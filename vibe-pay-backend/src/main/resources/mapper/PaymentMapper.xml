@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.vibe.pay.backend.payment.PaymentMapper">
+
+    <resultMap id="paymentResultMap" type="com.vibe.pay.backend.payment.Payment">
+        <id property="id" column="id"/>
+        <result property="memberId" column="member_id"/>
+        <result property="amount" column="amount"/>
+        <result property="paymentMethod" column="payment_method"/>
+        <result property="pgCompany" column="pg_company"/>
+        <result property="status" column="status"/>
+        <result property="transactionId" column="transaction_id"/>
+        <result property="paymentDate" column="payment_date"/>
+    </resultMap>
+
+    <select id="findAll" resultMap="paymentResultMap">
+        SELECT id, member_id, amount, payment_method, pg_company, status, transaction_id, payment_date FROM payment
+    </select>
+
+    <select id="findById" resultMap="paymentResultMap">
+        SELECT id, member_id, amount, payment_method, pg_company, status, transaction_id, payment_date FROM payment WHERE id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO payment (member_id, amount, payment_method, pg_company, status, transaction_id, payment_date) VALUES (#{memberId}, #{amount}, #{paymentMethod}, #{pgCompany}, #{status}, #{transactionId}, #{paymentDate})
+    </insert>
+
+    <update id="update">
+        UPDATE payment SET member_id = #{memberId}, amount = #{amount}, payment_method = #{paymentMethod}, pg_company = #{pgCompany}, status = #{status}, transaction_id = #{transactionId}, payment_date = #{paymentDate} WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM payment WHERE id = #{id}
+    </delete>
+
+</mapper>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.vibe.pay.backend.paymentlog.PaymentInterfaceRequestLogMapper">
+
+    <resultMap id="paymentInterfaceRequestLogResultMap" type="com.vibe.pay.backend.paymentlog.PaymentInterfaceRequestLog">
+        <id property="id" column="id"/>
+        <result property="paymentId" column="payment_id"/>
+        <result property="requestType" column="request_type"/>
+        <result property="requestPayload" column="request_payload"/>
+        <result property="responsePayload" column="response_payload"/>
+        <result property="timestamp" column="timestamp"/>
+    </resultMap>
+
+    <select id="findAll" resultMap="paymentInterfaceRequestLogResultMap">
+        SELECT id, payment_id, request_type, request_payload, response_payload, timestamp FROM payment_interface_request_log
+    </select>
+
+    <select id="findById" resultMap="paymentInterfaceRequestLogResultMap">
+        SELECT id, payment_id, request_type, request_payload, response_payload, timestamp FROM payment_interface_request_log WHERE id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO payment_interface_request_log (payment_id, request_type, request_payload, response_payload, timestamp) VALUES (#{paymentId}, #{requestType}, #{requestPayload}, #{responsePayload}, #{timestamp})
+    </insert>
+
+    <update id="update">
+        UPDATE payment_interface_request_log SET payment_id = #{paymentId}, request_type = #{requestType}, request_payload = #{requestPayload}, response_payload = #{responsePayload}, timestamp = #{timestamp} WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM payment_interface_request_log WHERE id = #{id}
+    </delete>
+
+</mapper>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.vibe.pay.backend.rewardpoints.RewardPointsMapper">
+
+    <resultMap id="rewardPointsResultMap" type="com.vibe.pay.backend.rewardpoints.RewardPoints">
+        <id property="id" column="id"/>
+        <result property="memberId" column="member_id"/>
+        <result property="points" column="points"/>
+        <result property="lastUpdated" column="last_updated"/>
+    </resultMap>
+
+    <select id="findAll" resultMap="rewardPointsResultMap">
+        SELECT id, member_id, points, last_updated FROM reward_points
+    </select>
+
+    <select id="findById" resultMap="rewardPointsResultMap">
+        SELECT id, member_id, points, last_updated FROM reward_points WHERE id = #{id}
+    </select>
+
+    <select id="findByMemberId" resultMap="rewardPointsResultMap">
+        SELECT id, member_id, points, last_updated FROM reward_points WHERE member_id = #{memberId}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO reward_points (member_id, points, last_updated) VALUES (#{memberId}, #{points}, #{lastUpdated})
+    </insert>
+
+    <update id="update">
+        UPDATE reward_points SET member_id = #{memberId}, points = #{points}, last_updated = #{lastUpdated} WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM reward_points WHERE id = #{id}
+    </delete>
+
+</mapper>

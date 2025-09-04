@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.vibe.pay.backend.member.MemberMapper">
+
+    <resultMap id="memberResultMap" type="com.vibe.pay.backend.member.Member">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="shippingAddress" column="shipping_address"/>
+        <result property="phoneNumber" column="phone_number"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <select id="findAll" resultMap="memberResultMap">
+        SELECT id, name, shipping_address, phone_number, created_at FROM member
+    </select>
+
+    <select id="findById" resultMap="memberResultMap">
+        SELECT id, name, shipping_address, phone_number, created_at FROM member WHERE id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO member (name, shipping_address, phone_number, created_at) VALUES (#{name}, #{shippingAddress}, #{phoneNumber}, #{createdAt})
+    </insert>
+
+    <update id="update">
+        UPDATE member SET name = #{name}, shipping_address = #{shippingAddress}, phone_number = #{phoneNumber} WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM member WHERE id = #{id}
+    </delete>
+
+</mapper>

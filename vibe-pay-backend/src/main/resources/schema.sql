@@ -1,0 +1,81 @@
+DROP TABLE IF EXISTS payment_interface_request_log CASCADE;
+DROP TABLE IF EXISTS order_item CASCADE;
+DROP TABLE IF EXISTS payment CASCADE;
+DROP TABLE IF EXISTS "order" CASCADE;
+DROP TABLE IF EXISTS reward_points CASCADE;
+DROP TABLE IF EXISTS product CASCADE;
+DROP TABLE IF EXISTS member CASCADE;
+
+-- Member Table
+CREATE TABLE IF NOT EXISTS member (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    shipping_address VARCHAR(255),
+    phone_number VARCHAR(255),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Product Table
+CREATE TABLE IF NOT EXISTS product (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    price DOUBLE PRECISION NOT NULL
+);
+
+-- RewardPoints Table
+CREATE TABLE IF NOT EXISTS reward_points (
+    id BIGSERIAL PRIMARY KEY,
+    member_id BIGINT NOT NULL,
+    points DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    last_updated TIMESTAMP NOT NULL,
+    CONSTRAINT fk_member_reward_points FOREIGN KEY (member_id) REFERENCES member(id)
+);
+
+-- Order Table
+CREATE TABLE IF NOT EXISTS "order" (
+    id BIGSERIAL PRIMARY KEY,
+    member_id BIGINT NOT NULL,
+    order_date TIMESTAMP NOT NULL,
+    total_amount DOUBLE PRECISION NOT NULL,
+    used_reward_points DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    final_payment_amount DOUBLE PRECISION NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    payment_id BIGINT,
+    CONSTRAINT fk_member_order FOREIGN KEY (member_id) REFERENCES member(id),
+    CONSTRAINT fk_payment_order FOREIGN KEY (payment_id) REFERENCES payment(id)
+);
+
+-- OrderItem Table
+CREATE TABLE IF NOT EXISTS order_item (
+    id BIGSERIAL PRIMARY KEY,
+    order_id BIGINT NOT NULL,
+    product_id BIGINT NOT NULL,
+    quantity INTEGER NOT NULL,
+    price_at_order DOUBLE PRECISION NOT NULL,
+    CONSTRAINT fk_order_item_order FOREIGN KEY (order_id) REFERENCES "order"(id),
+    CONSTRAINT fk_order_item_product FOREIGN KEY (product_id) REFERENCES product(id)
+);
+
+-- Payment Table
+CREATE TABLE IF NOT EXISTS payment (
+    id BIGSERIAL PRIMARY KEY,
+    member_id BIGINT NOT NULL,
+    amount DOUBLE PRECISION NOT NULL,
+    payment_method VARCHAR(50) NOT NULL,
+    pg_company VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    transaction_id VARCHAR(255),
+    payment_date TIMESTAMP NOT NULL,
+    CONSTRAINT fk_member_payment FOREIGN KEY (member_id) REFERENCES member(id)
+);
+
+-- PaymentInterfaceRequestLog Table
+CREATE TABLE IF NOT EXISTS payment_interface_request_log (
+    id BIGSERIAL PRIMARY KEY,
+    payment_id BIGINT,
+    request_type VARCHAR(50) NOT NULL,
+    request_payload TEXT,
+    response_payload TEXT,
+    timestamp TIMESTAMP NOT NULL,
+    CONSTRAINT fk_payment_log FOREIGN KEY (payment_id) REFERENCES payment(id)
+);

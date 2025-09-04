@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.vibe.pay.backend.order.OrderMapper">
+
+    <resultMap id="orderResultMap" type="com.vibe.pay.backend.order.Order">
+        <id property="id" column="id"/>
+        <result property="memberId" column="member_id"/>
+        <result property="orderDate" column="order_date"/>
+        <result property="totalAmount" column="total_amount"/>
+        <result property="usedRewardPoints" column="used_reward_points"/>
+        <result property="finalPaymentAmount" column="final_payment_amount"/>
+        <result property="status" column="status"/>
+        <result property="paymentId" column="payment_id"/>
+    </resultMap>
+
+    <select id="findAll" resultMap="orderResultMap">
+        SELECT id, member_id, order_date, total_amount, used_reward_points, final_payment_amount, status, payment_id FROM "order"
+    </select>
+
+    <select id="findById" resultMap="orderResultMap">
+        SELECT id, member_id, order_date, total_amount, used_reward_points, final_payment_amount, status, payment_id FROM "order" WHERE id = #{id}
+    </select>
+
+    <select id="findByMemberId" resultMap="orderResultMap">
+        SELECT id, member_id, order_date, total_amount, used_reward_points, final_payment_amount, status, payment_id FROM "order" WHERE member_id = #{memberId}
+    </select>
+
+    <select id="findByPaymentId" resultMap="orderResultMap">
+        SELECT id, member_id, order_date, total_amount, used_reward_points, final_payment_amount, status, payment_id FROM "order" WHERE payment_id = #{paymentId}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO "order" (member_id, order_date, total_amount, used_reward_points, final_payment_amount, status, payment_id) VALUES (#{memberId}, #{orderDate}, #{totalAmount}, #{usedRewardPoints}, #{finalPaymentAmount}, #{status}, #{paymentId})
+    </insert>
+
+    <update id="update">
+        UPDATE "order" SET member_id = #{memberId}, order_date = #{orderDate}, total_amount = #{totalAmount}, used_reward_points = #{usedRewardPoints}, final_payment_amount = #{finalPaymentAmount}, status = #{status}, payment_id = #{paymentId} WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM "order" WHERE id = #{id}
+    </delete>
+
+</mapper>
