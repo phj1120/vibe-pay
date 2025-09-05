@@ -71,12 +71,12 @@ CREATE TABLE IF NOT EXISTS payment (
 );
 
 -- PaymentInterfaceRequestLog Table
+-- payment_id는 임시 ID도 저장할 수 있도록 외래키 제약조건 제거
 CREATE TABLE IF NOT EXISTS payment_interface_request_log (
     id BIGSERIAL PRIMARY KEY,
-    payment_id BIGINT,
+    payment_id BIGINT, -- 외래키 제약조건 제거 (임시 ID 지원)
     request_type VARCHAR(50) NOT NULL,
     request_payload TEXT,
     response_payload TEXT,
-    timestamp TIMESTAMP NOT NULL,
-    CONSTRAINT fk_payment_log FOREIGN KEY (payment_id) REFERENCES payment(id)
+    timestamp TIMESTAMP NOT NULL
 );

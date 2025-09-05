@@ -5,6 +5,7 @@ public class PaymentInitiateRequest {
     private Long memberId;
     private Double amount;        // 금액(원), 정수 변환하여 사용
     private String paymentMethod;
+    private Double usedMileage;   // 사용한 적립금
 
     // 화면에서 넘어오는 정보
     private String goodName;
@@ -74,5 +75,13 @@ public class PaymentInitiateRequest {
 
     public void setBuyerEmail(String buyerEmail) {
         this.buyerEmail = buyerEmail;
+    }
+
+    public Double getUsedMileage() {
+        return usedMileage;
+    }
+
+    public void setUsedMileage(Double usedMileage) {
+        this.usedMileage = usedMileage;
     }
 }

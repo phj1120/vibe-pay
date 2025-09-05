@@ -1,10 +1,20 @@
 <template>
-  <v-card>
-    <v-card-title class="d-flex align-center">
-      Members
-      <v-spacer></v-spacer>
-      <v-btn color="primary" to="/members/new">New Member</v-btn>
-    </v-card-title>
+  <div class="page-container">
+    <!-- 헤더 -->
+    <div class="page-header">
+      <v-btn icon @click="goBack" class="back-btn">
+        <v-icon>mdi-arrow-left</v-icon>
+      </v-btn>
+      <h1 class="page-title">회원 정보</h1>
+    </div>
+
+    <!-- 컨텐츠 -->
+    <v-card class="content-card">
+      <v-card-title class="d-flex align-center">
+        회원 목록
+        <v-spacer></v-spacer>
+        <v-btn color="primary" to="/members/new">새 회원 추가</v-btn>
+      </v-card-title>
     <v-data-table
       :headers="headers"
       :items="members"
@@ -19,7 +29,8 @@
         <v-btn small color="primary" @click.stop="goToOrderForm(item.id)">Order</v-btn>
       </template>
     </v-data-table>
-  </v-card>
+    </v-card>
+  </div>
 </template>
 
 <script setup>
@@ -64,12 +75,48 @@ const goToOrderForm = (memberId) => {
   router.push(`/order?memberId=${memberId}`)
 }
 
+const goBack = () => {
+  router.go(-1)
+}
+
 onMounted(() => {
   fetchMembers()
 })
 </script>
 
 <style scoped>
+.page-container {
+  min-height: 100vh;
+  background-color: #fafafa;
+}
+
+.page-header {
+  background: white;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.back-btn {
+  margin-right: 12px;
+}
+
+.page-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.content-card {
+  margin: 20px;
+  border-radius: 16px !important;
+}
+
 .v-data-table :deep(tbody tr) {
   cursor: pointer;
 }

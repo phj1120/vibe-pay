@@ -19,6 +19,10 @@
         SELECT id, payment_id, request_type, request_payload, response_payload, timestamp FROM payment_interface_request_log WHERE id = #{id}
     </select>
 
+    <select id="findByPaymentId" resultMap="paymentInterfaceRequestLogResultMap">
+        SELECT id, payment_id, request_type, request_payload, response_payload, timestamp FROM payment_interface_request_log WHERE payment_id = #{paymentId} ORDER BY timestamp ASC
+    </select>
+
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO payment_interface_request_log (payment_id, request_type, request_payload, response_payload, timestamp) VALUES (#{paymentId}, #{requestType}, #{requestPayload}, #{responsePayload}, #{timestamp})
     </insert>

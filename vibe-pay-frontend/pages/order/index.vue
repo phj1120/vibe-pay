@@ -1,123 +1,238 @@
 <template>
-  <v-card>
-    <v-card-title>Create Order</v-card-title>
-    <v-card-text>
-      <!-- Member Selection -->
-      <v-autocomplete
+  <div class="order-page">
+    <!-- 헤더 -->
+    <div class="page-header">
+      <v-btn icon @click="$router.go(-1)" class="back-btn">
+        <v-icon>mdi-arrow-left</v-icon>
+      </v-btn>
+      <h1 class="page-title">주문하기</h1>
+    </div>
+
+    <!-- 메인 컨텐츠 -->
+    <div class="order-content">
+      <!-- 회원 선택 -->
+      <div class="section-card">
+        <div class="section-header">
+          <v-icon color="primary" class="mr-3">mdi-account</v-icon>
+          <h3>주문자 정보</h3>
+        </div>
+        <v-select
           v-model="selectedMember"
           :items="members"
           item-title="name"
           item-value="id"
-          label="Select a Member"
           return-object
-          class="mb-4"
-      ></v-autocomplete>
+          variant="outlined"
+          placeholder="주문자를 선택해주세요"
+          class="member-select"
+        >
+          <template v-slot:selection="{ item }">
+            <div class="member-info">
+              <div class="member-avatar">
+                {{ item.raw.name.charAt(0) }}
+              </div>
+              <div class="member-details">
+                <div class="member-name">{{ item.raw.name }}</div>
+                <div class="member-points">{{ item.raw.points || 0 }}P 보유</div>
+              </div>
+            </div>
+          </template>
+          <template v-slot:item="{ item, props }">
+            <v-list-item v-bind="props">
+              <template v-slot:prepend>
+                <div class="member-avatar small">
+                  {{ item.raw.name.charAt(0) }}
+                </div>
+              </template>
+              <v-list-item-title>{{ item.raw.name }}</v-list-item-title>
+              <v-list-item-subtitle>{{ item.raw.points || 0 }}P 보유</v-list-item-subtitle>
+            </v-list-item>
+          </template>
+        </v-select>
+      </div>
 
-      <!-- Product Selection -->
-      <v-autocomplete
+      <!-- 상품 선택 -->
+      <div class="section-card">
+        <div class="section-header">
+          <v-icon color="success" class="mr-3">mdi-shopping</v-icon>
+          <h3>상품 선택</h3>
+        </div>
+        <v-select
           v-model="selectedProduct"
           :items="products"
           item-title="name"
           item-value="id"
-          label="Add a Product"
           return-object
+          variant="outlined"
+          placeholder="상품을 선택해주세요"
           @update:modelValue="addProductToOrder"
-          class="mb-4"
-      ></v-autocomplete>
+          class="product-select"
+        >
+          <template v-slot:selection="{ item }">
+            <div class="product-info">
+              <div class="product-name">{{ item.raw.name }}</div>
+              <div class="product-price">₩{{ item.raw.price.toLocaleString() }}</div>
+            </div>
+          </template>
+          <template v-slot:item="{ item, props }">
+            <v-list-item v-bind="props">
+              <v-list-item-title>{{ item.raw.name }}</v-list-item-title>
+              <v-list-item-subtitle>₩{{ item.raw.price.toLocaleString() }}</v-list-item-subtitle>
+            </v-list-item>
+          </template>
+        </v-select>
+      </div>
 
-      <!-- Order Items -->
-      <v-data-table
-          :headers="orderHeaders"
-          :items="orderItems"
-          class="elevation-1 mb-4"
-      >
-        <template v-slot:item.quantity="{ item }">
-          <v-text-field
-              v-model.number="item.quantity"
+      <!-- 주문 상품 목록 -->
+      <div class="section-card" v-if="orderItems.length > 0">
+        <div class="section-header">
+          <v-icon color="accent" class="mr-3">mdi-cart</v-icon>
+          <h3>주문 상품</h3>
+        </div>
+        <div class="order-items">
+          <div 
+            v-for="item in orderItems" 
+            :key="item.id"
+            class="order-item"
+          >
+            <div class="item-info">
+              <div class="item-name">{{ item.name }}</div>
+              <div class="item-price">₩{{ item.price.toLocaleString() }}</div>
+            </div>
+            <div class="item-controls">
+              <div class="quantity-control">
+                <v-btn 
+                  icon 
+                  size="small" 
+                  @click="updateQuantity(item, -1)"
+                  :disabled="item.quantity <= 1"
+                >
+                  <v-icon size="16">mdi-minus</v-icon>
+                </v-btn>
+                <span class="quantity">{{ item.quantity }}</span>
+                <v-btn 
+                  icon 
+                  size="small" 
+                  @click="updateQuantity(item, 1)"
+                >
+                  <v-icon size="16">mdi-plus</v-icon>
+                </v-btn>
+              </div>
+              <v-btn 
+                icon 
+                size="small" 
+                color="error"
+                @click="removeProductFromOrder(item)"
+              >
+                <v-icon size="16">mdi-delete</v-icon>
+              </v-btn>
+            </div>
+            <div class="item-subtotal">
+              ₩{{ (item.quantity * item.price).toLocaleString() }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 포인트 사용 -->
+      <div class="section-card" v-if="selectedMember">
+        <div class="section-header">
+          <v-icon color="warning" class="mr-3">mdi-star</v-icon>
+          <h3>포인트 사용</h3>
+        </div>
+        <div class="points-section">
+          <div class="points-info">
+            <span>보유 포인트: <strong>{{ selectedMember.points || 0 }}P</strong></span>
+          </div>
+          <div class="points-input">
+            <v-text-field
+              v-model.number="usedPoints"
               type="number"
-              min="1"
-              style="width: 100px"
-              dense
-              hide-details
-          ></v-text-field>
-        </template>
-        <template v-slot:item.subtotal="{ item }">
-          {{ (item.quantity * item.price).toFixed(2) }}
-        </template>
-        <template v-slot:item.actions="{ item }">
-          <v-icon small @click="removeProductFromOrder(item)">mdi-delete</v-icon>
-        </template>
-      </v-data-table>
+              min="0"
+              :max="selectedMember.points || 0"
+              variant="outlined"
+              placeholder="사용할 포인트"
+              suffix="P"
+              class="points-field"
+            >
+              <template v-slot:append-inner>
+                <v-btn 
+                  size="small" 
+                  color="primary"
+                  @click="useAllPoints"
+                  :disabled="!selectedMember.points"
+                >
+                  전액사용
+                </v-btn>
+              </template>
+            </v-text-field>
+          </div>
+        </div>
+      </div>
+    </div>
 
-      <!-- Order Summary -->
-      <v-row justify="end">
-        <v-col cols="12" md="5">
-          <v-card outlined>
-            <v-card-text>
-              <div class="d-flex justify-space-between">
-                <span>Subtotal</span>
-                <span>${{ subtotal.toFixed(2) }}</span>
-              </div>
-              <v-divider class="my-2"></v-divider>
-              <div class="d-flex justify-space-between align-center">
-                <span>Use Points</span>
-                <v-text-field
-                    v-model.number="usedPoints"
-                    type="number"
-                    min="0"
-                    :max="selectedMember ? selectedMember.points : 0"
-                    style="width: 100px"
-                    dense
-                    hide-details
-                    class="ml-4"
-                ></v-text-field>
-              </div>
-              <div class="d-flex justify-space-between caption" v-if="selectedMember">
-                <span></span>
-                <span>Available: {{ selectedMember.points }}</span>
-              </div>
-              <v-divider class="my-2"></v-divider>
-              <div class="d-flex justify-space-between font-weight-bold text-h6">
-                <span>Total</span>
-                <span>${{ total.toFixed(2) }}</span>
-              </div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
+    <!-- 주문 요약 (하단 고정) -->
+    <div class="order-summary-fixed" v-if="orderItems.length > 0">
+      <div class="summary-content">
+        <div class="price-breakdown">
+          <div class="price-row">
+            <span>상품 금액</span>
+            <span>₩{{ subtotal.toLocaleString() }}</span>
+          </div>
+          <div class="price-row" v-if="usedPoints > 0">
+            <span>포인트 할인</span>
+            <span class="discount">-₩{{ usedPoints.toLocaleString() }}</span>
+          </div>
+          <div class="price-row total">
+            <span>총 결제금액</span>
+            <span>₩{{ total.toLocaleString() }}</span>
+          </div>
+        </div>
+        <v-btn 
+          color="primary" 
+          size="x-large"
+          block
+          rounded="xl"
+          class="pay-btn"
+          @click="proceedToPayment" 
+          :disabled="!selectedMember || orderItems.length === 0 || isProcessing" 
+          :loading="isProcessing"
+        >
+          <v-icon left>mdi-credit-card</v-icon>
+          {{ isProcessing ? '처리중...' : `₩${total.toLocaleString()} 결제하기` }}
+        </v-btn>
+      </div>
+    </div>
 
-      <!-- Hidden INIStdPay form to prevent null reference and pass parameters -->
-      <form id="inicisForm" style="display: none;">
-        <input type="hidden" name="mid" :value="inicisParams.mid"/>
-        <input type="hidden" name="oid" :value="inicisParams.oid"/>
-        <input type="hidden" name="price" :value="inicisParams.price"/>
-        <input type="hidden" name="timestamp" :value="inicisParams.timestamp"/>
-        <input type="hidden" name="signature" :value="inicisParams.signature"/>
-        <input type="hidden" name="verification" :value="inicisParams.verification"/>
-        <input type="hidden" name="mKey" :value="inicisParams.mKey"/>
-        <input type="hidden" name="version" :value="inicisParams.version"/>
-        <input type="hidden" name="currency" :value="inicisParams.currency"/>
-        <input type="hidden" name="moId" :value="inicisParams.moId"/>
-        <!-- INIStdPay expects these lowercase keys -->
-        <input type="hidden" name="goodname" :value="inicisParams.goodName"/>
-        <input type="hidden" name="buyername" :value="inicisParams.buyerName"/>
-        <input type="hidden" name="buyertel" :value="inicisParams.buyerTel"/>
-        <input type="hidden" name="buyeremail" :value="inicisParams.buyerEmail"/>
-        <input type="hidden" name="returnUrl" :value="inicisParams.returnUrl"/>
-        <input type="hidden" name="closeUrl" :value="inicisParams.closeUrl"/>
-        <!-- Required by INIStdPay -->
-        <input type="hidden" name="gopaymethod" :value="inicisParams.gopaymethod"/>
-        <input type="hidden" name="acceptmethod" :value="inicisParams.acceptmethod"/>
-      </form>
+    <!-- 빈 상태 -->
+    <div class="empty-state" v-if="orderItems.length === 0">
+      <v-icon size="80" color="grey-lighten-2">mdi-cart-outline</v-icon>
+      <h3>장바구니가 비어있습니다</h3>
+      <p>상품을 선택해서 주문을 시작해보세요</p>
+    </div>
 
-    </v-card-text>
-    <v-card-actions>
-      <v-spacer></v-spacer>
-      <v-btn color="primary" large @click="proceedToPayment" :disabled="!selectedMember || orderItems.length === 0 || isProcessing" :loading="isProcessing">
-        {{ isProcessing ? 'Processing...' : 'Proceed to Payment' }}
-      </v-btn>
-    </v-card-actions>
-  </v-card>
+    <!-- Hidden INIStdPay form -->
+    <form id="inicisForm" style="display: none;">
+      <input type="hidden" name="mid" :value="inicisParams.mid"/>
+      <input type="hidden" name="oid" :value="inicisParams.oid"/>
+      <input type="hidden" name="price" :value="inicisParams.price"/>
+      <input type="hidden" name="timestamp" :value="inicisParams.timestamp"/>
+      <input type="hidden" name="signature" :value="inicisParams.signature"/>
+      <input type="hidden" name="verification" :value="inicisParams.verification"/>
+      <input type="hidden" name="mKey" :value="inicisParams.mKey"/>
+      <input type="hidden" name="version" :value="inicisParams.version"/>
+      <input type="hidden" name="currency" :value="inicisParams.currency"/>
+      <input type="hidden" name="moId" :value="inicisParams.moId"/>
+      <input type="hidden" name="goodname" :value="inicisParams.goodName"/>
+      <input type="hidden" name="buyername" :value="inicisParams.buyerName"/>
+      <input type="hidden" name="buyertel" :value="inicisParams.buyerTel"/>
+      <input type="hidden" name="buyeremail" :value="inicisParams.buyerEmail"/>
+      <input type="hidden" name="returnUrl" :value="inicisParams.returnUrl"/>
+      <input type="hidden" name="closeUrl" :value="inicisParams.closeUrl"/>
+      <input type="hidden" name="gopaymethod" :value="inicisParams.gopaymethod"/>
+      <input type="hidden" name="acceptmethod" :value="inicisParams.acceptmethod"/>
+    </form>
+  </div>
 </template>
 
 <script setup>
@@ -127,21 +242,16 @@ import {useRoute, useRouter} from 'vue-router'
 const route = useRoute()
 const router = useRouter()
 
-// Mock Data
+// 반응형 데이터
 const members = ref([])
 const products = ref([])
 const selectedMember = ref(null)
 const selectedProduct = ref(null)
 const orderItems = ref([])
 const usedPoints = ref(0)
-const defaultApplied = ref(false)
 const isProcessing = ref(false)
 
-// Store the created order and payment IDs for confirmation
-const currentOrderId = ref(null)
-const currentPaymentId = ref(null)
-
-// Inicis parameters from backend
+// Inicis parameters
 const inicisParams = ref({
   mid: '', oid: '', price: '', timestamp: '', signature: '', mKey: '',
   version: '', currency: '', moId: '', goodName: '',
@@ -149,30 +259,24 @@ const inicisParams = ref({
   gopaymethod: '', acceptmethod: ''
 });
 
+// 회원 변경 시 포인트 조회
 watch(selectedMember, async (newMember) => {
   if (newMember) {
     try {
       const response = await fetch(`/api/rewardpoints/member/${newMember.id}`);
       if (!response.ok) throw new Error('Failed to fetch points');
       const data = await response.json();
-      newMember.points = data.points; // Assuming the response directly contains 'points'
+      newMember.points = data.points;
     } catch (error) {
       console.error(error);
-      newMember.points = 0; // Default to 0 on error
+      newMember.points = 0;
     }
   } else {
     usedPoints.value = 0;
   }
 });
 
-const orderHeaders = [
-  {title: 'Product', key: 'name'},
-  {title: 'Price', key: 'price'},
-  {title: 'Quantity', key: 'quantity'},
-  {title: 'Subtotal', key: 'subtotal'},
-  {title: 'Actions', key: 'actions', sortable: false},
-]
-
+// 계산된 속성
 const subtotal = computed(() => {
   return orderItems.value.reduce((acc, item) => acc + (item.quantity * item.price), 0)
 })
@@ -182,41 +286,30 @@ const total = computed(() => {
   return finalTotal > 0 ? finalTotal : 0
 })
 
+// 메서드
 const fetchInitialData = async () => {
   try {
     const [membersRes, productsRes] = await Promise.all([
       fetch('/api/members'),
       fetch('/api/products'),
     ]);
+    
     if (!membersRes.ok || !productsRes.ok) {
       throw new Error('Failed to fetch initial data');
     }
+    
     const membersData = await membersRes.json();
     members.value = membersData.map(m => ({...m, points: 0}));
     products.value = await productsRes.json();
 
-    // URL 쿼리(memberId) 우선 적용
+    // URL 쿼리에서 회원 ID 확인
     const memberIdFromQuery = route.query.memberId;
     if (memberIdFromQuery) {
       const foundMember = members.value.find(m => m.id === parseInt(memberIdFromQuery));
       if (foundMember) {
         selectedMember.value = foundMember;
       }
-    } else {
-      // URL 쿼리가 없으면 첫 번째 회원 자동 선택
-      if (members.value.length > 0) {
-        selectedMember.value = members.value[0];
-        console.log('Auto-selected first member:', selectedMember.value);
-      }
     }
-
-    // 첫 번째 상품을 자동으로 주문에 추가
-    if (products.value.length > 0) {
-      const firstProduct = products.value[0];
-      addProductToOrder(firstProduct);
-      console.log('Auto-added first product to order:', firstProduct);
-    }
-
   } catch (error) {
     console.error(error);
   }
@@ -233,27 +326,37 @@ const addProductToOrder = (product) => {
   selectedProduct.value = null
 }
 
+const updateQuantity = (item, change) => {
+  item.quantity += change
+  if (item.quantity <= 0) {
+    removeProductFromOrder(item)
+  }
+}
+
 const removeProductFromOrder = (itemToRemove) => {
   orderItems.value = orderItems.value.filter(item => item.id !== itemToRemove.id)
 }
 
-const proceedToPayment = async () => {
-  // 중복 클릭 방지
-  if (isProcessing.value) {
-    return;
+const useAllPoints = () => {
+  if (selectedMember.value && selectedMember.value.points) {
+    usedPoints.value = Math.min(selectedMember.value.points, subtotal.value)
   }
+}
+
+const proceedToPayment = async () => {
+  if (isProcessing.value) return;
 
   // 유효성 검사
   if (!selectedMember.value) {
-    alert("Please select a member.");
+    alert("주문자를 선택해주세요.");
     return;
   }
   if (usedPoints.value > (selectedMember.value.points || 0)) {
-    alert("Cannot use more points than available.");
+    alert("보유 포인트보다 많이 사용할 수 없습니다.");
     return;
   }
   if (orderItems.value.length === 0) {
-    alert("Please add at least one product.");
+    alert("주문할 상품을 선택해주세요.");
     return;
   }
 
@@ -261,7 +364,7 @@ const proceedToPayment = async () => {
     isProcessing.value = true;
     console.log('Starting payment process...');
     
-    // 주문 정보를 로컬 스토리지에 저장 (return 페이지에서 사용)
+    // 주문 정보 저장
     const orderData = {
       memberId: selectedMember.value.id,
       items: orderItems.value.map(item => ({ 
@@ -271,9 +374,8 @@ const proceedToPayment = async () => {
       usedPoints: usedPoints.value
     };
     localStorage.setItem('pendingOrder', JSON.stringify(orderData));
-    console.log('Stored pending order:', orderData);
     
-    // 상품명 생성 (선택된 상품들)
+    // 상품명 생성
     const productNames = orderItems.value.map(item => item.name).join(', ');
     const goodName = productNames.length > 50 ? productNames.substring(0, 47) + '...' : productNames;
     
@@ -281,71 +383,60 @@ const proceedToPayment = async () => {
       memberId: selectedMember.value.id,
       amount: total.value,
       paymentMethod: 'CREDIT_CARD',
-      goodName: goodName || '주문결제', // 실제 상품명 사용
-      buyerName: selectedMember.value.name || '구매자', // 실제 회원명 사용
+      usedMileage: usedPoints.value, // 적립금 사용량 추가
+      goodName: goodName || '주문결제',
+      buyerName: selectedMember.value.name || '구매자',
       buyerTel: selectedMember.value.phoneNumber || '010-0000-0000',
       buyerEmail: selectedMember.value.email || 'buyer@example.com',
     };
     
-    console.log('Selected member:', selectedMember.value);
-    console.log('Initiate payload:', initiatePayload);
+    // 결제 준비
+    console.log('Sending payment initiate request:', initiatePayload);
     
-    // 결제 준비 (백엔드 호출)
     const initiateResponse = await fetch('/api/payments/initiate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(initiatePayload),
     });
     
+    console.log('Payment initiate response status:', initiateResponse.status);
+    
     if (!initiateResponse.ok) {
-      const errorText = await initiateResponse.text();
-      throw new Error(`Payment initiation failed: ${errorText}`);
+      let errorText = '';
+      try {
+        const errorData = await initiateResponse.json();
+        errorText = JSON.stringify(errorData);
+        console.error('Payment initiate error data:', errorData);
+      } catch (e) {
+        errorText = await initiateResponse.text();
+        console.error('Payment initiate error text:', errorText);
+      }
+      throw new Error(`Payment initiation failed (${initiateResponse.status}): ${errorText}`);
     }
 
     const inicisResponse = await initiateResponse.json();
     console.log('Payment initiated:', inicisResponse);
     inicisParams.value = inicisResponse;
     
-    // INIStdPay.js 로드 확인 및 로드
+    // INIStdPay 로드 및 실행
     if (!window.INIStdPay) {
-      console.log('Loading INIStdPay.js...');
       await new Promise((resolve, reject) => {
         const src = 'https://stdpay.inicis.com/stdjs/INIStdPay.js';
-        const existing = document.querySelector(`script[src="${src}"]`);
-        if (existing) {
-          const start = Date.now();
-          const t = setInterval(() => {
-            if (window.INIStdPay) { 
-              clearInterval(t); 
-              console.log('INIStdPay.js loaded from existing script');
-              resolve(null); 
-            }
-            else if (Date.now() - start > 10000) { 
-              clearInterval(t); 
-              reject(new Error('Timeout waiting INIStdPay')); 
-            }
-          }, 50);
-        } else {
-          const s = document.createElement('script');
-          s.src = src; 
-          s.async = true;
-          s.onload = () => {
-            console.log('INIStdPay.js loaded successfully');
-            resolve(null);
-          };
-          s.onerror = () => reject(new Error('Failed to load INIStdPay.js'));
-          document.head.appendChild(s);
-        }
+        const s = document.createElement('script');
+        s.src = src; 
+        s.async = true;
+        s.onload = resolve;
+        s.onerror = () => reject(new Error('Failed to load INIStdPay.js'));
+        document.head.appendChild(s);
       });
     }
 
-    // 폼 확인
     const form = document.getElementById('inicisForm');
     if (!form) {
-      throw new Error('결제 폼을 찾을 수 없습니다. 페이지를 새로고침 후 다시 시도해주세요.');
+      throw new Error('결제 폼을 찾을 수 없습니다.');
     }
 
-    // 인코딩 명시(UTF-8)
+    // 인코딩 설정
     const ensureInput = (name, value) => {
       let input = form.querySelector(`input[name="${name}"]`);
       if (!input) {
@@ -358,13 +449,7 @@ const proceedToPayment = async () => {
     };
     ensureInput('charset', 'UTF-8');
 
-    if (!window.INIStdPay || typeof window.INIStdPay.pay !== 'function') {
-      throw new Error('INIStdPay.js가 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.');
-    }
-    
-    console.log('Calling INIStdPay.pay with form:', 'inicisForm');
-    
-    // 이니시스 결제창 호출 (return 페이지로 리다이렉트됨)
+    console.log('Calling INIStdPay.pay...');
     window.INIStdPay.pay('inicisForm');
     
   } catch (error) {
@@ -375,8 +460,276 @@ const proceedToPayment = async () => {
   }
 }
 
-
 onMounted(() => {
   fetchInitialData()
 })
 </script>
+
+<style scoped>
+.order-page {
+  min-height: 100vh;
+  background-color: #fafafa;
+  padding-bottom: 200px;
+}
+
+.page-header {
+  background: white;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.back-btn {
+  margin-right: 12px;
+}
+
+.page-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.order-content {
+  padding: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.section-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.section-header h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+/* 회원 정보 */
+.member-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.member-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  background: #0064FF;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.member-avatar.small {
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+}
+
+.member-details {
+  flex: 1;
+}
+
+.member-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.member-points {
+  font-size: 0.875rem;
+  color: #666;
+}
+
+/* 상품 정보 */
+.product-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.product-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.product-price {
+  font-weight: 600;
+  color: #0064FF;
+}
+
+/* 주문 상품 목록 */
+.order-items {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 12px;
+}
+
+.item-info {
+  flex: 1;
+}
+
+.item-name {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.item-price {
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.item-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quantity-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: white;
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.quantity {
+  min-width: 24px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.item-subtotal {
+  font-weight: 600;
+  color: #333;
+  min-width: 80px;
+  text-align: right;
+}
+
+/* 포인트 섹션 */
+.points-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.points-info {
+  color: #666;
+}
+
+.points-field {
+  max-width: 200px;
+}
+
+/* 주문 요약 (하단 고정) */
+.order-summary-fixed {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-top: 1px solid #eee;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+  z-index: 20;
+}
+
+.summary-content {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.price-breakdown {
+  margin-bottom: 20px;
+}
+
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.price-row.total {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  border-top: 1px solid #eee;
+  padding-top: 12px;
+  margin-top: 12px;
+}
+
+.discount {
+  color: #00C896;
+}
+
+.pay-btn {
+  font-weight: 600;
+  font-size: 1.1rem !important;
+  height: 56px !important;
+}
+
+/* 빈 상태 */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+}
+
+.empty-state h3 {
+  margin: 20px 0 8px;
+  color: #333;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .order-content {
+    padding: 16px;
+  }
+  
+  .section-card {
+    padding: 20px;
+  }
+  
+  .order-item {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .item-subtotal {
+    width: 100%;
+    text-align: left;
+    margin-top: 8px;
+  }
+}
+</style>

@@ -11,8 +11,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -99,30 +97,42 @@ public class PaymentService {
     @Transactional
     public InicisPaymentParameters initiatePayment(PaymentInitiateRequest request) {
         // 결제 시작 로그
-        log.info("Initiating payment: memberId={}, amount={}, method={}", request.getMemberId(), request.getAmount(), request.getPaymentMethod());
+        log.info("Initiating payment: memberId={}, amount={}, method={}, usedMileage={}", 
+                request.getMemberId(), request.getAmount(), request.getPaymentMethod(), request.getUsedMileage());
+        log.info("Request details: goodName={}, buyerName={}, buyerTel={}, buyerEmail={}", 
+                request.getGoodName(), request.getBuyerName(), request.getBuyerTel(), request.getBuyerEmail());
 
-        // PG 선택(샘플)
-        Random random = new Random();
-        String pgCompany = random.nextBoolean() ? "INICIS" : "NICEPAY";
+        // PG 선택 - 현재는 INICIS만 지원 (추후 NICEPAY 추가 예정)
+        String pgCompany = "INICIS";
         log.debug("Selected PG company: {}", pgCompany);
 
-        // 결제 레코드 생성(주문은 결제 성공 후 생성/연결)
-        Payment payment = new Payment(
-                request.getMemberId(),
-                request.getAmount(),
-                request.getPaymentMethod(),
-                pgCompany,
-                "INITIATED",
-                null
+        // 결제 방법 결정 (적립금 사용 여부에 따라)
+        String paymentMethod = request.getPaymentMethod();
+        // 적립금 사용량이 있다면 mileage도 포함
+        if (request.getUsedMileage() != null && request.getUsedMileage() > 0) {
+            paymentMethod = paymentMethod + "+MILEAGE";
+        }
+
+        // 결제 레코드는 나중에 성공시에만 생성하도록 변경
+        // 임시로 payment ID 생성을 위해 현재 시간 사용
+        Long tempPaymentId = System.currentTimeMillis();
+
+        // 인터페이스 로그 먼저 기록 (결제 요청 시작)
+        PaymentInterfaceRequestLog initiateLog = new PaymentInterfaceRequestLog(
+                tempPaymentId, // 임시 ID 사용
+                "INITIATE_PAYMENT",
+                "Request: memberId=" + request.getMemberId() + ", amount=" + request.getAmount() + 
+                ", paymentMethod=" + paymentMethod + ", usedMileage=" + request.getUsedMileage(),
+                "Starting payment initiation process"
         );
-        paymentMapper.insert(payment);
+        paymentInterfaceRequestLogMapper.insert(initiateLog);
 
         // 이니시스 파라미터 구성 - 화면에서 넘어온 값 사용
         InicisPaymentParameters inicisParams = new InicisPaymentParameters();
         inicisParams.setMid(inicisMid);
 
-        // 주문이 아직 없으므로 서버에서 OID 생성(결제ID 기반)
-        String oid = "OID-" + payment.getId() + "-" + System.currentTimeMillis();
+        // 주문이 아직 없으므로 서버에서 OID 생성(임시ID 기반)
+        String oid = "OID-" + tempPaymentId + "-" + System.currentTimeMillis();
         inicisParams.setOid(oid);
 
         // price: 요청 금액을 정수 문자열로 변환
@@ -148,7 +158,7 @@ public class PaymentService {
         // 환경설정 기반 옵션
         inicisParams.setVersion(inicisVersion);
         inicisParams.setCurrency(inicisCurrency);
-        inicisParams.setMoId(String.valueOf(payment.getId()));
+        inicisParams.setMoId(String.valueOf(tempPaymentId));
         inicisParams.setGopaymethod(inicisGopaymethod);
         inicisParams.setAcceptmethod(inicisAcceptmethod);
 
@@ -157,6 +167,7 @@ public class PaymentService {
         inicisParams.setTimestamp(timestamp);
 
         // signKey 정제
+        log.info("Checking Inicis configuration - MID: {}, SignKey present: {}", inicisMid, inicisSignKey != null);
         final String finalSignKey = (inicisSignKey != null) ? inicisSignKey.trim() : null;
         if (finalSignKey == null || finalSignKey.isBlank()) {
             log.error("Inicis signKey is not configured. Set INICIS_SIGN_KEY env/property for MID={}", inicisMid);
@@ -181,16 +192,16 @@ public class PaymentService {
         inicisParams.setReturnUrl(inicisReturnUrl);
         inicisParams.setCloseUrl(inicisCloseUrl);
 
-        // 인터페이스 로그 적재
-        PaymentInterfaceRequestLog logRow = new PaymentInterfaceRequestLog(
-                payment.getId(),
-                "INITIATE_PAYMENT",
-                "Request Payload: memberId=" + request.getMemberId() + ", amount=" + request.getAmount(),
-                "Inicis Parameters issued (oid=" + oid + ", price=" + priceStr + ")"
+        // 인터페이스 로그 업데이트 - 이니시스 파라미터 생성 완료
+        PaymentInterfaceRequestLog parametersLog = new PaymentInterfaceRequestLog(
+                tempPaymentId,
+                "INICIS_PARAMETERS_GENERATED",
+                "Inicis Parameters: oid=" + oid + ", price=" + priceStr + ", mid=" + inicisMid,
+                "Inicis payment parameters successfully generated"
         );
-        paymentInterfaceRequestLogMapper.insert(logRow);
+        paymentInterfaceRequestLogMapper.insert(parametersLog);
 
-        log.info("Payment initiation parameters issued for paymentId={}, oid={}", payment.getId(), oid);
+        log.info("Payment initiation parameters issued for tempId={}, oid={}", tempPaymentId, oid);
         return inicisParams;
     }
 
@@ -200,85 +211,93 @@ public class PaymentService {
         log.info("Request details - authToken: {}, authUrl: {}, oid: {}, price: {}", 
                 request.getAuthToken(), request.getAuthUrl(), request.getOid(), request.getPrice());
         
-        // OID로 결제 정보 찾기 (paymentId가 없는 경우)
-        Payment payment = null;
-        if (request.getPaymentId() != null) {
-            payment = paymentMapper.findById(request.getPaymentId());
-        } else {
-            // orderNumber 또는 oid로 결제 정보 찾기
-            String oidToSearch = request.getOrderNumber() != null ? request.getOrderNumber() : request.getOid();
-            if (oidToSearch != null) {
-                // OID에서 paymentId 추출 (OID-{paymentId}-{timestamp} 형식)
-                try {
-                    String[] oidParts = oidToSearch.split("-");
-                    if (oidParts.length >= 2) {
-                        Long paymentId = Long.parseLong(oidParts[1]);
-                        payment = paymentMapper.findById(paymentId);
-                    }
-                } catch (Exception e) {
-                    log.error("Failed to extract paymentId from OID: {}", oidToSearch, e);
-                }
-            }
-        }
-        
-        if (payment == null) {
-            throw new RuntimeException("Payment not found for OID: " + request.getOid());
-        }
-
-        // 이니시스 승인 처리
-        if (request.getAuthToken() != null && request.getAuthUrl() != null) {
-            log.info("Starting Inicis approval process for paymentId: {}", payment.getId());
+        // OID에서 tempPaymentId 추출
+        String oidToSearch = request.getOrderNumber() != null ? request.getOrderNumber() : request.getOid();
+        Long tempPaymentId = null;
+        if (oidToSearch != null) {
             try {
-                // 실제 이니시스 승인 API 호출
-                boolean approvalSuccess = processInicisApproval(request);
-                
-                if (approvalSuccess) {
-                    payment.setStatus("SUCCESS");
-                    payment.setTransactionId("TXN-" + System.currentTimeMillis());
-                    log.info("Payment approved successfully for paymentId: {}, status: SUCCESS", payment.getId());
-                } else {
-                    payment.setStatus("FAILED");
-                    log.error("Payment approval failed for paymentId: {}, status: FAILED", payment.getId());
+                String[] oidParts = oidToSearch.split("-");
+                if (oidParts.length >= 2) {
+                    tempPaymentId = Long.parseLong(oidParts[1]);
                 }
             } catch (Exception e) {
-                log.error("Error during Inicis approval process for paymentId: {}", payment.getId(), e);
-                payment.setStatus("FAILED");
+                log.error("Failed to extract tempPaymentId from OID: {}", oidToSearch, e);
+                throw new RuntimeException("Invalid OID format: " + oidToSearch);
+            }
+        }
+
+        if (tempPaymentId == null) {
+            throw new RuntimeException("Cannot extract tempPaymentId from OID: " + request.getOid());
+        }
+
+        // 승인 요청 인터페이스 로그 먼저 기록
+        PaymentInterfaceRequestLog approvalRequestLog = new PaymentInterfaceRequestLog(
+                tempPaymentId,
+                "INICIS_APPROVAL_REQUEST",
+                "Request: authToken=" + request.getAuthToken() + ", oid=" + request.getOid() + ", price=" + request.getPrice(),
+                "Starting Inicis approval process"
+        );
+        paymentInterfaceRequestLogMapper.insert(approvalRequestLog);
+
+        // 이니시스 승인 처리
+        boolean approvalSuccess = false;
+        String transactionId = null;
+        
+        if (request.getAuthToken() != null && request.getAuthUrl() != null) {
+            log.info("Starting Inicis approval process for tempId: {}", tempPaymentId);
+            try {
+                // 실제 이니시스 승인 API 호출
+                approvalSuccess = processInicisApproval(request);
+                
+                if (approvalSuccess) {
+                    transactionId = "TXN-" + System.currentTimeMillis();
+                    log.info("Payment approved successfully for tempId: {}", tempPaymentId);
+                } else {
+                    log.error("Payment approval failed for tempId: {}", tempPaymentId);
+                }
+            } catch (Exception e) {
+                log.error("Error during Inicis approval process for tempId: {}", tempPaymentId, e);
                 // 망취소 시도
                 if (request.getNetCancelUrl() != null) {
-                    log.info("Attempting net cancel for paymentId: {}", payment.getId());
+                    log.info("Attempting net cancel for tempId: {}", tempPaymentId);
                     safeNetCancel(request.getNetCancelUrl(), request.getAuthToken());
                 }
             }
-        } else {
-            log.info("Using direct status setting for paymentId: {}, status: {}", payment.getId(), request.getStatus());
-            // 기존 방식 (직접 상태 설정)
-            payment.setStatus(request.getStatus());
-            payment.setTransactionId(request.getTransactionId());
-        }
-        
-        paymentMapper.update(payment);
-
-        // 결제 성공 시에만 주문 생성
-        if ("SUCCESS".equals(payment.getStatus())) {
-            // 주문이 이미 있는지 확인
-            Order existingOrder = orderMapper.findByPaymentId(payment.getId());
-            if (existingOrder == null) {
-                log.info("No existing order found for paymentId: {}, creating new order", payment.getId());
-                // 주문 생성은 별도 API에서 처리하도록 함
-            } else {
-                existingOrder.setStatus("PAID");
-                orderMapper.update(existingOrder);
-            }
         }
 
-        // 로그 기록
-        PaymentInterfaceRequestLog logEntry = new PaymentInterfaceRequestLog(
-                payment.getId(),
-                "CONFIRM_PAYMENT",
-                "Request: " + request.toString(),
-                "Response: Status=" + payment.getStatus() + ", TransactionId=" + payment.getTransactionId()
+        // 승인 응답 인터페이스 로그 기록
+        PaymentInterfaceRequestLog approvalResponseLog = new PaymentInterfaceRequestLog(
+                tempPaymentId,
+                "INICIS_APPROVAL_RESPONSE",
+                "Response: success=" + approvalSuccess + ", transactionId=" + transactionId,
+                approvalSuccess ? "Inicis approval successful" : "Inicis approval failed"
         );
-        paymentInterfaceRequestLogMapper.insert(logEntry);
+        paymentInterfaceRequestLogMapper.insert(approvalResponseLog);
+
+        // 성공한 경우에만 Payment 테이블에 저장
+        Payment payment = null;
+        if (approvalSuccess) {
+            // tempPaymentId를 기반으로 원래 결제 요청 정보를 찾기 위해 인터페이스 로그에서 조회
+            Long memberId = extractMemberIdFromLogs(tempPaymentId);
+            String paymentMethod = extractPaymentMethodFromLogs(tempPaymentId);
+            
+            payment = new Payment(
+                    memberId, // 실제 memberId 사용
+                    Double.valueOf(request.getPrice()),
+                    paymentMethod,
+                    "INICIS",
+                    "SUCCESS",
+                    transactionId
+            );
+            paymentMapper.insert(payment);
+            
+            log.info("Payment record created successfully: paymentId={}, memberId={}, tempId={}", 
+                    payment.getId(), memberId, tempPaymentId);
+        } else {
+            // 실패한 경우 Payment 테이블에는 저장하지 않음
+            log.info("Payment failed, no record created in Payment table for tempId: {}", tempPaymentId);
+            throw new RuntimeException("Payment approval failed");
+        }
 
         return payment;
     }
@@ -362,70 +381,6 @@ public class PaymentService {
         return payment;
     }
 
-    private String generateOrdNo() {
-        return "ORD-" + System.currentTimeMillis();
-    }
-
-        // INIStdPay 리다이렉트 플로우 수신 처리
-        public void handleReturn(MultiValueMap<String, String> form) {
-            String resultCode = form.getFirst("resultCode");
-            String resultMsg = form.getFirst("resultMsg");
-            String authToken = form.getFirst("authToken");
-            String authUrl = form.getFirst("authUrl");
-            String netCancelUrl = form.getFirst("netCancelUrl");
-            String mid = form.getFirst("mid");
-            String oid = form.getFirst("oid");
-            String price = form.getFirst("price");
-
-            log.info("INIStdPay return received: resultCode={}, resultMsg={}, mid={}, oid={}, price={}",
-                    resultCode, resultMsg, mid, oid, price);
-
-            if (!"0000".equals(resultCode)) {
-                log.error("Payment auth failed at return: {} {}", resultCode, resultMsg);
-                throw new RuntimeException("Payment auth failed: " + resultMsg);
-            }
-
-            // 승인 요청(approve)
-            approveWithAuth(authUrl, netCancelUrl, authToken, mid);
-            // TODO: 승인 성공 후 결제/주문 처리(현재 비즈니스 규칙에 맞게 갱신)
-        }
-
-        // authUrl로 승인 요청 수행
-        private void approveWithAuth(String authUrl, String netCancelUrl, String authToken, String mid) {
-            if (authUrl == null || authToken == null) {
-                throw new RuntimeException("Missing authUrl/authToken on return");
-            }
-            String timestamp = String.valueOf(System.currentTimeMillis());
-            // 이니시스 승인 서명 규칙 (SHA-256 - 결제 요청과 동일한 방식)
-            String signingText = "authToken=" + authToken + "&timestamp=" + timestamp;
-            String signature = sha256Hex(signingText);
-
-            MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-            params.add("mid", (mid != null && !mid.isBlank()) ? mid : inicisMid);
-            params.add("authToken", authToken);
-            params.add("signature", signature);
-            params.add("timestamp", timestamp);
-            params.add("charset", "UTF-8");
-            params.add("format", "JSON");
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-            RestTemplate rt = new RestTemplate();
-
-            try {
-                ResponseEntity<String> resp = rt.postForEntity(authUrl, new HttpEntity<>(params, headers), String.class);
-                String body = resp.getBody();
-                log.info("Approval response: {}", body);
-                if (body == null || !body.contains("\"resultCode\":\"0000\"")) {
-                    // 승인 실패 시 망취소
-                    safeNetCancel(netCancelUrl, authToken);
-                    throw new RuntimeException("Approval failed");
-                }
-            } catch (Exception ex) {
-                safeNetCancel(netCancelUrl, authToken);
-                throw new RuntimeException("Approval error", ex);
-            }
-        }
 
         private void safeNetCancel(String netCancelUrl, String authToken) {
             try {
@@ -451,11 +406,6 @@ public class PaymentService {
             } catch (Exception ignore) { }
         }
 
-        private static String bytesToHex(byte[] raw) {
-            StringBuilder sb = new StringBuilder();
-            for (byte b : raw) sb.append(String.format("%02x", b));
-            return sb.toString();
-        }
 
     private static String sha256Hex(String text) {
         try {
@@ -539,5 +489,47 @@ public class PaymentService {
         }
         
         return sanitized;
+    }
+
+    // 로그에서 memberId 추출
+    private Long extractMemberIdFromLogs(Long tempPaymentId) {
+        try {
+            List<PaymentInterfaceRequestLog> logs = paymentInterfaceRequestLogMapper.findByPaymentId(tempPaymentId);
+            for (PaymentInterfaceRequestLog log : logs) {
+                if ("INITIATE_PAYMENT".equals(log.getRequestType())) {
+                    String payload = log.getRequestPayload();
+                    // "Request: memberId=1, amount=10000, ..." 형태에서 memberId 추출
+                    if (payload != null && payload.contains("memberId=")) {
+                        String memberIdStr = payload.substring(payload.indexOf("memberId=") + 9);
+                        memberIdStr = memberIdStr.split(",")[0].trim();
+                        return Long.parseLong(memberIdStr);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to extract memberId from logs for tempId: {}", tempPaymentId, e);
+        }
+        return 1L; // 기본값
+    }
+
+    // 로그에서 paymentMethod 추출
+    private String extractPaymentMethodFromLogs(Long tempPaymentId) {
+        try {
+            List<PaymentInterfaceRequestLog> logs = paymentInterfaceRequestLogMapper.findByPaymentId(tempPaymentId);
+            for (PaymentInterfaceRequestLog log : logs) {
+                if ("INITIATE_PAYMENT".equals(log.getRequestType())) {
+                    String payload = log.getRequestPayload();
+                    // "Request: ..., paymentMethod=CREDIT_CARD+MILEAGE, ..." 형태에서 paymentMethod 추출
+                    if (payload != null && payload.contains("paymentMethod=")) {
+                        String methodStr = payload.substring(payload.indexOf("paymentMethod=") + 14);
+                        methodStr = methodStr.split(",")[0].trim();
+                        return methodStr;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to extract paymentMethod from logs for tempId: {}", tempPaymentId, e);
+        }
+        return "CREDIT_CARD"; // 기본값
     }
 }

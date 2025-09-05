@@ -61,22 +61,30 @@ public class PaymentController {
 
     @PostMapping("/initiate")
     public ResponseEntity<InicisPaymentParameters> initiatePayment(@RequestBody PaymentInitiateRequest request) { // Changed return type
+        log.info("Received payment initiate request: memberId={}, amount={}, method={}", 
+                request.getMemberId(), request.getAmount(), request.getPaymentMethod());
         try {
             InicisPaymentParameters inicisParams = paymentService.initiatePayment(request);
+            log.info("Payment initiation successful for memberId={}", request.getMemberId());
             return ResponseEntity.ok(inicisParams);
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
             log.error("initiatePayment failed. request={}", request, e);
+            log.error("Error details: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().body(null); // Return null or specific error DTO
         }
     }
 
     @PostMapping("/confirm")
     public ResponseEntity<Payment> confirmPayment(@RequestBody PaymentConfirmRequest request) {
+        log.info("Received payment confirm request: authToken={}, oid={}, price={}", 
+                request.getAuthToken(), request.getOid(), request.getPrice());
         try {
             Payment confirmedPayment = paymentService.confirmPayment(request);
+            log.info("Payment confirmation successful for oid={}", request.getOid());
             return ResponseEntity.ok(confirmedPayment);
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
             log.error("confirmPayment failed. request={}", request, e);
+            log.error("Error details: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().body(null); // Or a more specific error response
         }
     }
