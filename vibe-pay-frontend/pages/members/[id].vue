@@ -6,6 +6,7 @@
         <v-text-field v-model="member.name" label="Name" :rules="[rules.required]"></v-text-field>
         <v-text-field v-model="member.address" label="Address"></v-text-field>
         <v-text-field v-model="member.phoneNumber" label="Phone Number"></v-text-field>
+        <v-text-field v-model="member.email" label="Email" type="email"></v-text-field>
 
         <v-divider class="my-4"></v-divider>
 
@@ -58,7 +59,7 @@ import { useRoute, useRouter } from 'vue-router'
 const route = useRoute()
 const router = useRouter()
 
-const member = ref({ name: '', address: '', phoneNumber: '' })
+const member = ref({ name: '', address: '', phoneNumber: '', email: '' })
 const pointsToAdd = ref(0)
 const orders = ref([])
 const ordersLoading = ref(false)

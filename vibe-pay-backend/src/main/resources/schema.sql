@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS member (
     name VARCHAR(255) NOT NULL,
     shipping_address VARCHAR(255),
     phone_number VARCHAR(255),
+    email VARCHAR(255),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

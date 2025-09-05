@@ -8,6 +8,7 @@ public class Member {
     private String name;
     private String shippingAddress;
     private String phoneNumber;
+    private String email;
     private LocalDateTime createdAt;
 
     // Constructors
@@ -52,6 +53,14 @@ public class Member {
 
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public LocalDateTime getCreatedAt() {

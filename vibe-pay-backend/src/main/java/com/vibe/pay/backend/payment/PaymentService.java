@@ -20,9 +20,15 @@ import java.security.MessageDigest;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.math.BigDecimal;
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.util.MultiValueMap;
+
 
 @Service
 public class PaymentService {
@@ -51,16 +57,16 @@ public class PaymentService {
     @Value("${inicis.closeUrl}")
     private String inicisCloseUrl;
 
-    @Value("${inicis.currency:WON}")
+    @Value("${inicis.currency}")
     private String inicisCurrency;
 
-    @Value("${inicis.version:1.0}")
+    @Value("${inicis.version}")
     private String inicisVersion;
 
-    @Value("${inicis.gopaymethod:Card}")
+    @Value("${inicis.gopaymethod}")
     private String inicisGopaymethod;
 
-    @Value("${inicis.acceptmethod:below1000}")
+    @Value("${inicis.acceptmethod}")
     private String inicisAcceptmethod;
 
     public Payment createPayment(Payment payment) {
@@ -127,11 +133,17 @@ public class PaymentService {
         }
         inicisParams.setPrice(priceStr);
 
-        // 화면에서 넘어온 표기 정보
-        inicisParams.setGoodName(request.getGoodName() != null ? request.getGoodName() : "주문결제");
-        inicisParams.setBuyerName(request.getBuyerName());
-        inicisParams.setBuyerTel(request.getBuyerTel());
-        inicisParams.setBuyerEmail(request.getBuyerEmail());
+        // 화면에서 넘어온 표기 정보 (한글 허용, 특수문자만 제거)
+        log.info("Original request data - goodName: {}, buyerName: {}, buyerTel: {}, buyerEmail: {}", 
+                request.getGoodName(), request.getBuyerName(), request.getBuyerTel(), request.getBuyerEmail());
+        
+        inicisParams.setGoodName(sanitizeForInicis(request.getGoodName(), "주문결제"));
+        inicisParams.setBuyerName(sanitizeForInicis(request.getBuyerName(), "구매자"));
+        inicisParams.setBuyerTel(sanitizeForPhoneNumber(request.getBuyerTel()));
+        inicisParams.setBuyerEmail(sanitizeForInicis(request.getBuyerEmail(), "buyer@example.com"));
+        
+        log.info("Sanitized data - goodName: {}, buyerName: {}, buyerTel: {}, buyerEmail: {}", 
+                inicisParams.getGoodName(), inicisParams.getBuyerName(), inicisParams.getBuyerTel(), inicisParams.getBuyerEmail());
 
         // 환경설정 기반 옵션
         inicisParams.setVersion(inicisVersion);
@@ -159,8 +171,7 @@ public class PaymentService {
                 + "&timestamp=" + inicisParams.getTimestamp();
         inicisParams.setSignature(sha256Hex(signingText));
 
-        String verificationText = "oid=" + inicisMid
-                + "&oid=" + inicisParams.getOid()
+        String verificationText = "oid=" + inicisParams.getOid()
                 + "&price=" + inicisParams.getPrice()
                 + "&signKey=" + finalSignKey
                 + "&timestamp=" + inicisParams.getTimestamp();
@@ -185,40 +196,125 @@ public class PaymentService {
 
     @Transactional
     public Payment confirmPayment(PaymentConfirmRequest request) {
-        Payment payment = paymentMapper.findById(request.getPaymentId());
+        log.info("Processing payment confirmation: {}", request);
+        log.info("Request details - authToken: {}, authUrl: {}, oid: {}, price: {}", 
+                request.getAuthToken(), request.getAuthUrl(), request.getOid(), request.getPrice());
+        
+        // OID로 결제 정보 찾기 (paymentId가 없는 경우)
+        Payment payment = null;
+        if (request.getPaymentId() != null) {
+            payment = paymentMapper.findById(request.getPaymentId());
+        } else {
+            // orderNumber 또는 oid로 결제 정보 찾기
+            String oidToSearch = request.getOrderNumber() != null ? request.getOrderNumber() : request.getOid();
+            if (oidToSearch != null) {
+                // OID에서 paymentId 추출 (OID-{paymentId}-{timestamp} 형식)
+                try {
+                    String[] oidParts = oidToSearch.split("-");
+                    if (oidParts.length >= 2) {
+                        Long paymentId = Long.parseLong(oidParts[1]);
+                        payment = paymentMapper.findById(paymentId);
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to extract paymentId from OID: {}", oidToSearch, e);
+                }
+            }
+        }
+        
         if (payment == null) {
-            throw new RuntimeException("Payment not found with id " + request.getPaymentId());
+            throw new RuntimeException("Payment not found for OID: " + request.getOid());
         }
 
-        // Update payment status and transaction ID
-        payment.setStatus(request.getStatus());
-        payment.setTransactionId(request.getTransactionId());
+        // 이니시스 승인 처리
+        if (request.getAuthToken() != null && request.getAuthUrl() != null) {
+            log.info("Starting Inicis approval process for paymentId: {}", payment.getId());
+            try {
+                // 실제 이니시스 승인 API 호출
+                boolean approvalSuccess = processInicisApproval(request);
+                
+                if (approvalSuccess) {
+                    payment.setStatus("SUCCESS");
+                    payment.setTransactionId("TXN-" + System.currentTimeMillis());
+                    log.info("Payment approved successfully for paymentId: {}, status: SUCCESS", payment.getId());
+                } else {
+                    payment.setStatus("FAILED");
+                    log.error("Payment approval failed for paymentId: {}, status: FAILED", payment.getId());
+                }
+            } catch (Exception e) {
+                log.error("Error during Inicis approval process for paymentId: {}", payment.getId(), e);
+                payment.setStatus("FAILED");
+                // 망취소 시도
+                if (request.getNetCancelUrl() != null) {
+                    log.info("Attempting net cancel for paymentId: {}", payment.getId());
+                    safeNetCancel(request.getNetCancelUrl(), request.getAuthToken());
+                }
+            }
+        } else {
+            log.info("Using direct status setting for paymentId: {}, status: {}", payment.getId(), request.getStatus());
+            // 기존 방식 (직접 상태 설정)
+            payment.setStatus(request.getStatus());
+            payment.setTransactionId(request.getTransactionId());
+        }
+        
         paymentMapper.update(payment);
 
-        // Update associated Order status
-        Order order = orderMapper.findByPaymentId(payment.getId());
-        if (order == null) {
-            throw new RuntimeException("Order not found for payment ID: " + payment.getId());
+        // 결제 성공 시에만 주문 생성
+        if ("SUCCESS".equals(payment.getStatus())) {
+            // 주문이 이미 있는지 확인
+            Order existingOrder = orderMapper.findByPaymentId(payment.getId());
+            if (existingOrder == null) {
+                log.info("No existing order found for paymentId: {}, creating new order", payment.getId());
+                // 주문 생성은 별도 API에서 처리하도록 함
+            } else {
+                existingOrder.setStatus("PAID");
+                orderMapper.update(existingOrder);
+            }
         }
 
-        if ("SUCCESS".equals(request.getStatus())) {
-            order.setStatus("COMPLETED");
-        } else if ("FAILURE".equals(request.getStatus())) {
-            order.setStatus("FAILED");
-        }
-        orderMapper.update(order);
-
-
-        // Create PaymentInterfaceRequestLog entry for confirmation
-        PaymentInterfaceRequestLog log = new PaymentInterfaceRequestLog(
+        // 로그 기록
+        PaymentInterfaceRequestLog logEntry = new PaymentInterfaceRequestLog(
                 payment.getId(),
                 "CONFIRM_PAYMENT",
-                "Request Payload: " + request.toString(), // Simplified payload
-                "Confirmation Status: " + request.getStatus() + ", Transaction ID: " + request.getTransactionId() // Simplified response
+                "Request: " + request.toString(),
+                "Response: Status=" + payment.getStatus() + ", TransactionId=" + payment.getTransactionId()
         );
-        paymentInterfaceRequestLogMapper.insert(log);
+        paymentInterfaceRequestLogMapper.insert(logEntry);
 
         return payment;
+    }
+    
+    private boolean processInicisApproval(PaymentConfirmRequest request) {
+        try {
+            String timestamp = String.valueOf(System.currentTimeMillis());
+            
+            // 이니시스 승인 서명 생성 (SHA-256 - 결제 요청과 동일한 방식)
+            String signingText = "authToken=" + request.getAuthToken() + "&timestamp=" + timestamp;
+            String signature = sha256Hex(signingText);
+
+            MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+            params.add("mid", request.getMid() != null ? request.getMid() : inicisMid);
+            params.add("authToken", request.getAuthToken());
+            params.add("signature", signature);
+            params.add("timestamp", timestamp);
+            params.add("charset", "UTF-8");
+            params.add("format", "JSON");
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            RestTemplate rt = new RestTemplate();
+
+            ResponseEntity<String> response = rt.postForEntity(request.getAuthUrl(), new HttpEntity<>(params, headers), String.class);
+            String responseBody = response.getBody();
+            
+            log.info("Inicis approval response: {}", responseBody);
+            
+            // 응답에서 성공 여부 확인
+            return responseBody != null && responseBody.contains("\"resultCode\":\"0000\"");
+            
+        } catch (Exception e) {
+            log.error("Error during Inicis approval process", e);
+            return false;
+        }
     }
 
     @Transactional
@@ -270,6 +366,97 @@ public class PaymentService {
         return "ORD-" + System.currentTimeMillis();
     }
 
+        // INIStdPay 리다이렉트 플로우 수신 처리
+        public void handleReturn(MultiValueMap<String, String> form) {
+            String resultCode = form.getFirst("resultCode");
+            String resultMsg = form.getFirst("resultMsg");
+            String authToken = form.getFirst("authToken");
+            String authUrl = form.getFirst("authUrl");
+            String netCancelUrl = form.getFirst("netCancelUrl");
+            String mid = form.getFirst("mid");
+            String oid = form.getFirst("oid");
+            String price = form.getFirst("price");
+
+            log.info("INIStdPay return received: resultCode={}, resultMsg={}, mid={}, oid={}, price={}",
+                    resultCode, resultMsg, mid, oid, price);
+
+            if (!"0000".equals(resultCode)) {
+                log.error("Payment auth failed at return: {} {}", resultCode, resultMsg);
+                throw new RuntimeException("Payment auth failed: " + resultMsg);
+            }
+
+            // 승인 요청(approve)
+            approveWithAuth(authUrl, netCancelUrl, authToken, mid);
+            // TODO: 승인 성공 후 결제/주문 처리(현재 비즈니스 규칙에 맞게 갱신)
+        }
+
+        // authUrl로 승인 요청 수행
+        private void approveWithAuth(String authUrl, String netCancelUrl, String authToken, String mid) {
+            if (authUrl == null || authToken == null) {
+                throw new RuntimeException("Missing authUrl/authToken on return");
+            }
+            String timestamp = String.valueOf(System.currentTimeMillis());
+            // 이니시스 승인 서명 규칙 (SHA-256 - 결제 요청과 동일한 방식)
+            String signingText = "authToken=" + authToken + "&timestamp=" + timestamp;
+            String signature = sha256Hex(signingText);
+
+            MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+            params.add("mid", (mid != null && !mid.isBlank()) ? mid : inicisMid);
+            params.add("authToken", authToken);
+            params.add("signature", signature);
+            params.add("timestamp", timestamp);
+            params.add("charset", "UTF-8");
+            params.add("format", "JSON");
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            RestTemplate rt = new RestTemplate();
+
+            try {
+                ResponseEntity<String> resp = rt.postForEntity(authUrl, new HttpEntity<>(params, headers), String.class);
+                String body = resp.getBody();
+                log.info("Approval response: {}", body);
+                if (body == null || !body.contains("\"resultCode\":\"0000\"")) {
+                    // 승인 실패 시 망취소
+                    safeNetCancel(netCancelUrl, authToken);
+                    throw new RuntimeException("Approval failed");
+                }
+            } catch (Exception ex) {
+                safeNetCancel(netCancelUrl, authToken);
+                throw new RuntimeException("Approval error", ex);
+            }
+        }
+
+        private void safeNetCancel(String netCancelUrl, String authToken) {
+            try {
+                if (netCancelUrl == null || netCancelUrl.isBlank()) return;
+                String timestamp = String.valueOf(System.currentTimeMillis());
+                // 망취소 서명 생성 (SHA-256 - 결제 요청과 동일한 방식)
+                String signingText = "authToken=" + authToken + "&timestamp=" + timestamp;
+                String signature = sha256Hex(signingText);
+
+                MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+                params.add("mid", inicisMid);
+                params.add("authToken", authToken);
+                params.add("signature", signature);
+                params.add("timestamp", timestamp);
+                params.add("charset", "UTF-8");
+                params.add("format", "JSON");
+
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+                RestTemplate rt = new RestTemplate();
+                ResponseEntity<String> resp = rt.postForEntity(netCancelUrl, new HttpEntity<>(params, headers), String.class);
+                log.warn("NetCancel called. Response={}", resp.getBody());
+            } catch (Exception ignore) { }
+        }
+
+        private static String bytesToHex(byte[] raw) {
+            StringBuilder sb = new StringBuilder();
+            for (byte b : raw) sb.append(String.format("%02x", b));
+            return sb.toString();
+        }
+
     private static String sha256Hex(String text) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -278,5 +465,79 @@ public class PaymentService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to compute SHA-256", e);
         }
+    }
+    
+    /**
+     * 이니시스 파라미터를 위한 문자열 정리
+     * 한글 허용, 이니시스에서 문제가 될 수 있는 특수문자만 제거
+     */
+    private String sanitizeForInicis(String value, String defaultValue) {
+        if (value == null || value.trim().isEmpty()) {
+            return defaultValue;
+        }
+        
+        String sanitized = value.trim();
+        
+        // 이니시스에서 문제가 될 수 있는 특수문자 제거
+        // 허용: 한글, 영문, 숫자, 공백, @, -, ., (, ), /
+        // 제거: <, >, &, ", ', ;, =, +, *, %, #, $, ^, ~, `, |, \, {, }, [, ]
+        sanitized = sanitized.replaceAll("[<>\"';&=+*%#$^~`|\\\\{}\\[\\]]", "");
+        
+        // 연속된 공백을 하나로 변경
+        sanitized = sanitized.replaceAll("\\s+", " ");
+        
+        // 앞뒤 공백 제거
+        sanitized = sanitized.trim();
+        
+        // 빈 문자열이 되면 기본값 사용
+        if (sanitized.isEmpty()) {
+            return defaultValue;
+        }
+        
+        // 길이 제한 (이니시스 파라미터 길이 제한 고려)
+        if (sanitized.length() > 100) {
+            sanitized = sanitized.substring(0, 97) + "...";
+        }
+        
+        return sanitized;
+    }
+    
+    /**
+     * 전화번호 전용 정리 메서드
+     * 숫자, -, (, ), 공백만 허용
+     */
+    private String sanitizeForPhoneNumber(String phoneNumber) {
+        if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+            return "010-0000-0000";
+        }
+        
+        String sanitized = phoneNumber.trim();
+        
+        // 전화번호에서 허용되는 문자만 남기기: 숫자, -, (, ), 공백
+        sanitized = sanitized.replaceAll("[^0-9\\-\\(\\)\\s]", "");
+        
+        // 연속된 공백을 하나로 변경
+        sanitized = sanitized.replaceAll("\\s+", " ");
+        
+        // 앞뒤 공백 제거
+        sanitized = sanitized.trim();
+        
+        // 빈 문자열이 되면 기본값 사용
+        if (sanitized.isEmpty()) {
+            return "010-0000-0000";
+        }
+        
+        // 전화번호 형식 검증 (간단한 검증)
+        if (!sanitized.matches(".*[0-9].*")) {
+            log.warn("Invalid phone number format: {}, using default", phoneNumber);
+            return "010-0000-0000";
+        }
+        
+        // 길이 제한
+        if (sanitized.length() > 20) {
+            sanitized = sanitized.substring(0, 20);
+        }
+        
+        return sanitized;
     }
 }

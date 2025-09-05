@@ -8,7 +8,6 @@ public class InicisPaymentParameters {
     private String signature;
     private String mKey;
     private String version;
-    private String payViewType;
     private String currency;
     private String moId;
     private String goodName;
@@ -17,11 +16,11 @@ public class InicisPaymentParameters {
     private String buyerEmail;
     private String returnUrl;
     private String closeUrl;
-        private String verification;
+    private String verification;
 
     // 결제수단/옵션
-    private String gopaymethod;   // 예: Card
-    private String acceptmethod;  // 예: below1000 등
+    private String gopaymethod;
+    private String acceptmethod;
 
     // Getters and Setters
     public String getMid() {

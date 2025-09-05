@@ -6,6 +6,7 @@ public class OrderRequest {
     private Long memberId;
     private List<OrderItemRequest> items;
     private Double usedPoints;
+    private Long paymentId; // 결제 ID 추가
 
     public Long getMemberId() {
         return memberId;
@@ -29,5 +30,13 @@ public class OrderRequest {
 
     public void setUsedPoints(Double usedPoints) {
         this.usedPoints = usedPoints;
+    }
+
+    public Long getPaymentId() {
+        return paymentId;
+    }
+
+    public void setPaymentId(Long paymentId) {
+        this.paymentId = paymentId;
     }
 }

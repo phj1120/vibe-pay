@@ -3,10 +3,15 @@ package com.vibe.pay.backend.payment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/payments")
@@ -97,6 +102,75 @@ public class PaymentController {
         } catch (RuntimeException e) {
             log.error("cancelPayment failed for id={}", id, e);
             return ResponseEntity.badRequest().body(null);
+        }
+    }
+
+    @PostMapping(value = "/return")
+    public ResponseEntity<Map<String, Object>> handlePaymentReturn(HttpServletRequest request) {
+        log.info("Received payment return from Inicis");
+        
+        try {
+            // POST 파라미터에서 이니시스 결과 데이터 추출
+            Map<String, String> params = new HashMap<>();
+            request.getParameterMap().forEach((key, values) -> {
+                if (values.length > 0) {
+                    params.put(key, values[0]);
+                    log.info("Received parameter: {} = {}", key, values[0]);
+                }
+            });
+            
+            // 필수 파라미터 확인
+            String resultCode = params.get("resultCode");
+            if (resultCode == null) {
+                log.error("Missing resultCode in payment return");
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "결제 결과 정보가 없습니다.");
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
+            
+            log.info("Payment return resultCode: {}", resultCode);
+            
+            // 결제 성공인 경우 승인 처리
+            if ("0000".equals(resultCode)) {
+                PaymentConfirmRequest confirmRequest = new PaymentConfirmRequest();
+                confirmRequest.setAuthToken(params.get("authToken"));
+                confirmRequest.setAuthUrl(params.get("authUrl"));
+                confirmRequest.setNetCancelUrl(params.get("netCancelUrl"));
+                confirmRequest.setMid(params.get("mid"));
+                confirmRequest.setOid(params.get("oid"));
+                confirmRequest.setPrice(params.get("price"));
+                
+                log.info("Processing payment confirmation for OID: {}", confirmRequest.getOid());
+                
+                // 결제 승인 처리
+                var confirmedPayment = paymentService.confirmPayment(confirmRequest);
+                
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", true);
+                response.put("payment", confirmedPayment);
+                response.put("message", "결제가 성공적으로 완료되었습니다.");
+                
+                return ResponseEntity.ok(response);
+            } else {
+                // 결제 실패
+                String resultMsg = params.get("resultMsg");
+                log.error("Payment failed with resultCode: {}, message: {}", resultCode, resultMsg);
+                
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("resultCode", resultCode);
+                response.put("message", resultMsg != null ? resultMsg : "결제가 실패했습니다.");
+                
+                return ResponseEntity.ok(response);
+            }
+            
+        } catch (Exception e) {
+            log.error("Error processing payment return", e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "결제 처리 중 오류가 발생했습니다: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(errorResponse);
         }
     }
 }

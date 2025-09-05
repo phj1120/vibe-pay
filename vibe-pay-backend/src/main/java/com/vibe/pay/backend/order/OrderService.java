@@ -39,7 +39,14 @@ public class OrderService {
         order.setMemberId(orderRequest.getMemberId());
         order.setUsedRewardPoints(orderRequest.getUsedPoints());
         order.setOrderDate(LocalDateTime.now());
-        order.setStatus("PENDING"); // Initial status
+        
+        // 결제가 이미 완료된 경우 PAID 상태로 설정
+        if (orderRequest.getPaymentId() != null) {
+            order.setStatus("PAID");
+            order.setPaymentId(orderRequest.getPaymentId());
+        } else {
+            order.setStatus("PENDING");
+        }
 
         // 2. Calculate total amount and create OrderItem entities
         double calculatedTotalAmount = 0.0;
@@ -80,20 +87,22 @@ public class OrderService {
             orderItemMapper.insert(item);
         }
 
-        // 6. Create payment entry (placeholder for PG integration)
-        Payment payment = new Payment(
-                order.getMemberId(),
-                order.getFinalPaymentAmount(),
-                "CREDIT_CARD", // Default payment method for now
-                "NICEPAY",     // Default PG for now
-                "PENDING",
-                null // Transaction ID will be set after actual PG processing
-        );
-        paymentService.createPayment(payment);
+        // 6. Create payment entry only if paymentId is not provided
+        if (orderRequest.getPaymentId() == null) {
+            Payment payment = new Payment(
+                    order.getMemberId(),
+                    order.getFinalPaymentAmount(),
+                    "CREDIT_CARD", // Default payment method for now
+                    "NICEPAY",     // Default PG for now
+                    "PENDING",
+                    null // Transaction ID will be set after actual PG processing
+            );
+            paymentService.createPayment(payment);
 
-        // 7. Link payment to order and update order
-        order.setPaymentId(payment.getId());
-        orderMapper.update(order); // Update order with paymentId
+            // 7. Link payment to order and update order
+            order.setPaymentId(payment.getId());
+            orderMapper.update(order); // Update order with paymentId
+        }
 
         return order;
     }

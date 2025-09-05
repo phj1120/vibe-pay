@@ -7,23 +7,24 @@
         <result property="name" column="name"/>
         <result property="shippingAddress" column="shipping_address"/>
         <result property="phoneNumber" column="phone_number"/>
+        <result property="email" column="email"/>
         <result property="createdAt" column="created_at"/>
     </resultMap>
 
     <select id="findAll" resultMap="memberResultMap">
-        SELECT id, name, shipping_address, phone_number, created_at FROM member
+        SELECT id, name, shipping_address, phone_number, email, created_at FROM member
     </select>
 
     <select id="findById" resultMap="memberResultMap">
-        SELECT id, name, shipping_address, phone_number, created_at FROM member WHERE id = #{id}
+        SELECT id, name, shipping_address, phone_number, email, created_at FROM member WHERE id = #{id}
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO member (name, shipping_address, phone_number, created_at) VALUES (#{name}, #{shippingAddress}, #{phoneNumber}, #{createdAt})
+        INSERT INTO member (name, shipping_address, phone_number, email, created_at) VALUES (#{name}, #{shippingAddress}, #{phoneNumber}, #{email}, #{createdAt})
     </insert>
 
     <update id="update">
-        UPDATE member SET name = #{name}, shipping_address = #{shippingAddress}, phone_number = #{phoneNumber} WHERE id = #{id}
+        UPDATE member SET name = #{name}, shipping_address = #{shippingAddress}, phone_number = #{phoneNumber}, email = #{email} WHERE id = #{id}
     </update>
 
     <delete id="delete">
