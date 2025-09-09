@@ -6,6 +6,9 @@ DROP TABLE IF EXISTS reward_points CASCADE;
 DROP TABLE IF EXISTS product CASCADE;
 DROP TABLE IF EXISTS member CASCADE;
 
+SELECT tablename FROM pg_tables;
+
+
 -- Member Table
 CREATE TABLE IF NOT EXISTS member (
     id BIGSERIAL PRIMARY KEY,
@@ -30,6 +33,20 @@ CREATE TABLE IF NOT EXISTS reward_points (
     points DOUBLE PRECISION NOT NULL DEFAULT 0.0,
     last_updated TIMESTAMP NOT NULL,
     CONSTRAINT fk_member_reward_points FOREIGN KEY (member_id) REFERENCES member(id)
+);
+
+
+-- Payment Table
+CREATE TABLE IF NOT EXISTS payment (
+                                       id BIGSERIAL PRIMARY KEY,
+                                       member_id BIGINT NOT NULL,
+                                       amount DOUBLE PRECISION NOT NULL,
+                                       payment_method VARCHAR(50) NOT NULL,
+                                       pg_company VARCHAR(50) NOT NULL,
+                                       status VARCHAR(50) NOT NULL,
+                                       transaction_id VARCHAR(255),
+                                       payment_date TIMESTAMP NOT NULL,
+                                       CONSTRAINT fk_member_payment FOREIGN KEY (member_id) REFERENCES member(id)
 );
 
 -- Order Table
@@ -57,18 +74,6 @@ CREATE TABLE IF NOT EXISTS order_item (
     CONSTRAINT fk_order_item_product FOREIGN KEY (product_id) REFERENCES product(id)
 );
 
--- Payment Table
-CREATE TABLE IF NOT EXISTS payment (
-    id BIGSERIAL PRIMARY KEY,
-    member_id BIGINT NOT NULL,
-    amount DOUBLE PRECISION NOT NULL,
-    payment_method VARCHAR(50) NOT NULL,
-    pg_company VARCHAR(50) NOT NULL,
-    status VARCHAR(50) NOT NULL,
-    transaction_id VARCHAR(255),
-    payment_date TIMESTAMP NOT NULL,
-    CONSTRAINT fk_member_payment FOREIGN KEY (member_id) REFERENCES member(id)
-);
 
 -- PaymentInterfaceRequestLog Table
 -- payment_id는 임시 ID도 저장할 수 있도록 외래키 제약조건 제거

@@ -2,8 +2,6 @@ package com.vibe.pay.backend.payment;
 
 import com.vibe.pay.backend.paymentlog.PaymentInterfaceRequestLog;
 import com.vibe.pay.backend.paymentlog.PaymentInterfaceRequestLogMapper;
-import com.vibe.pay.backend.order.Order;
-import com.vibe.pay.backend.order.OrderMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.security.MessageDigest;
 import java.math.BigInteger;
 import java.math.RoundingMode;
@@ -26,6 +23,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.util.MultiValueMap;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 
 @Service
@@ -39,8 +38,9 @@ public class PaymentService {
     @Autowired
     private PaymentInterfaceRequestLogMapper paymentInterfaceRequestLogMapper;
 
+
     @Autowired
-    private OrderMapper orderMapper;
+    private ObjectMapper objectMapper;
 
     // 환경별 설정 주입
     @Value("${inicis.mid}")
@@ -117,13 +117,14 @@ public class PaymentService {
         // 임시로 payment ID 생성을 위해 현재 시간 사용
         Long tempPaymentId = System.currentTimeMillis();
 
-        // 인터페이스 로그 먼저 기록 (결제 요청 시작)
+        // 인터페이스 로그 먼저 기록 (결제 요청 시작) - JSON 형태로 저장
+        String requestJson = convertToJson(request);
+        
         PaymentInterfaceRequestLog initiateLog = new PaymentInterfaceRequestLog(
                 tempPaymentId, // 임시 ID 사용
                 "INITIATE_PAYMENT",
-                "Request: memberId=" + request.getMemberId() + ", amount=" + request.getAmount() + 
-                ", paymentMethod=" + paymentMethod + ", usedMileage=" + request.getUsedMileage(),
-                "Starting payment initiation process"
+                requestJson,
+                null // response는 없음
         );
         paymentInterfaceRequestLogMapper.insert(initiateLog);
 
@@ -192,12 +193,14 @@ public class PaymentService {
         inicisParams.setReturnUrl(inicisReturnUrl);
         inicisParams.setCloseUrl(inicisCloseUrl);
 
-        // 인터페이스 로그 업데이트 - 이니시스 파라미터 생성 완료
+        // 인터페이스 로그 업데이트 - 이니시스 파라미터 생성 완료 (JSON 형태로 저장)
+        String inicisParamsJson = convertToJson(inicisParams);
+        
         PaymentInterfaceRequestLog parametersLog = new PaymentInterfaceRequestLog(
                 tempPaymentId,
                 "INICIS_PARAMETERS_GENERATED",
-                "Inicis Parameters: oid=" + oid + ", price=" + priceStr + ", mid=" + inicisMid,
-                "Inicis payment parameters successfully generated"
+                inicisParamsJson,
+                null // response는 없음
         );
         paymentInterfaceRequestLogMapper.insert(parametersLog);
 
@@ -230,24 +233,29 @@ public class PaymentService {
             throw new RuntimeException("Cannot extract tempPaymentId from OID: " + request.getOid());
         }
 
-        // 승인 요청 인터페이스 로그 먼저 기록
+        // 승인 요청 인터페이스 로그 먼저 기록 (JSON 형태로 저장)
+        String approvalRequestJson = convertToJson(request);
+        
         PaymentInterfaceRequestLog approvalRequestLog = new PaymentInterfaceRequestLog(
                 tempPaymentId,
                 "INICIS_APPROVAL_REQUEST",
-                "Request: authToken=" + request.getAuthToken() + ", oid=" + request.getOid() + ", price=" + request.getPrice(),
-                "Starting Inicis approval process"
+                approvalRequestJson,
+                null // response는 없음
         );
         paymentInterfaceRequestLogMapper.insert(approvalRequestLog);
 
         // 이니시스 승인 처리
         boolean approvalSuccess = false;
         String transactionId = null;
+        String actualResponse = null;
         
         if (request.getAuthToken() != null && request.getAuthUrl() != null) {
             log.info("Starting Inicis approval process for tempId: {}", tempPaymentId);
             try {
                 // 실제 이니시스 승인 API 호출
-                approvalSuccess = processInicisApproval(request);
+                ApprovalResult result = processInicisApprovalWithResponse(request);
+                approvalSuccess = result.isSuccess();
+                actualResponse = result.getResponseBody();
                 
                 if (approvalSuccess) {
                     transactionId = "TXN-" + System.currentTimeMillis();
@@ -265,12 +273,14 @@ public class PaymentService {
             }
         }
 
-        // 승인 응답 인터페이스 로그 기록
+        // 승인 응답 인터페이스 로그 기록 - 실제 응답값 저장
+        String summaryRequestJson = convertToJson(request);
+        
         PaymentInterfaceRequestLog approvalResponseLog = new PaymentInterfaceRequestLog(
                 tempPaymentId,
                 "INICIS_APPROVAL_RESPONSE",
-                "Response: success=" + approvalSuccess + ", transactionId=" + transactionId,
-                approvalSuccess ? "Inicis approval successful" : "Inicis approval failed"
+                summaryRequestJson,
+                actualResponse // 실제 이니시스 응답 또는 null
         );
         paymentInterfaceRequestLogMapper.insert(approvalResponseLog);
 
@@ -302,8 +312,44 @@ public class PaymentService {
         return payment;
     }
     
-    private boolean processInicisApproval(PaymentConfirmRequest request) {
+    // 승인 결과를 담는 내부 클래스
+    private static class ApprovalResult {
+        private final boolean success;
+        private final String responseBody;
+        
+        public ApprovalResult(boolean success, String responseBody) {
+            this.success = success;
+            this.responseBody = responseBody;
+        }
+        
+        public boolean isSuccess() {
+            return success;
+        }
+        
+        public String getResponseBody() {
+            return responseBody;
+        }
+    }
+    
+    private ApprovalResult processInicisApprovalWithResponse(PaymentConfirmRequest request) {
+        Long tempPaymentId = null;
+        String requestJson = null;
+        String responseJson = null;
+        
         try {
+            // OID에서 tempPaymentId 추출 (로그 저장용)
+            String oidToSearch = request.getOrderNumber() != null ? request.getOrderNumber() : request.getOid();
+            if (oidToSearch != null) {
+                try {
+                    String[] oidParts = oidToSearch.split("-");
+                    if (oidParts.length >= 2) {
+                        tempPaymentId = Long.parseLong(oidParts[1]);
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to extract tempPaymentId from OID for logging: {}", oidToSearch);
+                }
+            }
+            
             String timestamp = String.valueOf(System.currentTimeMillis());
             
             // 이니시스 승인 서명 생성 (SHA-256 - 결제 요청과 동일한 방식)
@@ -318,6 +364,9 @@ public class PaymentService {
             params.add("charset", "UTF-8");
             params.add("format", "JSON");
 
+            // 실제 요청 정보를 JSON으로 저장
+            requestJson = convertToJson(params);
+
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
             RestTemplate rt = new RestTemplate();
@@ -325,16 +374,45 @@ public class PaymentService {
             ResponseEntity<String> response = rt.postForEntity(request.getAuthUrl(), new HttpEntity<>(params, headers), String.class);
             String responseBody = response.getBody();
             
+            // 실제 응답 정보를 JSON으로 저장
+            responseJson = convertToJson(response);
+            
             log.info("Inicis approval response: {}", responseBody);
             
+            // 실제 API 호출 로그 저장
+            if (tempPaymentId != null) {
+                PaymentInterfaceRequestLog apiCallLog = new PaymentInterfaceRequestLog(
+                        tempPaymentId,
+                        "INICIS_API_CALL",
+                        requestJson,
+                        responseJson
+                );
+                paymentInterfaceRequestLogMapper.insert(apiCallLog);
+            }
+            
             // 응답에서 성공 여부 확인
-            return responseBody != null && responseBody.contains("\"resultCode\":\"0000\"");
+            boolean success = responseBody != null && responseBody.contains("\"resultCode\":\"0000\"");
+            
+            return new ApprovalResult(success, responseBody);
             
         } catch (Exception e) {
             log.error("Error during Inicis approval process", e);
-            return false;
+            
+            // 에러 발생 시에도 로그 저장
+            if (tempPaymentId != null && requestJson != null) {
+                PaymentInterfaceRequestLog errorLog = new PaymentInterfaceRequestLog(
+                        tempPaymentId,
+                        "INICIS_API_CALL",
+                        requestJson,
+                        null // 에러 시 response 없음
+                );
+                paymentInterfaceRequestLogMapper.insert(errorLog);
+            }
+            
+            return new ApprovalResult(false, null);
         }
     }
+    
 
     @Transactional
     public Payment processPayment(Payment payment) {
@@ -365,12 +443,12 @@ public class PaymentService {
         payment.setTransactionId(payment.getTransactionId() + "-CANCEL"); // Append -CANCEL for simulation
         paymentMapper.update(payment);
 
-        // Create PaymentInterfaceRequestLog entry for cancellation
+        // Create PaymentInterfaceRequestLog entry for cancellation (실제 객체만 저장)
         PaymentInterfaceRequestLog log = new PaymentInterfaceRequestLog(
                 payment.getId(),
                 "CANCEL_PAYMENT",
-                "Request Payload: Payment ID " + paymentId, // Simplified payload
-                "Cancellation Status: SUCCESS, Transaction ID: " + payment.getTransactionId() // Simplified response
+                convertToJson(payment), // 실제 payment 객체
+                null // 취소 시 별도 response 없음
         );
         paymentInterfaceRequestLogMapper.insert(log);
 
@@ -402,8 +480,15 @@ public class PaymentService {
                 headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
                 RestTemplate rt = new RestTemplate();
                 ResponseEntity<String> resp = rt.postForEntity(netCancelUrl, new HttpEntity<>(params, headers), String.class);
-                log.warn("NetCancel called. Response={}", resp.getBody());
-            } catch (Exception ignore) { }
+                
+                // 망취소 로그 저장 (실제 객체만)
+                log.warn("NetCancel called. Request={}, Response={}", 
+                        convertToJson(params), 
+                        convertToJson(resp));
+                
+            } catch (Exception e) {
+                log.error("Error during net cancel", e);
+            }
         }
 
 
@@ -491,17 +576,27 @@ public class PaymentService {
         return sanitized;
     }
 
-    // 로그에서 memberId 추출
+    // JSON 변환 유틸리티 메소드
+    private String convertToJson(Object obj) {
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to convert object to JSON: {}", obj, e);
+            return "{}";
+        }
+    }
+
+    // 로그에서 memberId 추출 (JSON 형식에서)
     private Long extractMemberIdFromLogs(Long tempPaymentId) {
         try {
             List<PaymentInterfaceRequestLog> logs = paymentInterfaceRequestLogMapper.findByPaymentId(tempPaymentId);
             for (PaymentInterfaceRequestLog log : logs) {
                 if ("INITIATE_PAYMENT".equals(log.getRequestType())) {
                     String payload = log.getRequestPayload();
-                    // "Request: memberId=1, amount=10000, ..." 형태에서 memberId 추출
-                    if (payload != null && payload.contains("memberId=")) {
-                        String memberIdStr = payload.substring(payload.indexOf("memberId=") + 9);
-                        memberIdStr = memberIdStr.split(",")[0].trim();
+                    // JSON 형태에서 memberId 추출: {"memberId":1,"amount":10000,...}
+                    if (payload != null && payload.contains("\"memberId\":")) {
+                        // 간단한 JSON 파싱 (정규식 사용)
+                        String memberIdStr = payload.replaceAll(".*\"memberId\":(\\d+).*", "$1");
                         return Long.parseLong(memberIdStr);
                     }
                 }
@@ -512,17 +607,17 @@ public class PaymentService {
         return 1L; // 기본값
     }
 
-    // 로그에서 paymentMethod 추출
+    // 로그에서 paymentMethod 추출 (JSON 형식에서)
     private String extractPaymentMethodFromLogs(Long tempPaymentId) {
         try {
             List<PaymentInterfaceRequestLog> logs = paymentInterfaceRequestLogMapper.findByPaymentId(tempPaymentId);
             for (PaymentInterfaceRequestLog log : logs) {
                 if ("INITIATE_PAYMENT".equals(log.getRequestType())) {
                     String payload = log.getRequestPayload();
-                    // "Request: ..., paymentMethod=CREDIT_CARD+MILEAGE, ..." 형태에서 paymentMethod 추출
-                    if (payload != null && payload.contains("paymentMethod=")) {
-                        String methodStr = payload.substring(payload.indexOf("paymentMethod=") + 14);
-                        methodStr = methodStr.split(",")[0].trim();
+                    // JSON 형태에서 paymentMethod 추출: {"paymentMethod":"CREDIT_CARD",...}
+                    if (payload != null && payload.contains("\"paymentMethod\":")) {
+                        // 간단한 JSON 파싱 (정규식 사용)
+                        String methodStr = payload.replaceAll(".*\"paymentMethod\":\"([^\"]+)\".*", "$1");
                         return methodStr;
                     }
                 }
