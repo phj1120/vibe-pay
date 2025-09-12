@@ -3,9 +3,7 @@ package com.vibe.pay.backend.payment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -59,6 +57,23 @@ public class PaymentController {
         return ResponseEntity.noContent().build();
     }
 
+    // 2. 결제 요청 API (주문 번호 기반)
+    @PostMapping("/initiate-with-order")
+    public ResponseEntity<InicisPaymentParameters> initiatePaymentWithOrder(@RequestBody PaymentInitiateRequest request) {
+        log.info("Received payment initiate request with order: memberId={}, amount={}, method={}, orderId={}", 
+                request.getMemberId(), request.getAmount(), request.getPaymentMethod(), request.getOrderId());
+        try {
+            InicisPaymentParameters inicisParams = paymentService.initiatePayment(request);
+            log.info("Payment initiation successful for memberId={}, orderId={}", request.getMemberId(), request.getOrderId());
+            return ResponseEntity.ok(inicisParams);
+        } catch (Exception e) {
+            log.error("initiatePaymentWithOrder failed. request={}", request, e);
+            log.error("Error details: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+
+    // 기존 결제 시작 API (하위 호환성 유지)
     @PostMapping("/initiate")
     public ResponseEntity<InicisPaymentParameters> initiatePayment(@RequestBody PaymentInitiateRequest request) { // Changed return type
         log.info("Received payment initiate request: memberId={}, amount={}, method={}", 

@@ -132,8 +132,15 @@ public class PaymentService {
         InicisPaymentParameters inicisParams = new InicisPaymentParameters();
         inicisParams.setMid(inicisMid);
 
-        // 주문이 아직 없으므로 서버에서 OID 생성(임시ID 기반)
-        String oid = "OID-" + tempPaymentId + "-" + System.currentTimeMillis();
+        // 주문 번호가 있으면 사용, 없으면 임시 ID 기반 OID 생성
+        String oid;
+        if (request.getOrderId() != null) {
+            // 기존 주문이 있는 경우 (기존 프로세스)
+            oid = "OID-" + request.getOrderId() + "-" + System.currentTimeMillis();
+        } else {
+            // 새로운 프로세스: 주문 번호 채번 후 결제 요청
+            oid = "OID-" + tempPaymentId + "-" + System.currentTimeMillis();
+        }
         inicisParams.setOid(oid);
 
         // price: 요청 금액을 정수 문자열로 변환

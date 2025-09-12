@@ -2,6 +2,7 @@ package com.vibe.pay.backend.order;
 
 import com.vibe.pay.backend.payment.Payment;
 import com.vibe.pay.backend.payment.PaymentService;
+import com.vibe.pay.backend.payment.PaymentConfirmRequest;
 import com.vibe.pay.backend.product.Product;
 import com.vibe.pay.backend.product.ProductService;
 import com.vibe.pay.backend.rewardpoints.RewardPointsService;
@@ -32,80 +33,6 @@ public class OrderService {
     @Autowired
     private PaymentService paymentService;
 
-    @Transactional
-    public Order createOrder(OrderRequest orderRequest) {
-        // 1. Create Order entity from OrderRequest
-        Order order = new Order();
-        order.setMemberId(orderRequest.getMemberId());
-        order.setUsedRewardPoints(orderRequest.getUsedPoints());
-        order.setOrderDate(LocalDateTime.now());
-        
-        // 결제가 이미 완료된 경우 PAID 상태로 설정
-        if (orderRequest.getPaymentId() != null) {
-            order.setStatus("PAID");
-            order.setPaymentId(orderRequest.getPaymentId());
-        } else {
-            order.setStatus("PENDING");
-        }
-
-        // 2. Calculate total amount and create OrderItem entities
-        double calculatedTotalAmount = 0.0;
-        List<OrderItem> orderItems = new ArrayList<>();
-        for (OrderItemRequest itemRequest : orderRequest.getItems()) {
-            Product product = productService.getProductById(itemRequest.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Product not found with id " + itemRequest.getProductId()));
-
-            OrderItem orderItem = new OrderItem();
-            orderItem.setProductId(itemRequest.getProductId());
-            orderItem.setQuantity(itemRequest.getQuantity());
-            orderItem.setPriceAtOrder(product.getPrice()); // Store price at the time of order
-
-            orderItems.add(orderItem);
-            calculatedTotalAmount += product.getPrice() * orderItem.getQuantity();
-        }
-        order.setTotalAmount(calculatedTotalAmount);
-
-        // 3. Handle reward points usage and final payment amount
-        if (order.getUsedRewardPoints() > 0) {
-            rewardPointsService.usePoints(order.getMemberId(), order.getUsedRewardPoints());
-            order.setFinalPaymentAmount(order.getTotalAmount() - order.getUsedRewardPoints());
-        } else {
-            order.setFinalPaymentAmount(order.getTotalAmount());
-        }
-
-        // Ensure final payment amount is not negative
-        if (order.getFinalPaymentAmount() < 0) {
-            order.setFinalPaymentAmount(0.0);
-        }
-
-        // 4. Save order (first insert to get ID)
-        orderMapper.insert(order);
-
-        // 5. Save order items
-        for (OrderItem item : orderItems) {
-            item.setOrderId(order.getId());
-            orderItemMapper.insert(item);
-        }
-
-        // 6. Create payment entry only if paymentId is not provided
-        if (orderRequest.getPaymentId() == null) {
-            Payment payment = new Payment(
-                    order.getMemberId(),
-                    order.getFinalPaymentAmount(),
-                    "CREDIT_CARD", // Default payment method for now
-                    "NICEPAY",     // Default PG for now
-                    "PENDING",
-                    null // Transaction ID will be set after actual PG processing
-            );
-            paymentService.createPayment(payment);
-
-            // 7. Link payment to order and update order
-            order.setPaymentId(payment.getId());
-            orderMapper.update(order); // Update order with paymentId
-        }
-
-        return order;
-    }
 
     public Optional<Order> getOrderById(Long id) {
         return Optional.ofNullable(orderMapper.findById(id));
@@ -141,6 +68,84 @@ public class OrderService {
             order.setStatus("CANCELLED");
             orderMapper.update(order);
         }
+        return order;
+    }
+
+    // 1. 주문 번호 채번
+    public String generateOrderNumber() {
+        // 현재 시간을 기반으로 주문 번호 생성 (실제로는 더 복잡한 로직 필요)
+        long timestamp = System.currentTimeMillis();
+        return "ORD-" + timestamp;
+    }
+
+    // 주문 생성 + 결제 승인
+    @Transactional
+    public Order createOrder(OrderRequest orderRequest) {
+        // 4-1. 먼저 결제 승인 처리
+        PaymentConfirmRequest paymentConfirmRequest = new PaymentConfirmRequest();
+        paymentConfirmRequest.setAuthToken(orderRequest.getAuthToken());
+        paymentConfirmRequest.setAuthUrl(orderRequest.getAuthUrl());
+        paymentConfirmRequest.setOid(orderRequest.getOid());
+        paymentConfirmRequest.setPrice(orderRequest.getPrice());
+        paymentConfirmRequest.setMid(orderRequest.getMid());
+        paymentConfirmRequest.setOrderNumber(orderRequest.getOrderNumber());
+        paymentConfirmRequest.setNetCancelUrl(orderRequest.getNetCancelUrl());
+
+        // 결제 승인 처리
+        Payment payment;
+        try {
+            payment = paymentService.confirmPayment(paymentConfirmRequest);
+        } catch (Exception e) {
+            throw new RuntimeException("Payment approval failed: " + e.getMessage(), e);
+        }
+
+        // 4-2. 결제 승인 성공 시 주문 생성
+        Order order = new Order();
+        order.setMemberId(orderRequest.getMemberId());
+        order.setUsedRewardPoints(orderRequest.getUsedPoints() != null ? orderRequest.getUsedPoints().doubleValue() : 0.0);
+        order.setOrderDate(LocalDateTime.now());
+        order.setStatus("PAID"); // 결제 완료 상태
+        order.setPaymentId(payment.getId());
+
+        // 주문 상품 정보 처리 및 총액 계산
+        double calculatedTotalAmount = 0.0;
+        List<OrderItem> orderItems = new ArrayList<>();
+        for (OrderItemRequest itemRequest : orderRequest.getItems()) {
+            Product product = productService.getProductById(itemRequest.getProductId())
+                    .orElseThrow(() -> new RuntimeException("Product not found with id " + itemRequest.getProductId()));
+
+            OrderItem orderItem = new OrderItem();
+            orderItem.setProductId(itemRequest.getProductId());
+            orderItem.setQuantity(itemRequest.getQuantity());
+            orderItem.setPriceAtOrder(product.getPrice());
+
+            orderItems.add(orderItem);
+            calculatedTotalAmount += product.getPrice() * orderItem.getQuantity();
+        }
+        order.setTotalAmount(calculatedTotalAmount);
+
+        // 적립금 사용 처리
+        if (order.getUsedRewardPoints() > 0) {
+            rewardPointsService.usePoints(order.getMemberId(), order.getUsedRewardPoints());
+            order.setFinalPaymentAmount(order.getTotalAmount() - order.getUsedRewardPoints());
+        } else {
+            order.setFinalPaymentAmount(order.getTotalAmount());
+        }
+
+        // 최종 결제 금액이 음수가 되지 않도록 보정
+        if (order.getFinalPaymentAmount() < 0) {
+            order.setFinalPaymentAmount(0.0);
+        }
+
+        // 주문 저장
+        orderMapper.insert(order);
+
+        // 주문 상품 저장
+        for (OrderItem item : orderItems) {
+            item.setOrderId(order.getId());
+            orderItemMapper.insert(item);
+        }
+
         return order;
     }
 }
