@@ -143,7 +143,12 @@
 - **POST** `/payments/return`
 - **설명**: PG사 결제 완료 후 리턴 처리
 - **Content-Type**: `application/x-www-form-urlencoded`
-- **응답**: `String`
+- **응답**: `String` (HTML 또는 JavaScript)
+
+### 7. 결제 상태 조회
+- **GET** `/payments/status/{paymentId}`
+- **설명**: 특정 결제의 상태 조회
+- **응답**: `PaymentStatus`
 
 ## 적립금 관리 API
 
@@ -173,6 +178,7 @@
   "name": "string",
   "shippingAddress": "string",
   "phoneNumber": "string",
+  "email": "string",
   "createdAt": "string (ISO 8601)"
 }
 ```
@@ -224,13 +230,82 @@
 }
 ```
 
-## 에러 코드
+### PaymentInitiateRequest
+```json
+{
+  "memberId": "number",
+  "orderItems": [
+    {
+      "productId": "number",
+      "quantity": "number"
+    }
+  ],
+  "usedRewardPoints": "number"
+}
+```
 
+### PaymentConfirmRequest
+```json
+{
+  "paymentId": "number",
+  "pgTransactionId": "string",
+  "pgResponse": "object"
+}
+```
+
+### InicisPaymentParameters
+```json
+{
+  "mid": "string",
+  "orderNumber": "string",
+  "amount": "number",
+  "goodsName": "string",
+  "buyerName": "string",
+  "buyerEmail": "string",
+  "buyerTel": "string",
+  "returnUrl": "string",
+  "closeUrl": "string",
+  "timestamp": "string",
+  "signature": "string"
+}
+```
+
+## 에러 코드
 | 코드 | 설명 |
 |------|------|
 | `MEMBER_NOT_FOUND` | 회원을 찾을 수 없음 |
 | `PRODUCT_NOT_FOUND` | 상품을 찾을 수 없음 |
 | `ORDER_NOT_FOUND` | 주문을 찾을 수 없음 |
+| `PAYMENT_NOT_FOUND` | 결제를 찾을 수 없음 |
 | `PAYMENT_FAILED` | 결제 실패 |
+| `PAYMENT_ALREADY_PROCESSED` | 이미 처리된 결제 |
 | `INSUFFICIENT_POINTS` | 적립금 부족 |
 | `INVALID_REQUEST` | 잘못된 요청 |
+| `PG_CONNECTION_ERROR` | PG사 연동 오류 |
+| `INTERNAL_SERVER_ERROR` | 서버 내부 오류 |
+
+## API 사용 예시
+
+### 주문 및 결제 프로세스
+```javascript
+// 1. 결제 시작
+const initiateResponse = await fetch('/api/payments/initiate', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    memberId: 1,
+    orderItems: [
+      { productId: 1, quantity: 2 },
+      { productId: 2, quantity: 1 }
+    ],
+    usedRewardPoints: 1000
+  })
+});
+
+// 2. 이니시스 결제창 호출
+const paymentParams = await initiateResponse.json();
+INIStdPay.pay(paymentParams);
+
+// 3. 결제 완료 후 승인 처리 (자동)
+// PG사에서 returnUrl로 결과 전송
+```

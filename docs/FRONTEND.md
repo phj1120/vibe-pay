@@ -2,11 +2,12 @@
 
 ## 기술 스택
 
-- **프레임워크**: Nuxt.js 3
-- **UI 라이브러리**: Vuetify 3
+- **프레임워크**: Nuxt.js 3.12.2
+- **UI 라이브러리**: Vuetify 3 (vuetify-nuxt-module 0.14.0)
 - **언어**: TypeScript
 - **스타일링**: CSS, Vuetify 테마
-- **아이콘**: Material Design Icons
+- **아이콘**: Material Design Icons (@mdi/font 7.4.47)
+- **빌드 도구**: Vite (Nuxt 내장)
 
 ## 프로젝트 구조
 
@@ -26,7 +27,10 @@ vibe-pay-frontend/
 │   │   └── [id].vue       # 상품 상세/수정
 │   └── order/
 │       ├── index.vue      # 주문서 생성
-│       └── popup.vue      # 결제 팝업
+│       ├── popup.vue      # 결제 팝업
+│       ├── progress.vue   # 결제 진행
+│       ├── return.vue     # 결제 완료 처리
+│       └── close.vue      # 결제 창 닫기
 ├── plugins/
 │   └── inicis.client.ts   # 이니시스 SDK 로드
 └── public/
@@ -142,10 +146,49 @@ vibe-pay-frontend/
    - 3단계: 결제 승인 (`POST /api/payments/confirm`)
    - 4단계: 주문 생성 (`POST /api/orders`)
 
-**쿼리 파라미터**:
-- `memberId`: 미리 선택된 회원 ID
+**결제 프로세스 개선사항**:
+1. **3단계 처리**: 시작 → 진행 → 완료/취소
+2. **SSR 호환**: Nuxt.js SSR 환경에서 POST 데이터 처리
+3. **에러 핸들링**: 각 단계별 상세한 에러 처리
+4. **사용자 경험**: 명확한 진행 상태 표시
 
+**기술적 특징**:
+- 이니시스 SDK 클라이언트 사이드 로드
+- FormData를 이용한 PG사 연동
+- PostMessage API를 통한 팝업 통신
+
+#### 4.3 결제 진행 (`/order/progress`)
+**파일**: `pages/order/progress.vue`
+
+**기능**:
+- PG사 결제 완료 후 리턴 처리
+- 결제 결과 파라미터 수신 (POST body)
+- 결제 승인 API 호출
+- 주문 생성 및 완료 처리
+
+**처리 플로우**:
+1. PG사에서 POST 데이터 수신
+2. 결제 승인 API 호출 (`POST /api/payments/confirm`)
+3. 성공 시 주문 완료 페이지 이동
+4. 실패 시 에러 메시지 표시
+
+#### 4.4 결제 완료 처리 (`/order/return`)
+**파일**: `pages/order/return.vue`
+
+**기능**:
+- 결제 완료 안내
+- 주문 상세 정보 표시
+- 추가 액션 버튼 (홈으로, 주문 내역 등)
+
+#### 4.5 결제 창 닫기 (`/order/close`)
+**파일**: `pages/order/close.vue`
+
+**기능**:
+- 결제 취소 시 표시
+- 사용자 안내 메시지
+- 주문서로 돌아가기 버튼
 #### 4.2 결제 팝업 (`/order/popup`)
+
 **파일**: `pages/order/popup.vue`
 
 **기능**:
@@ -160,8 +203,6 @@ vibe-pay-frontend/
 ## 레이아웃
 
 ### 기본 레이아웃 (`layouts/default.vue`)
-
-**구성**:
 - `v-navigation-drawer`: 사이드 네비게이션
 - `v-main`: 메인 콘텐츠 영역
 

@@ -85,3 +85,11 @@ CREATE TABLE IF NOT EXISTS payment_interface_request_log (
     response_payload TEXT,
     timestamp TIMESTAMP NOT NULL
 );
+
+-- Order ID Sequence (8자리, 99999999까지, 순환)
+CREATE SEQUENCE IF NOT EXISTS order_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    MAXVALUE 99999999
+    CYCLE;

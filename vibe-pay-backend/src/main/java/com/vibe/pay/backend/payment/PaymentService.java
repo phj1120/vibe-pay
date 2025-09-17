@@ -265,16 +265,23 @@ public class PaymentService {
                 actualResponse = result.getResponseBody();
                 
                 if (approvalSuccess) {
-                    transactionId = "TXN-" + System.currentTimeMillis();
+                    // 이니시스에서 받은 실제 거래 ID 사용 (없으면 임시 ID 생성)
+                    transactionId = result.getTransactionId() != null ? 
+                            result.getTransactionId() : "TXN-" + System.currentTimeMillis();
                     log.info("Payment approved successfully for tempId: {}", tempPaymentId);
                 } else {
                     log.error("Payment approval failed for tempId: {}", tempPaymentId);
+                    // 승인 실패 시 망취소 시도
+                    if (request.getNetCancelUrl() != null) {
+                        log.info("Attempting net cancel due to approval failure for tempId: {}", tempPaymentId);
+                        safeNetCancel(request.getNetCancelUrl(), request.getAuthToken());
+                    }
                 }
             } catch (Exception e) {
                 log.error("Error during Inicis approval process for tempId: {}", tempPaymentId, e);
-                // 망취소 시도
+                // 에러 발생 시 망취소 시도
                 if (request.getNetCancelUrl() != null) {
-                    log.info("Attempting net cancel for tempId: {}", tempPaymentId);
+                    log.info("Attempting net cancel due to error for tempId: {}", tempPaymentId);
                     safeNetCancel(request.getNetCancelUrl(), request.getAuthToken());
                 }
             }
@@ -323,10 +330,12 @@ public class PaymentService {
     private static class ApprovalResult {
         private final boolean success;
         private final String responseBody;
+        private final String transactionId;
         
-        public ApprovalResult(boolean success, String responseBody) {
+        public ApprovalResult(boolean success, String responseBody, String transactionId) {
             this.success = success;
             this.responseBody = responseBody;
+            this.transactionId = transactionId;
         }
         
         public boolean isSuccess() {
@@ -335,6 +344,10 @@ public class PaymentService {
         
         public String getResponseBody() {
             return responseBody;
+        }
+        
+        public String getTransactionId() {
+            return transactionId;
         }
     }
     
@@ -397,10 +410,39 @@ public class PaymentService {
                 paymentInterfaceRequestLogMapper.insert(apiCallLog);
             }
             
-            // 응답에서 성공 여부 확인
-            boolean success = responseBody != null && responseBody.contains("\"resultCode\":\"0000\"");
+            // 응답 파싱 및 성공 여부 확인
+            boolean success = false;
+            String tid = null;
+            if (responseBody != null && !responseBody.trim().isEmpty()) {
+                try {
+                    InicisApprovalResponse inicisResponse = objectMapper.readValue(responseBody, InicisApprovalResponse.class);
+                    tid = inicisResponse.getTid(); // 거래 ID 추출 (망취소 시 필요)
+                    
+                    // 승인 성공 조건: resultCode가 "0000"이고 요청 금액과 응답 금액이 일치
+                    if ("0000".equals(inicisResponse.getResultCode())) {
+                        String requestPrice = request.getPrice();
+                        String responsePrice = inicisResponse.getTotPrice();
+                        
+                        if (requestPrice != null && requestPrice.equals(responsePrice)) {
+                            success = true;
+                            log.info("Payment approval successful: tid={}, amount={}", 
+                                    inicisResponse.getTid(), responsePrice);
+                        } else {
+                            log.error("Payment amount mismatch: requested={}, response={}", 
+                                    requestPrice, responsePrice);
+                        }
+                    } else {
+                        log.error("Payment approval failed: resultCode={}, resultMsg={}", 
+                                inicisResponse.getResultCode(), inicisResponse.getResultMsg());
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to parse Inicis response: {}", responseBody, e);
+                    // JSON 파싱 실패 시 기존 방식으로 폴백
+                    success = responseBody.contains("\"resultCode\":\"0000\"");
+                }
+            }
             
-            return new ApprovalResult(success, responseBody);
+            return new ApprovalResult(success, responseBody, tid);
             
         } catch (Exception e) {
             log.error("Error during Inicis approval process", e);
@@ -416,7 +458,7 @@ public class PaymentService {
                 paymentInterfaceRequestLogMapper.insert(errorLog);
             }
             
-            return new ApprovalResult(false, null);
+            return new ApprovalResult(false, null, null);
         }
     }
     

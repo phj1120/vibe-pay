@@ -15,6 +15,7 @@ CREATE TABLE member (
     name VARCHAR(255) NOT NULL,
     shipping_address VARCHAR(255),
     phone_number VARCHAR(255),
+    email VARCHAR(255),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 ```
@@ -24,6 +25,7 @@ CREATE TABLE member (
 - `name`: 회원 이름 (필수)
 - `shipping_address`: 배송지 주소
 - `phone_number`: 전화번호
+- `email`: 이메일 주소
 - `created_at`: 회원 가입일시
 
 ### 2. product (상품)
@@ -132,22 +134,25 @@ CREATE TABLE payment (
 ```sql
 CREATE TABLE payment_interface_request_log (
     id BIGSERIAL PRIMARY KEY,
-    payment_id BIGINT,
+    payment_id BIGINT, -- 외래키 제약조건 제거 (임시 ID 지원)
     request_type VARCHAR(50) NOT NULL,
     request_payload TEXT,
     response_payload TEXT,
-    timestamp TIMESTAMP NOT NULL,
-    CONSTRAINT fk_payment_log FOREIGN KEY (payment_id) REFERENCES payment(id)
+    timestamp TIMESTAMP NOT NULL
 );
 ```
 
 **컬럼 설명**:
 - `id`: 로그 ID (자동 증가)
-- `payment_id`: 결제 ID (외래키)
+- `payment_id`: 결제 ID (외래키 제약조건 없음, 임시 ID 지원)
 - `request_type`: 요청 타입 (INITIATE, CONFIRM, CANCEL)
 - `request_payload`: 요청 데이터 (JSON)
 - `response_payload`: 응답 데이터 (JSON)
 - `timestamp`: 요청 일시
+
+**특이사항**: 
+- payment_id에 외래키 제약조건이 없어 임시 결제 ID도 저장 가능
+- 결제 프로세스의 모든 단계별 로그 추적 지원
 
 ## 인덱스
 
@@ -156,6 +161,7 @@ CREATE TABLE payment_interface_request_log (
 -- 회원 조회 최적화
 CREATE INDEX idx_member_name ON member(name);
 CREATE INDEX idx_member_phone ON member(phone_number);
+CREATE INDEX idx_member_email ON member(email);
 
 -- 주문 조회 최적화
 CREATE INDEX idx_order_member_id ON "order"(member_id);
@@ -206,14 +212,17 @@ CREATE INDEX idx_reward_points_member_id ON reward_points(member_id);
 3. 데이터 검증
 4. 롤백 계획 수립
 
-### 예시 마이그레이션 스크립트
+### 추가된 시퀀스
+
+#### Order ID 시퀀스 (주문번호 생성용)
 ```sql
--- 컬럼 추가 예시
-ALTER TABLE member ADD COLUMN email VARCHAR(255);
-
--- 인덱스 추가 예시
-CREATE INDEX idx_member_email ON member(email);
-
--- 데이터 업데이트 예시
-UPDATE member SET email = 'default@example.com' WHERE email IS NULL;
+CREATE SEQUENCE order_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    MAXVALUE 99999999
+    CYCLE;
 ```
+
+**용도**: 8자리 주문번호 생성 (1~99999999, 순환)
+### 예시 마이그레이션 스크립트

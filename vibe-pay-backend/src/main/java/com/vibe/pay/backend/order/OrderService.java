@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -71,11 +72,18 @@ public class OrderService {
         return order;
     }
 
-    // 1. 주문 번호 채번
+    // 1. 주문 번호 채번 (날짜 + O + 시퀀스)
     public String generateOrderNumber() {
-        // 현재 시간을 기반으로 주문 번호 생성 (실제로는 더 복잡한 로직 필요)
-        long timestamp = System.currentTimeMillis();
-        return "ORD-" + timestamp;
+        // 현재 날짜를 YYYYMMDD 형식으로 포맷
+        String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        
+        // DB 시퀀스에서 다음 번호 조회
+        Long sequence = orderMapper.getNextOrderSequence();
+        
+        // 8자리로 패딩 (00000001 ~ 99999999)
+        String sequenceStr = String.format("%08d", sequence);
+        
+        return dateStr + "O" + sequenceStr;
     }
 
     // 주문 생성 + 결제 승인
