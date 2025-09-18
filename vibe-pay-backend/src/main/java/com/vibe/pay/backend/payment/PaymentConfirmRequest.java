@@ -10,8 +10,7 @@ public class PaymentConfirmRequest {
     private String authUrl;
     private String netCancelUrl;
     private String mid;
-    private String oid;
-    private String orderNumber; // 이니시스에서 전달되는 실제 필드명
+    private String orderNumber; // 이니시스에서 전달되는 실제 필드명 (oid와 동일)
     private String price;
 
     public Long getPaymentId() {
@@ -68,14 +67,6 @@ public class PaymentConfirmRequest {
 
     public void setMid(String mid) {
         this.mid = mid;
-    }
-
-    public String getOid() {
-        return oid;
-    }
-
-    public void setOid(String oid) {
-        this.oid = oid;
     }
 
     public String getOrderNumber() {

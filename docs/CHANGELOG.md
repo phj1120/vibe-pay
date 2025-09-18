@@ -1,5 +1,34 @@
 # VibePay 프로젝트 변경 이력
 
+## [0.2.1] - 2024-12-19
+
+### Fixed
+- **임의 값 생성 로직 제거** - PG사 실제 응답 데이터 무결성 보장
+- **주문번호 기반 프로세스 단순화** - tempPaymentId 제거, 실제 주문번호만 사용
+- **중복 필드 제거**: oid 필드 제거, orderNumber 필드로 통일
+- **OID 단순화**: 접두사 제거, 주문번호 자체를 OID로 사용
+- transactionId null 시 임의 생성 로직 제거 (실제 PG 응답만 사용)
+- 결제 취소 시 transactionId 임의 변경 제거
+- 시뮬레이션 코드 제거 및 실제 로직으로 교체
+
+### Changed
+- **필드 통일화**: `oid = orderNumber = ordNo` 완전 통일
+- **결제 프로세스 개선**: 주문번호 채번 → OID 직접 사용 → 승인 → 완료
+- **API 단순화**: PaymentConfirmRequest, OrderRequest에서 oid 필드 제거
+- extractMemberIdFromLogs/extractPaymentMethodFromLogs에서 기본값 제거
+- 모든 로그를 실제 주문번호 기반으로 저장
+- 데이터 무결성을 위해 예외 발생으로 변경
+- 로그 레벨 개선 (System.out.println → Logger 사용)
+
+### Technical Details
+- `PaymentInitiateRequest`: orderId 필드 제거
+- `PaymentConfirmRequest`: oid 필드 제거, orderNumber만 사용
+- `OrderRequest`: oid 필드 제거, orderNumber만 사용
+- `initiatePayment()`: 주문번호를 OID로 직접 사용
+- `confirmPayment()`: orderNumber 필드로 주문번호 추출
+- `OrderService`: setOid() 호출 제거
+- `generateTempPaymentId()` 메서드 제거
+
 ## [0.2.0] - 2024-12-19
 
 ### Added

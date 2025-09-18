@@ -2,6 +2,7 @@ package com.vibe.pay.backend.payment;
 
 import com.vibe.pay.backend.paymentlog.PaymentInterfaceRequestLog;
 import com.vibe.pay.backend.paymentlog.PaymentInterfaceRequestLogMapper;
+import com.vibe.pay.backend.order.OrderMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,9 @@ public class PaymentService {
 
     @Autowired
     private PaymentInterfaceRequestLogMapper paymentInterfaceRequestLogMapper;
+
+    @Autowired
+    private OrderMapper orderMapper;
 
 
     @Autowired
@@ -113,15 +117,16 @@ public class PaymentService {
             paymentMethod = paymentMethod + "+MILEAGE";
         }
 
-        // 결제 레코드는 나중에 성공시에만 생성하도록 변경
-        // 임시로 payment ID 생성을 위해 현재 시간 사용
-        Long tempPaymentId = System.currentTimeMillis();
+        // 결제 프로세스 시작: 주문번호 채번 먼저
+        // 실제 주문번호 채번
+        Long orderNumber = orderMapper.getNextOrderSequence();
+        log.info("Generated order number: {}", orderNumber);
 
-        // 인터페이스 로그 먼저 기록 (결제 요청 시작) - JSON 형태로 저장
+        // 인터페이스 로그 먼저 기록 (결제 요청 시작) - 주문번호로 로그 저장
         String requestJson = convertToJson(request);
         
         PaymentInterfaceRequestLog initiateLog = new PaymentInterfaceRequestLog(
-                tempPaymentId, // 임시 ID 사용
+                orderNumber, // 주문번호 사용
                 "INITIATE_PAYMENT",
                 requestJson,
                 null // response는 없음
@@ -132,15 +137,8 @@ public class PaymentService {
         InicisPaymentParameters inicisParams = new InicisPaymentParameters();
         inicisParams.setMid(inicisMid);
 
-        // 주문 번호가 있으면 사용, 없으면 임시 ID 기반 OID 생성
-        String oid;
-        if (request.getOrderId() != null) {
-            // 기존 주문이 있는 경우 (기존 프로세스)
-            oid = "OID-" + request.getOrderId() + "-" + System.currentTimeMillis();
-        } else {
-            // 새로운 프로세스: 주문 번호 채번 후 결제 요청
-            oid = "OID-" + tempPaymentId + "-" + System.currentTimeMillis();
-        }
+        // 채번된 주문번호를 OID로 직접 사용
+        String oid = String.valueOf(orderNumber);
         inicisParams.setOid(oid);
 
         // price: 요청 금액을 정수 문자열로 변환
@@ -166,11 +164,10 @@ public class PaymentService {
         // 환경설정 기반 옵션
         inicisParams.setVersion(inicisVersion);
         inicisParams.setCurrency(inicisCurrency);
-        inicisParams.setMoId(String.valueOf(tempPaymentId));
         inicisParams.setGopaymethod(inicisGopaymethod);
         inicisParams.setAcceptmethod(inicisAcceptmethod);
 
-        // 타임스탬프(ms)
+        // 타임스탬프(ms) - 이니시스 시그니처 생성용
         String timestamp = String.valueOf(System.currentTimeMillis());
         inicisParams.setTimestamp(timestamp);
 
@@ -200,51 +197,51 @@ public class PaymentService {
         inicisParams.setReturnUrl(inicisReturnUrl);
         inicisParams.setCloseUrl(inicisCloseUrl);
 
-        // 인터페이스 로그 업데이트 - 이니시스 파라미터 생성 완료 (JSON 형태로 저장)
+        // 인터페이스 로그 업데이트 - 이니시스 파라미터 생성 완료
         String inicisParamsJson = convertToJson(inicisParams);
         
         PaymentInterfaceRequestLog parametersLog = new PaymentInterfaceRequestLog(
-                tempPaymentId,
+                orderNumber, // 주문번호 사용
                 "INICIS_PARAMETERS_GENERATED",
                 inicisParamsJson,
                 null // response는 없음
         );
         paymentInterfaceRequestLogMapper.insert(parametersLog);
 
-        log.info("Payment initiation parameters issued for tempId={}, oid={}", tempPaymentId, oid);
+        log.info("Payment initiation parameters issued for order={}, oid={}", orderNumber, oid);
         return inicisParams;
     }
 
     @Transactional
     public Payment confirmPayment(PaymentConfirmRequest request) {
         log.info("Processing payment confirmation: {}", request);
-        log.info("Request details - authToken: {}, authUrl: {}, oid: {}, price: {}", 
-                request.getAuthToken(), request.getAuthUrl(), request.getOid(), request.getPrice());
+        log.info("Request details - authToken: {}, authUrl: {}, orderNumber: {}, price: {}", 
+                request.getAuthToken(), request.getAuthUrl(), request.getOrderNumber(), request.getPrice());
         
-        // OID에서 tempPaymentId 추출
-        String oidToSearch = request.getOrderNumber() != null ? request.getOrderNumber() : request.getOid();
-        Long tempPaymentId = null;
-        if (oidToSearch != null) {
+        // 주문번호 추출 (orderNumber 필드 사용)
+        String orderNumberStr = request.getOrderNumber();
+        Long orderNumber = null;
+        
+        if (orderNumberStr != null) {
             try {
-                String[] oidParts = oidToSearch.split("-");
-                if (oidParts.length >= 2) {
-                    tempPaymentId = Long.parseLong(oidParts[1]);
-                }
+                // orderNumber가 주문번호 자체이므로 바로 파싱
+                orderNumber = Long.parseLong(orderNumberStr);
+                log.info("Extracted order number: {}", orderNumber);
             } catch (Exception e) {
-                log.error("Failed to extract tempPaymentId from OID: {}", oidToSearch, e);
-                throw new RuntimeException("Invalid OID format: " + oidToSearch);
+                log.error("Failed to parse order number: {}", orderNumberStr, e);
+                throw new RuntimeException("Invalid order number format: " + orderNumberStr);
             }
         }
 
-        if (tempPaymentId == null) {
-            throw new RuntimeException("Cannot extract tempPaymentId from OID: " + request.getOid());
+        if (orderNumber == null) {
+            throw new RuntimeException("Order number is required");
         }
 
-        // 승인 요청 인터페이스 로그 먼저 기록 (JSON 형태로 저장)
+        // 승인 요청 인터페이스 로그 먼저 기록
         String approvalRequestJson = convertToJson(request);
         
         PaymentInterfaceRequestLog approvalRequestLog = new PaymentInterfaceRequestLog(
-                tempPaymentId,
+                orderNumber, // 주문번호 사용
                 "INICIS_APPROVAL_REQUEST",
                 approvalRequestJson,
                 null // response는 없음
@@ -257,7 +254,7 @@ public class PaymentService {
         String actualResponse = null;
         
         if (request.getAuthToken() != null && request.getAuthUrl() != null) {
-            log.info("Starting Inicis approval process for tempId: {}", tempPaymentId);
+                log.info("Starting Inicis approval process for order: {}", orderNumber);
             try {
                 // 실제 이니시스 승인 API 호출
                 ApprovalResult result = processInicisApprovalWithResponse(request);
@@ -265,23 +262,22 @@ public class PaymentService {
                 actualResponse = result.getResponseBody();
                 
                 if (approvalSuccess) {
-                    // 이니시스에서 받은 실제 거래 ID 사용 (없으면 임시 ID 생성)
-                    transactionId = result.getTransactionId() != null ? 
-                            result.getTransactionId() : "TXN-" + System.currentTimeMillis();
-                    log.info("Payment approved successfully for tempId: {}", tempPaymentId);
+                    // 이니시스에서 받은 실제 거래 ID 사용
+                    transactionId = result.getTransactionId();
+                    log.info("Payment approved successfully for order: {}, transactionId: {}", orderNumber, transactionId);
                 } else {
-                    log.error("Payment approval failed for tempId: {}", tempPaymentId);
+                    log.error("Payment approval failed for order: {}", orderNumber);
                     // 승인 실패 시 망취소 시도
                     if (request.getNetCancelUrl() != null) {
-                        log.info("Attempting net cancel due to approval failure for tempId: {}", tempPaymentId);
+                        log.info("Attempting net cancel due to approval failure for order: {}", orderNumber);
                         safeNetCancel(request.getNetCancelUrl(), request.getAuthToken());
                     }
                 }
             } catch (Exception e) {
-                log.error("Error during Inicis approval process for tempId: {}", tempPaymentId, e);
+                log.error("Error during Inicis approval process for order: {}", orderNumber, e);
                 // 에러 발생 시 망취소 시도
                 if (request.getNetCancelUrl() != null) {
-                    log.info("Attempting net cancel due to error for tempId: {}", tempPaymentId);
+                    log.info("Attempting net cancel due to error for order: {}", orderNumber);
                     safeNetCancel(request.getNetCancelUrl(), request.getAuthToken());
                 }
             }
@@ -291,7 +287,7 @@ public class PaymentService {
         String summaryRequestJson = convertToJson(request);
         
         PaymentInterfaceRequestLog approvalResponseLog = new PaymentInterfaceRequestLog(
-                tempPaymentId,
+                orderNumber, // 주문번호 사용
                 "INICIS_APPROVAL_RESPONSE",
                 summaryRequestJson,
                 actualResponse // 실제 이니시스 응답 또는 null
@@ -301,9 +297,9 @@ public class PaymentService {
         // 성공한 경우에만 Payment 테이블에 저장
         Payment payment = null;
         if (approvalSuccess) {
-            // tempPaymentId를 기반으로 원래 결제 요청 정보를 찾기 위해 인터페이스 로그에서 조회
-            Long memberId = extractMemberIdFromLogs(tempPaymentId);
-            String paymentMethod = extractPaymentMethodFromLogs(tempPaymentId);
+            // 주문번호를 기반으로 원래 결제 요청 정보를 찾기 위해 인터페이스 로그에서 조회
+            Long memberId = extractMemberIdFromLogs(orderNumber);
+            String paymentMethod = extractPaymentMethodFromLogs(orderNumber);
             
             payment = new Payment(
                     memberId, // 실제 memberId 사용
@@ -315,11 +311,11 @@ public class PaymentService {
             );
             paymentMapper.insert(payment);
             
-            log.info("Payment record created successfully: paymentId={}, memberId={}, tempId={}", 
-                    payment.getId(), memberId, tempPaymentId);
+            log.info("Payment record created successfully: paymentId={}, memberId={}, order={}", 
+                    payment.getId(), memberId, orderNumber);
         } else {
             // 실패한 경우 Payment 테이블에는 저장하지 않음
-            log.info("Payment failed, no record created in Payment table for tempId: {}", tempPaymentId);
+            log.info("Payment failed, no record created in Payment table for order: {}", orderNumber);
             throw new RuntimeException("Payment approval failed");
         }
 
@@ -331,42 +327,40 @@ public class PaymentService {
         private final boolean success;
         private final String responseBody;
         private final String transactionId;
-        
+
         public ApprovalResult(boolean success, String responseBody, String transactionId) {
             this.success = success;
             this.responseBody = responseBody;
             this.transactionId = transactionId;
         }
-        
+
         public boolean isSuccess() {
             return success;
         }
-        
+
         public String getResponseBody() {
             return responseBody;
         }
-        
+
         public String getTransactionId() {
             return transactionId;
         }
     }
     
     private ApprovalResult processInicisApprovalWithResponse(PaymentConfirmRequest request) {
-        Long tempPaymentId = null;
+        Long orderNumber = null;
         String requestJson = null;
         String responseJson = null;
         
         try {
-            // OID에서 tempPaymentId 추출 (로그 저장용)
-            String oidToSearch = request.getOrderNumber() != null ? request.getOrderNumber() : request.getOid();
-            if (oidToSearch != null) {
+            // 주문번호 추출 (로그 저장용)
+            String orderNumberStr = request.getOrderNumber();
+            if (orderNumberStr != null) {
                 try {
-                    String[] oidParts = oidToSearch.split("-");
-                    if (oidParts.length >= 2) {
-                        tempPaymentId = Long.parseLong(oidParts[1]);
-                    }
+                    // orderNumber가 주문번호 자체이므로 바로 파싱
+                    orderNumber = Long.parseLong(orderNumberStr);
                 } catch (Exception e) {
-                    log.warn("Failed to extract tempPaymentId from OID for logging: {}", oidToSearch);
+                    log.warn("Failed to extract order number for logging: {}", orderNumberStr);
                 }
             }
             
@@ -400,9 +394,9 @@ public class PaymentService {
             log.info("Inicis approval response: {}", responseBody);
             
             // 실제 API 호출 로그 저장
-            if (tempPaymentId != null) {
+            if (orderNumber != null) {
                 PaymentInterfaceRequestLog apiCallLog = new PaymentInterfaceRequestLog(
-                        tempPaymentId,
+                        orderNumber, // 주문번호를 ID로 사용
                         "INICIS_API_CALL",
                         requestJson,
                         responseJson
@@ -448,9 +442,9 @@ public class PaymentService {
             log.error("Error during Inicis approval process", e);
             
             // 에러 발생 시에도 로그 저장
-            if (tempPaymentId != null && requestJson != null) {
+            if (orderNumber != null && requestJson != null) {
                 PaymentInterfaceRequestLog errorLog = new PaymentInterfaceRequestLog(
-                        tempPaymentId,
+                        orderNumber,
                         "INICIS_API_CALL",
                         requestJson,
                         null // 에러 시 response 없음
@@ -465,10 +459,11 @@ public class PaymentService {
 
     @Transactional
     public Payment processPayment(Payment payment) {
-        // This is a placeholder for actual PG integration logic
-        // In a real scenario, you would call a PG API here
-        System.out.println("Processing payment for amount: " + payment.getAmount() + " with PG: " + payment.getPgCompany());
-        payment.setStatus("APPROVED"); // Simulate approval
+        // 실제 PG 연동 로직이 필요한 부분
+        // 현재는 이니시스만 지원하므로 해당 로직으로 리다이렉트
+        log.warn("processPayment() called - this should use confirmPayment() for actual PG integration");
+        
+        // 상태 업데이트만 수행 (실제 PG 연동은 confirmPayment에서 처리)
         paymentMapper.update(payment);
         return payment;
     }
@@ -484,12 +479,14 @@ public class PaymentService {
             throw new RuntimeException("Payment is already cancelled.");
         }
 
-        // Simulate PG cancellation
-        System.out.println("Simulating PG cancellation for payment ID: " + paymentId + " with PG: " + payment.getPgCompany());
+        // 실제 PG 취소 로직이 필요한 부분
+        // TODO: 이니시스 취소 API 연동 구현 필요
+        log.warn("Cancellation requested for payment ID: {} with PG: {} - actual PG cancel API not implemented yet", 
+                paymentId, payment.getPgCompany());
 
         // Update payment status
         payment.setStatus("CANCELLED");
-        payment.setTransactionId(payment.getTransactionId() + "-CANCEL"); // Append -CANCEL for simulation
+        // transactionId는 그대로 유지 (임의로 변경하지 않음)
         paymentMapper.update(payment);
 
         // Create PaymentInterfaceRequestLog entry for cancellation (실제 객체만 저장)
@@ -636,9 +633,9 @@ public class PaymentService {
     }
 
     // 로그에서 memberId 추출 (JSON 형식에서)
-    private Long extractMemberIdFromLogs(Long tempPaymentId) {
+    private Long extractMemberIdFromLogs(Long orderNumber) {
         try {
-            List<PaymentInterfaceRequestLog> logs = paymentInterfaceRequestLogMapper.findByPaymentId(tempPaymentId);
+            List<PaymentInterfaceRequestLog> logs = paymentInterfaceRequestLogMapper.findByPaymentId(orderNumber);
             for (PaymentInterfaceRequestLog log : logs) {
                 if ("INITIATE_PAYMENT".equals(log.getRequestType())) {
                     String payload = log.getRequestPayload();
@@ -651,15 +648,17 @@ public class PaymentService {
                 }
             }
         } catch (Exception e) {
-            log.error("Failed to extract memberId from logs for tempId: {}", tempPaymentId, e);
+            log.error("Failed to extract memberId from logs for order: {}", orderNumber, e);
         }
-        return 1L; // 기본값
+        
+        // 기본값 대신 예외 발생
+        throw new RuntimeException("Cannot extract memberId from payment logs for order: " + orderNumber);
     }
 
     // 로그에서 paymentMethod 추출 (JSON 형식에서)
-    private String extractPaymentMethodFromLogs(Long tempPaymentId) {
+    private String extractPaymentMethodFromLogs(Long orderNumber) {
         try {
-            List<PaymentInterfaceRequestLog> logs = paymentInterfaceRequestLogMapper.findByPaymentId(tempPaymentId);
+            List<PaymentInterfaceRequestLog> logs = paymentInterfaceRequestLogMapper.findByPaymentId(orderNumber);
             for (PaymentInterfaceRequestLog log : logs) {
                 if ("INITIATE_PAYMENT".equals(log.getRequestType())) {
                     String payload = log.getRequestPayload();
@@ -672,8 +671,10 @@ public class PaymentService {
                 }
             }
         } catch (Exception e) {
-            log.error("Failed to extract paymentMethod from logs for tempId: {}", tempPaymentId, e);
+            log.error("Failed to extract paymentMethod from logs for order: {}", orderNumber, e);
         }
-        return "CREDIT_CARD"; // 기본값
+        
+        // 기본값 대신 예외 발생
+        throw new RuntimeException("Cannot extract paymentMethod from payment logs for order: " + orderNumber);
     }
 }

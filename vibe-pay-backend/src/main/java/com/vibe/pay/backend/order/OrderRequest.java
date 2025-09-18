@@ -11,7 +11,6 @@ public class OrderRequest {
     // 결제 정보 (2단계에서 받은 결제 응답 정보)
     private String authToken;
     private String authUrl;
-    private String oid;
     private String price;
     private String mid;
     private String netCancelUrl;
@@ -66,14 +65,6 @@ public class OrderRequest {
 
     public void setAuthUrl(String authUrl) {
         this.authUrl = authUrl;
-    }
-
-    public String getOid() {
-        return oid;
-    }
-
-    public void setOid(String oid) {
-        this.oid = oid;
     }
 
     public String getPrice() {

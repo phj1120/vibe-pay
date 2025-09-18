@@ -234,13 +234,13 @@
 ```json
 {
   "memberId": "number",
-  "orderItems": [
-    {
-      "productId": "number",
-      "quantity": "number"
-    }
-  ],
-  "usedRewardPoints": "number"
+  "amount": "number",
+  "paymentMethod": "string",
+  "usedMileage": "number",
+  "goodName": "string",
+  "buyerName": "string", 
+  "buyerTel": "string",
+  "buyerEmail": "string"
 }
 ```
 
@@ -257,16 +257,18 @@
 ```json
 {
   "mid": "string",
-  "orderNumber": "string",
-  "amount": "number",
-  "goodsName": "string",
+  "oid": "string (주문번호)",
+  "price": "string",
+  "goodName": "string",
   "buyerName": "string",
   "buyerEmail": "string",
   "buyerTel": "string",
   "returnUrl": "string",
   "closeUrl": "string",
   "timestamp": "string",
-  "signature": "string"
+  "signature": "string",
+  "mKey": "string",
+  "verification": "string"
 }
 ```
 
@@ -288,24 +290,27 @@
 
 ### 주문 및 결제 프로세스
 ```javascript
-// 1. 결제 시작
+// 1. 결제 시작 (주문번호 자동 채번)
 const initiateResponse = await fetch('/api/payments/initiate', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
     memberId: 1,
-    orderItems: [
-      { productId: 1, quantity: 2 },
-      { productId: 2, quantity: 1 }
-    ],
-    usedRewardPoints: 1000
+    amount: 15000,
+    paymentMethod: "CREDIT_CARD",
+    usedMileage: 1000,
+    goodName: "상품명",
+    buyerName: "구매자명",
+    buyerTel: "010-1234-5678", 
+    buyerEmail: "buyer@example.com"
   })
 });
 
 // 2. 이니시스 결제창 호출
 const paymentParams = await initiateResponse.json();
+// paymentParams.oid = "12345678" (실제 주문번호)
 INIStdPay.pay(paymentParams);
 
 // 3. 결제 완료 후 승인 처리 (자동)
-// PG사에서 returnUrl로 결과 전송
+// PG사에서 returnUrl로 결과 전송, OID = 주문번호
 ```

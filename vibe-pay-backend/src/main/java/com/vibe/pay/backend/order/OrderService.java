@@ -93,10 +93,9 @@ public class OrderService {
         PaymentConfirmRequest paymentConfirmRequest = new PaymentConfirmRequest();
         paymentConfirmRequest.setAuthToken(orderRequest.getAuthToken());
         paymentConfirmRequest.setAuthUrl(orderRequest.getAuthUrl());
-        paymentConfirmRequest.setOid(orderRequest.getOid());
+        paymentConfirmRequest.setOrderNumber(orderRequest.getOrderNumber());
         paymentConfirmRequest.setPrice(orderRequest.getPrice());
         paymentConfirmRequest.setMid(orderRequest.getMid());
-        paymentConfirmRequest.setOrderNumber(orderRequest.getOrderNumber());
         paymentConfirmRequest.setNetCancelUrl(orderRequest.getNetCancelUrl());
 
         // 결제 승인 처리

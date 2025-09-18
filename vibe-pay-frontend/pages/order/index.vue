@@ -384,10 +384,10 @@ const proceedToPayment = async () => {
       amount: total.value,
       paymentMethod: 'CREDIT_CARD',
       usedMileage: usedPoints.value, // 적립금 사용량 추가
-      goodName: goodName || '주문결제',
-      buyerName: selectedMember.value.name || '구매자',
-      buyerTel: selectedMember.value.phoneNumber || '010-0000-0000',
-      buyerEmail: selectedMember.value.email || 'buyer@example.com',
+      goodName: goodName,
+      buyerName: selectedMember.value.name,
+      buyerTel: selectedMember.value.phoneNumber,
+      buyerEmail: selectedMember.value.email,
     };
     
     // 결제 준비

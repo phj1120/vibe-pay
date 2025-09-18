@@ -1,7 +1,6 @@
 package com.vibe.pay.backend.payment;
 
 public class PaymentInitiateRequest {
-    private Long orderId;         // 선택값: 현재 흐름에서는 사용하지 않음
     private Long memberId;
     private Double amount;        // 금액(원), 정수 변환하여 사용
     private String paymentMethod;
@@ -12,14 +11,6 @@ public class PaymentInitiateRequest {
     private String buyerName;
     private String buyerTel;
     private String buyerEmail;
-
-    public Long getOrderId() {
-        return orderId;
-    }
-
-    public void setOrderId(Long orderId) {
-        this.orderId = orderId;
-    }
 
     public Long getMemberId() {
         return memberId;
