@@ -247,9 +247,14 @@
 ### PaymentConfirmRequest
 ```json
 {
-  "paymentId": "number",
-  "pgTransactionId": "string",
-  "pgResponse": "object"
+  "authToken": "string",
+  "authUrl": "string",
+  "netCancelUrl": "string",
+  "mid": "string",
+  "orderNumber": "string (17자리)",
+  "price": "string",
+  "memberId": "number",
+  "paymentMethod": "string"
 }
 ```
 
