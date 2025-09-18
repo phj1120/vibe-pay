@@ -12,8 +12,8 @@ inicis:
   currency: WON
   gopaymethod: Card
   acceptmethod: below1000
-  # 프론트엔드 SSR 페이지로 복귀 (POST body 처리)
-  returnUrl: http://localhost:3000/order/progress
+  # 프론트엔드 팝업 페이지로 복귀 (POST body 처리)
+  returnUrl: http://localhost:3000/order/progress-popup
   closeUrl: http://localhost:3000/order/close
 
 # 개발 환경
@@ -25,7 +25,7 @@ spring:
 inicis:
   mid: ${INICIS_MID:INIpayTest}
   signKey: ${INICIS_SIGN_KEY:INIpayTest}
-  returnUrl: ${INICIS_RETURN_URL:http://localhost:3000/order/return}
+  returnUrl: ${INICIS_RETURN_URL:http://localhost:3000/order/progress-popup}
   closeUrl: ${INICIS_CLOSE_URL:http://localhost:3000/order/close}
 
 # 검증(staging/test) 환경

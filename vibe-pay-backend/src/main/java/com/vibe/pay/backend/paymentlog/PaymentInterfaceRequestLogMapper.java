@@ -7,7 +7,7 @@ import java.util.List;
 public interface PaymentInterfaceRequestLogMapper {
     List<PaymentInterfaceRequestLog> findAll();
     PaymentInterfaceRequestLog findById(Long id);
-    List<PaymentInterfaceRequestLog> findByPaymentId(Long paymentId);
+    List<PaymentInterfaceRequestLog> findByPaymentId(String paymentId);
     void insert(PaymentInterfaceRequestLog log);
     void update(PaymentInterfaceRequestLog log);
     void delete(Long id);

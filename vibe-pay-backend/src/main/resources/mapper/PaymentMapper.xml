@@ -21,8 +21,8 @@
         SELECT id, member_id, amount, payment_method, pg_company, status, transaction_id, payment_date FROM payment WHERE id = #{id}
     </select>
 
-    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO payment (member_id, amount, payment_method, pg_company, status, transaction_id, payment_date) VALUES (#{memberId}, #{amount}, #{paymentMethod}, #{pgCompany}, #{status}, #{transactionId}, #{paymentDate})
+    <insert id="insert">
+        INSERT INTO payment (id, member_id, amount, payment_method, pg_company, status, transaction_id, payment_date) VALUES (#{id}, #{memberId}, #{amount}, #{paymentMethod}, #{pgCompany}, #{status}, #{transactionId}, #{paymentDate})
     </insert>
 
     <update id="update">

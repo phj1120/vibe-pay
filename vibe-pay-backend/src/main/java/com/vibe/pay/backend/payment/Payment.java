@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 public class Payment {
 
-    private Long id;
+    private String id;
     private Long memberId;
     private Double amount;
     private String paymentMethod;
@@ -28,11 +28,11 @@ public class Payment {
     }
 
     // Getters and Setters
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

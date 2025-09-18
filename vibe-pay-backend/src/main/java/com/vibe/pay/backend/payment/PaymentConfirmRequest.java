@@ -12,6 +12,10 @@ public class PaymentConfirmRequest {
     private String mid;
     private String orderNumber; // 이니시스에서 전달되는 실제 필드명 (oid와 동일)
     private String price;
+    
+    // 결제 승인 시 필요한 추가 정보
+    private Long memberId;
+    private String paymentMethod;
 
     public Long getPaymentId() {
         return paymentId;
@@ -83,5 +87,21 @@ public class PaymentConfirmRequest {
 
     public void setPrice(String price) {
         this.price = price;
+    }
+
+    public Long getMemberId() {
+        return memberId;
+    }
+
+    public void setMemberId(Long memberId) {
+        this.memberId = memberId;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
     }
 }

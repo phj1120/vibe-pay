@@ -35,7 +35,7 @@ public class OrderService {
     private PaymentService paymentService;
 
 
-    public Optional<Order> getOrderById(Long id) {
+    public Optional<Order> getOrderById(String id) {
         return Optional.ofNullable(orderMapper.findById(id));
     }
 
@@ -48,7 +48,7 @@ public class OrderService {
     }
 
     @Transactional
-    public Order cancelOrder(Long orderId) {
+    public Order cancelOrder(String orderId) {
         Order order = orderMapper.findById(orderId);
         if (order == null) {
             throw new RuntimeException("Order not found with id " + orderId);
@@ -97,6 +97,8 @@ public class OrderService {
         paymentConfirmRequest.setPrice(orderRequest.getPrice());
         paymentConfirmRequest.setMid(orderRequest.getMid());
         paymentConfirmRequest.setNetCancelUrl(orderRequest.getNetCancelUrl());
+        paymentConfirmRequest.setMemberId(orderRequest.getMemberId());
+        paymentConfirmRequest.setPaymentMethod(orderRequest.getPaymentMethod());
 
         // 결제 승인 처리
         Payment payment;
@@ -108,6 +110,7 @@ public class OrderService {
 
         // 4-2. 결제 승인 성공 시 주문 생성
         Order order = new Order();
+        order.setId(orderRequest.getOrderNumber()); // 주문번호를 ID로 설정
         order.setMemberId(orderRequest.getMemberId());
         order.setUsedRewardPoints(orderRequest.getUsedPoints() != null ? orderRequest.getUsedPoints().doubleValue() : 0.0);
         order.setOrderDate(LocalDateTime.now());

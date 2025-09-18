@@ -35,14 +35,14 @@ public class PaymentController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Payment> getPaymentById(@PathVariable Long id) {
+    public ResponseEntity<Payment> getPaymentById(@PathVariable String id) {
         return paymentService.getPaymentById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Payment> updatePayment(@PathVariable Long id, @RequestBody Payment paymentDetails) {
+    public ResponseEntity<Payment> updatePayment(@PathVariable String id, @RequestBody Payment paymentDetails) {
         try {
             Payment updatedPayment = paymentService.updatePayment(id, paymentDetails);
             return ResponseEntity.ok(updatedPayment);
@@ -53,7 +53,7 @@ public class PaymentController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePayment(@PathVariable Long id) {
+    public ResponseEntity<Void> deletePayment(@PathVariable String id) {
         paymentService.deletePayment(id);
         return ResponseEntity.noContent().build();
     }
@@ -73,23 +73,8 @@ public class PaymentController {
         }
     }
 
-    @PostMapping("/confirm")
-    public ResponseEntity<Payment> confirmPayment(@RequestBody PaymentConfirmRequest request) {
-        log.info(" payment confirm request: authToken={}, orderNumber={}, price={}",
-                request.getAuthToken(), request.getOrderNumber(), request.getPrice());
-        try {
-            Payment confirmedPayment = paymentService.confirmPayment(request);
-            log.info("Payment confirmation successful for orderNumber={}", request.getOrderNumber());
-            return ResponseEntity.ok(confirmedPayment);
-        } catch (Exception e) {
-            log.error("confirmPayment failed. request={}", request, e);
-            log.error("Error details: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().body(null); // Or a more specific error response
-        }
-    }
-
     @PostMapping("/{id}/process")
-    public ResponseEntity<Payment> processPayment(@PathVariable Long id) {
+    public ResponseEntity<Payment> processPayment(@PathVariable String id) {
         try {
             Payment payment = paymentService.getPaymentById(id)
                     .orElseThrow(() -> new RuntimeException("Payment not found with id " + id));
@@ -102,7 +87,7 @@ public class PaymentController {
     }
 
     @PostMapping("/{id}/cancel")
-    public ResponseEntity<Payment> cancelPayment(@PathVariable Long id) {
+    public ResponseEntity<Payment> cancelPayment(@PathVariable String id) {
         try {
             Payment cancelledPayment = paymentService.cancelPayment(id);
             return ResponseEntity.ok(cancelledPayment);

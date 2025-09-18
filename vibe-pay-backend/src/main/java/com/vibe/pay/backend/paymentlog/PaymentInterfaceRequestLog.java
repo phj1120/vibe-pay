@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 public class PaymentInterfaceRequestLog {
 
     private Long id;
-    private Long paymentId;
+    private String paymentId;
     private String requestType;
 
     private String requestPayload;
@@ -17,7 +17,7 @@ public class PaymentInterfaceRequestLog {
     public PaymentInterfaceRequestLog() {
     }
 
-    public PaymentInterfaceRequestLog(Long paymentId, String requestType, String requestPayload, String responsePayload) {
+    public PaymentInterfaceRequestLog(String paymentId, String requestType, String requestPayload, String responsePayload) {
         this.paymentId = paymentId;
         this.requestType = requestType;
         this.requestPayload = requestPayload;
@@ -34,11 +34,11 @@ public class PaymentInterfaceRequestLog {
         this.id = id;
     }
 
-    public Long getPaymentId() {
+    public String getPaymentId() {
         return paymentId;
     }
 
-    public void setPaymentId(Long paymentId) {
+    public void setPaymentId(String paymentId) {
         this.paymentId = paymentId;
     }
 

@@ -3,7 +3,7 @@ package com.vibe.pay.backend.order;
 public class OrderItem {
 
     private Long id;
-    private Long orderId;
+    private String orderId;
     private Long productId;
     private Integer quantity;
     private Double priceAtOrder;
@@ -11,7 +11,7 @@ public class OrderItem {
     public OrderItem() {
     }
 
-    public OrderItem(Long orderId, Long productId, Integer quantity, Double priceAtOrder) {
+    public OrderItem(String orderId, Long productId, Integer quantity, Double priceAtOrder) {
         this.orderId = orderId;
         this.productId = productId;
         this.quantity = quantity;
@@ -26,11 +26,11 @@ public class OrderItem {
         this.id = id;
     }
 
-    public Long getOrderId() {
+    public String getOrderId() {
         return orderId;
     }
 
-    public void setOrderId(Long orderId) {
+    public void setOrderId(String orderId) {
         this.orderId = orderId;
     }
 

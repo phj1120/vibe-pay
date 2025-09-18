@@ -29,8 +29,8 @@
         SELECT id, member_id, order_date, total_amount, used_reward_points, final_payment_amount, status, payment_id FROM "order" WHERE payment_id = #{paymentId}
     </select>
 
-    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO "order" (member_id, order_date, total_amount, used_reward_points, final_payment_amount, status, payment_id) VALUES (#{memberId}, #{orderDate}, #{totalAmount}, #{usedRewardPoints}, #{finalPaymentAmount}, #{status}, #{paymentId})
+    <insert id="insert">
+        INSERT INTO "order" (id, member_id, order_date, total_amount, used_reward_points, final_payment_amount, status, payment_id) VALUES (#{id}, #{memberId}, #{orderDate}, #{totalAmount}, #{usedRewardPoints}, #{finalPaymentAmount}, #{status}, #{paymentId})
     </insert>
 
     <update id="update">

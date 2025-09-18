@@ -211,27 +211,7 @@
       <p>상품을 선택해서 주문을 시작해보세요</p>
     </div>
 
-    <!-- Hidden INIStdPay form -->
-    <form id="inicisForm" style="display: none;">
-      <input type="hidden" name="mid" :value="inicisParams.mid"/>
-      <input type="hidden" name="oid" :value="inicisParams.oid"/>
-      <input type="hidden" name="price" :value="inicisParams.price"/>
-      <input type="hidden" name="timestamp" :value="inicisParams.timestamp"/>
-      <input type="hidden" name="signature" :value="inicisParams.signature"/>
-      <input type="hidden" name="verification" :value="inicisParams.verification"/>
-      <input type="hidden" name="mKey" :value="inicisParams.mKey"/>
-      <input type="hidden" name="version" :value="inicisParams.version"/>
-      <input type="hidden" name="currency" :value="inicisParams.currency"/>
-      <input type="hidden" name="moId" :value="inicisParams.moId"/>
-      <input type="hidden" name="goodname" :value="inicisParams.goodName"/>
-      <input type="hidden" name="buyername" :value="inicisParams.buyerName"/>
-      <input type="hidden" name="buyertel" :value="inicisParams.buyerTel"/>
-      <input type="hidden" name="buyeremail" :value="inicisParams.buyerEmail"/>
-      <input type="hidden" name="returnUrl" :value="inicisParams.returnUrl"/>
-      <input type="hidden" name="closeUrl" :value="inicisParams.closeUrl"/>
-      <input type="hidden" name="gopaymethod" :value="inicisParams.gopaymethod"/>
-      <input type="hidden" name="acceptmethod" :value="inicisParams.acceptmethod"/>
-    </form>
+
   </div>
 </template>
 
@@ -251,13 +231,7 @@ const orderItems = ref([])
 const usedPoints = ref(0)
 const isProcessing = ref(false)
 
-// Inicis parameters
-const inicisParams = ref({
-  mid: '', oid: '', price: '', timestamp: '', signature: '', mKey: '',
-  version: '', currency: '', moId: '', goodName: '',
-  buyerName: '', buyerTel: '', buyerEmail: '', returnUrl: '', closeUrl: '',
-  gopaymethod: '', acceptmethod: ''
-});
+
 
 // 회원 변경 시 포인트 조회
 watch(selectedMember, async (newMember) => {
@@ -343,6 +317,9 @@ const useAllPoints = () => {
   }
 }
 
+// 현재 주문 데이터 (팝업에서 참조)
+const currentOrderData = ref(null);
+
 const proceedToPayment = async () => {
   if (isProcessing.value) return;
 
@@ -363,7 +340,7 @@ const proceedToPayment = async () => {
   try {
     isProcessing.value = true;
     console.log('Starting payment process...');
-    
+
     // 1. 주문번호 채번
     console.log('Generating order number...');
     const orderNumberResponse = await fetch('/api/orders/generateOrderNumber');
@@ -406,7 +383,7 @@ const proceedToPayment = async () => {
     // 상품명 생성
     const productNames = orderItems.value.map(item => item.name).join(', ');
     const goodName = productNames.length > 50 ? productNames.substring(0, 47) + '...' : productNames;
-    
+
     const initiatePayload = {
       memberId: selectedMember.value.id,
       amount: total.value,
@@ -417,18 +394,18 @@ const proceedToPayment = async () => {
       buyerTel: selectedMember.value.phoneNumber,
       buyerEmail: selectedMember.value.email,
     };
-    
+
     // 결제 준비
     console.log('Sending payment initiate request:', initiatePayload);
-    
+
     const initiateResponse = await fetch('/api/payments/initiate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(initiatePayload),
     });
-    
+
     console.log('Payment initiate response status:', initiateResponse.status);
-    
+
     if (!initiateResponse.ok) {
       let errorText = '';
       try {
@@ -444,48 +421,159 @@ const proceedToPayment = async () => {
 
     const inicisResponse = await initiateResponse.json();
     console.log('Payment initiated:', inicisResponse);
-    inicisParams.value = inicisResponse;
-    
-    // INIStdPay 로드 및 실행
-    if (!window.INIStdPay) {
-      await new Promise((resolve, reject) => {
-        const src = 'https://stdpay.inicis.com/stdjs/INIStdPay.js';
-        const s = document.createElement('script');
-        s.src = src; 
-        s.async = true;
-        s.onload = resolve;
-        s.onerror = () => reject(new Error('Failed to load INIStdPay.js'));
-        document.head.appendChild(s);
-      });
+
+    // 주문 데이터 저장
+    currentOrderData.value = orderData;
+
+    // 팝업 열기
+    console.log('Opening payment popup...');
+    const popup = window.open(
+      '/order/popup',
+      'payment',
+      'width=500,height=600,scrollbars=yes,resizable=yes'
+    );
+
+    if (!popup) {
+      throw new Error('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.');
     }
 
-    const form = document.getElementById('inicisForm');
-    if (!form) {
-      throw new Error('결제 폼을 찾을 수 없습니다.');
-    }
-
-    // 인코딩 설정
-    const ensureInput = (name, value) => {
-      let input = form.querySelector(`input[name="${name}"]`);
-      if (!input) {
-        input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = name;
-        form.appendChild(input);
-      }
-      input.value = value != null ? String(value) : '';
+    // 팝업이 로드될 때까지 기다린 후 데이터 전송
+    const sendPaymentParams = () => {
+      console.log('Sending payment params to popup:', inicisResponse);
+      popup.postMessage({
+        type: 'PAYMENT_PARAMS',
+        data: inicisResponse
+      }, '*');
     };
-    ensureInput('charset', 'UTF-8');
 
-    console.log('Calling INIStdPay.pay...');
-    window.INIStdPay.pay('inicisForm');
-    
+    // 팝업에서 메시지 수신 대기
+    const handleMessage = (event) => {
+      console.log('Received message from popup:', event.data);
+
+      if (event.data.type === 'POPUP_READY') {
+        console.log('Popup is ready, sending payment params');
+        sendPaymentParams();
+      } else if (event.data.type === 'PAYMENT_RESULT') {
+        window.removeEventListener('message', handleMessage);
+        handlePaymentResult(event.data.data);
+      } else if (event.data.type === 'PAYMENT_ERROR') {
+        window.removeEventListener('message', handleMessage);
+        handlePaymentError(event.data.error);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    // 안전을 위해 1초 후에도 데이터 전송 (팝업이 준비되지 않았을 경우를 대비)
+    setTimeout(() => {
+      sendPaymentParams();
+    }, 1000);
+
+    // 팝업이 닫힌 경우 처리
+    const checkClosed = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(checkClosed);
+        window.removeEventListener('message', handleMessage);
+        isProcessing.value = false;
+        console.log('Payment popup was closed');
+      }
+    }, 1000);
+
   } catch (error) {
     console.error('Payment process error:', error);
     alert(`결제 시작 중 오류가 발생했습니다: ${error.message}`);
-  } finally {
     isProcessing.value = false;
   }
+}
+
+// 결제 결과 처리
+const handlePaymentResult = async (paymentData) => {
+  console.log('Processing payment result:', paymentData);
+
+  if (paymentData.success) {
+    try {
+      // 주문 생성 요청 - 저장된 주문 정보와 결제 정보를 함께 전송
+      console.log('Creating order after successful payment...');
+      console.log('Payment data received:', paymentData);
+      console.log('Current order data:', currentOrderData.value);
+
+      if (!currentOrderData.value) {
+        throw new Error('주문 정보를 찾을 수 없습니다.');
+      }
+
+      const orderRequestPayload = {
+        // 주문 기본 정보 (OrderRequest 필드와 일치)
+        orderNumber: currentOrderData.value.orderNumber,
+        memberId: currentOrderData.value.memberId,
+        items: currentOrderData.value.items, // { productId: Long, quantity: Integer }
+        usedPoints: currentOrderData.value.usedPoints,
+
+        // 결제 정보 (OrderRequest 필드와 일치)
+        authToken: paymentData.authToken,
+        authUrl: paymentData.authUrl,
+        netCancelUrl: paymentData.netCancelUrl,
+        price: paymentData.price ||
+               (currentOrderData.value.finalPaymentAmount > 0 ? currentOrderData.value.finalPaymentAmount.toString() : null) ||
+               (currentOrderData.value.totalAmount > 0 ? currentOrderData.value.totalAmount.toString() : null) ||
+               total.value.toString(),
+        mid: paymentData.mid,
+
+        // 결제 방법 정보 (OrderRequest 필드와 일치)
+        paymentMethod: paymentData.payMethod || 'CREDIT_CARD',
+        usedMileage: currentOrderData.value.usedPoints ? parseFloat(currentOrderData.value.usedPoints) : 0.0
+      };
+
+      console.log('=== Order Request Debug ===');
+      console.log('paymentData:', paymentData);
+      console.log('paymentData.price:', paymentData.price, typeof paymentData.price);
+      console.log('currentOrderData.value:', currentOrderData.value);
+      console.log('currentOrderData.finalPaymentAmount:', currentOrderData.value.finalPaymentAmount, typeof currentOrderData.value.finalPaymentAmount);
+      console.log('currentOrderData.totalAmount:', currentOrderData.value.totalAmount, typeof currentOrderData.value.totalAmount);
+      console.log('Fallback values:');
+      console.log('- paymentData.price || "not found":', paymentData.price || "not found");
+      console.log('- finalPaymentAmount?.toString():', currentOrderData.value.finalPaymentAmount?.toString() || "not found");
+      console.log('- totalAmount?.toString():', currentOrderData.value.totalAmount?.toString() || "not found");
+      console.log('Final price used:', orderRequestPayload.price, typeof orderRequestPayload.price);
+
+      console.log('Sending order creation request:', orderRequestPayload);
+
+      const orderResponse = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderRequestPayload),
+      });
+
+      if (orderResponse.ok) {
+        const orderResult = await orderResponse.json();
+        console.log('Order created:', orderResult);
+
+        // 주문 완료 페이지로 이동 (알럿 제거)
+        router.push(`/order/complete?orderNumber=${orderResult.id || paymentData.orderNumber}`);
+      } else {
+        const errorText = await orderResponse.text();
+        console.error('Order creation failed:', errorText);
+        console.error('주문 생성 중 오류가 발생했습니다.');
+        // 에러 페이지로 이동하거나 토스트 알림 사용 고려
+      }
+    } catch (error) {
+      console.error('Order creation error:', error);
+      console.error('주문 처리 중 오류가 발생했습니다.');
+      // 에러 페이지로 이동하거나 토스트 알림 사용 고려
+    }
+  } else {
+    console.log('Payment failed:', paymentData.resultMsg);
+    console.error(`결제가 실패했습니다: ${paymentData.resultMsg}`);
+    // 결제 실패 페이지로 이동하거나 토스트 알림 사용 고려
+  }
+
+  isProcessing.value = false;
+}
+
+// 결제 오류 처리
+const handlePaymentError = (error) => {
+  console.error('Payment error:', error);
+  alert(`결제 처리 중 오류가 발생했습니다: ${error}`);
+  isProcessing.value = false;
 }
 
 onMounted(() => {

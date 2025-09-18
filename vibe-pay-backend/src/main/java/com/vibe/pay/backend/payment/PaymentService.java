@@ -17,6 +17,8 @@ import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -41,6 +43,8 @@ public class PaymentService {
 
     @Autowired
     private OrderMapper orderMapper;
+    
+
 
 
     @Autowired
@@ -72,11 +76,16 @@ public class PaymentService {
     private String inicisAcceptmethod;
 
     public Payment createPayment(Payment payment) {
+        // Generate payment ID if not already set
+        if (payment.getId() == null) {
+            String paymentId = generatePaymentId();
+            payment.setId(paymentId);
+        }
         paymentMapper.insert(payment);
         return payment;
     }
 
-    public Optional<Payment> getPaymentById(Long id) {
+    public Optional<Payment> getPaymentById(String id) {
         return Optional.ofNullable(paymentMapper.findById(id));
     }
 
@@ -84,7 +93,7 @@ public class PaymentService {
         return paymentMapper.findAll();
     }
 
-    public Payment updatePayment(Long id, Payment paymentDetails) {
+    public Payment updatePayment(String id, Payment paymentDetails) {
         Payment existingPayment = paymentMapper.findById(id);
         if (existingPayment == null) {
             throw new RuntimeException("Payment not found with id " + id);
@@ -94,7 +103,7 @@ public class PaymentService {
         return paymentDetails;
     }
 
-    public void deletePayment(Long id) {
+    public void deletePayment(String id) {
         paymentMapper.delete(id);
     }
 
@@ -117,16 +126,17 @@ public class PaymentService {
             paymentMethod = paymentMethod + "+MILEAGE";
         }
 
-        // 결제 프로세스 시작: 주문번호 채번 먼저
-        // 실제 주문번호 채번
-        Long orderNumber = orderMapper.getNextOrderSequence();
-        log.info("Generated order number: {}", orderNumber);
+        // 결제 프로세스 시작: 주문번호는 화면에서 전달된 값 사용
+        // 주문번호를 별도로 생성하지 않고, 요청에서 전달받은 값 사용 예정
+        // 현재는 임시로 타임스탬프 기반 ID 생성
+        String orderNumber = "ORD" + System.currentTimeMillis();
+        log.info("Using order number: {}", orderNumber);
 
         // 인터페이스 로그 먼저 기록 (결제 요청 시작) - 주문번호로 로그 저장
         String requestJson = convertToJson(request);
         
         PaymentInterfaceRequestLog initiateLog = new PaymentInterfaceRequestLog(
-                orderNumber, // 주문번호 사용
+                orderNumber, // 주문번호 사용 (String)
                 "INITIATE_PAYMENT",
                 requestJson,
                 null // response는 없음
@@ -138,7 +148,7 @@ public class PaymentService {
         inicisParams.setMid(inicisMid);
 
         // 채번된 주문번호를 OID로 직접 사용
-        String oid = String.valueOf(orderNumber);
+        String oid = orderNumber;
         inicisParams.setOid(oid);
 
         // price: 요청 금액을 정수 문자열로 변환
@@ -193,7 +203,7 @@ public class PaymentService {
                 + "&timestamp=" + inicisParams.getTimestamp();
         inicisParams.setVerification(sha256Hex(verificationText));
 
-        // 환경설정 기반 콜백 URL
+        // 환경설정 기반 콜백 URL (팝업 방식으로 변경)
         inicisParams.setReturnUrl(inicisReturnUrl);
         inicisParams.setCloseUrl(inicisCloseUrl);
 
@@ -201,7 +211,7 @@ public class PaymentService {
         String inicisParamsJson = convertToJson(inicisParams);
         
         PaymentInterfaceRequestLog parametersLog = new PaymentInterfaceRequestLog(
-                orderNumber, // 주문번호 사용
+                orderNumber, // 주문번호 사용 (String)
                 "INICIS_PARAMETERS_GENERATED",
                 inicisParamsJson,
                 null // response는 없음
@@ -219,29 +229,21 @@ public class PaymentService {
                 request.getAuthToken(), request.getAuthUrl(), request.getOrderNumber(), request.getPrice());
         
         // 주문번호 추출 (orderNumber 필드 사용)
-        String orderNumberStr = request.getOrderNumber();
-        Long orderNumber = null;
+        String orderNumber = request.getOrderNumber();
         
-        if (orderNumberStr != null) {
-            try {
-                // orderNumber가 주문번호 자체이므로 바로 파싱
-                orderNumber = Long.parseLong(orderNumberStr);
-                log.info("Extracted order number: {}", orderNumber);
-            } catch (Exception e) {
-                log.error("Failed to parse order number: {}", orderNumberStr, e);
-                throw new RuntimeException("Invalid order number format: " + orderNumberStr);
-            }
-        }
-
-        if (orderNumber == null) {
+        if (orderNumber == null || orderNumber.trim().isEmpty()) {
             throw new RuntimeException("Order number is required");
         }
+        
+        log.info("Extracted order number: {}", orderNumber);
+
+
 
         // 승인 요청 인터페이스 로그 먼저 기록
         String approvalRequestJson = convertToJson(request);
         
         PaymentInterfaceRequestLog approvalRequestLog = new PaymentInterfaceRequestLog(
-                orderNumber, // 주문번호 사용
+                orderNumber, // 주문번호 사용 (String)
                 "INICIS_APPROVAL_REQUEST",
                 approvalRequestJson,
                 null // response는 없음
@@ -287,7 +289,7 @@ public class PaymentService {
         String summaryRequestJson = convertToJson(request);
         
         PaymentInterfaceRequestLog approvalResponseLog = new PaymentInterfaceRequestLog(
-                orderNumber, // 주문번호 사용
+                orderNumber, // 주문번호 사용 (String)
                 "INICIS_APPROVAL_RESPONSE",
                 summaryRequestJson,
                 actualResponse // 실제 이니시스 응답 또는 null
@@ -297,18 +299,30 @@ public class PaymentService {
         // 성공한 경우에만 Payment 테이블에 저장
         Payment payment = null;
         if (approvalSuccess) {
-            // 주문번호를 기반으로 원래 결제 요청 정보를 찾기 위해 인터페이스 로그에서 조회
-            Long memberId = extractMemberIdFromLogs(orderNumber);
-            String paymentMethod = extractPaymentMethodFromLogs(orderNumber);
+            // request에서 직접 memberId와 paymentMethod 가져오기
+            Long memberId = request.getMemberId();
+            String paymentMethod = request.getPaymentMethod();
+            
+            // 필수 필드 검증
+            if (memberId == null) {
+                throw new RuntimeException("Member ID is required for payment confirmation");
+            }
+            if (paymentMethod == null || paymentMethod.trim().isEmpty()) {
+                throw new RuntimeException("Payment method is required for payment confirmation");
+            }
+            
+            // Generate payment ID using separate payment ID generation logic
+            String paymentId = generatePaymentId();
             
             payment = new Payment(
-                    memberId, // 실제 memberId 사용
+                    memberId, // request에서 가져온 memberId 사용
                     Double.valueOf(request.getPrice()),
                     paymentMethod,
                     "INICIS",
                     "SUCCESS",
                     transactionId
             );
+            payment.setId(paymentId); // Set the generated payment ID
             paymentMapper.insert(payment);
             
             log.info("Payment record created successfully: paymentId={}, memberId={}, order={}", 
@@ -321,47 +335,17 @@ public class PaymentService {
 
         return payment;
     }
-    
-    // 승인 결과를 담는 내부 클래스
-    private static class ApprovalResult {
-        private final boolean success;
-        private final String responseBody;
-        private final String transactionId;
 
-        public ApprovalResult(boolean success, String responseBody, String transactionId) {
-            this.success = success;
-            this.responseBody = responseBody;
-            this.transactionId = transactionId;
-        }
-
-        public boolean isSuccess() {
-            return success;
-        }
-
-        public String getResponseBody() {
-            return responseBody;
-        }
-
-        public String getTransactionId() {
-            return transactionId;
-        }
-    }
-    
     private ApprovalResult processInicisApprovalWithResponse(PaymentConfirmRequest request) {
-        Long orderNumber = null;
+        String orderNumber = null;
         String requestJson = null;
         String responseJson = null;
         
         try {
             // 주문번호 추출 (로그 저장용)
-            String orderNumberStr = request.getOrderNumber();
-            if (orderNumberStr != null) {
-                try {
-                    // orderNumber가 주문번호 자체이므로 바로 파싱
-                    orderNumber = Long.parseLong(orderNumberStr);
-                } catch (Exception e) {
-                    log.warn("Failed to extract order number for logging: {}", orderNumberStr);
-                }
+            orderNumber = request.getOrderNumber();
+            if (orderNumber == null || orderNumber.trim().isEmpty()) {
+                log.warn("No order number provided for logging");
             }
             
             String timestamp = String.valueOf(System.currentTimeMillis());
@@ -394,9 +378,9 @@ public class PaymentService {
             log.info("Inicis approval response: {}", inicisResponse);
             
             // 실제 API 호출 로그 저장
-            if (orderNumber != null) {
+            if (orderNumber != null && !orderNumber.trim().isEmpty()) {
                 PaymentInterfaceRequestLog apiCallLog = new PaymentInterfaceRequestLog(
-                        orderNumber, // 주문번호를 ID로 사용
+                        orderNumber, // 주문번호 사용 (String)
                         "INICIS_API_CALL",
                         requestJson,
                         responseJson
@@ -438,9 +422,9 @@ public class PaymentService {
             log.error("Error during Inicis approval process", e);
             
             // 에러 발생 시에도 로그 저장
-            if (orderNumber != null && requestJson != null) {
+            if (orderNumber != null && !orderNumber.trim().isEmpty() && requestJson != null) {
                 PaymentInterfaceRequestLog errorLog = new PaymentInterfaceRequestLog(
-                        orderNumber,
+                        orderNumber, // 주문번호 사용 (String)
                         "INICIS_API_CALL",
                         requestJson,
                         null // 에러 시 response 없음
@@ -465,7 +449,7 @@ public class PaymentService {
     }
 
     @Transactional
-    public Payment cancelPayment(Long paymentId) {
+    public Payment cancelPayment(String paymentId) {
         Payment payment = paymentMapper.findById(paymentId);
         if (payment == null) {
             throw new RuntimeException("Payment not found with id " + paymentId);
@@ -628,49 +612,20 @@ public class PaymentService {
         }
     }
 
-    // 로그에서 memberId 추출 (JSON 형식에서)
-    private Long extractMemberIdFromLogs(Long orderNumber) {
-        try {
-            List<PaymentInterfaceRequestLog> logs = paymentInterfaceRequestLogMapper.findByPaymentId(orderNumber);
-            for (PaymentInterfaceRequestLog log : logs) {
-                if ("INITIATE_PAYMENT".equals(log.getRequestType())) {
-                    String payload = log.getRequestPayload();
-                    // JSON 형태에서 memberId 추출: {"memberId":1,"amount":10000,...}
-                    if (payload != null && payload.contains("\"memberId\":")) {
-                        // 간단한 JSON 파싱 (정규식 사용)
-                        String memberIdStr = payload.replaceAll(".*\"memberId\":(\\d+).*", "$1");
-                        return Long.parseLong(memberIdStr);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.error("Failed to extract memberId from logs for order: {}", orderNumber, e);
-        }
+    // Payment ID 생성 메소드 (17자리 고정 형식)
+    private String generatePaymentId() {
+        // Payment ID 형식: YYYYMMDDP + 8자리 시퀀스 (총 17자리)
+        // 예: 20250918P00000001
         
-        // 기본값 대신 예외 발생
-        throw new RuntimeException("Cannot extract memberId from payment logs for order: " + orderNumber);
-    }
-
-    // 로그에서 paymentMethod 추출 (JSON 형식에서)
-    private String extractPaymentMethodFromLogs(Long orderNumber) {
-        try {
-            List<PaymentInterfaceRequestLog> logs = paymentInterfaceRequestLogMapper.findByPaymentId(orderNumber);
-            for (PaymentInterfaceRequestLog log : logs) {
-                if ("INITIATE_PAYMENT".equals(log.getRequestType())) {
-                    String payload = log.getRequestPayload();
-                    // JSON 형태에서 paymentMethod 추출: {"paymentMethod":"CREDIT_CARD",...}
-                    if (payload != null && payload.contains("\"paymentMethod\":")) {
-                        // 간단한 JSON 파싱 (정규식 사용)
-                        String methodStr = payload.replaceAll(".*\"paymentMethod\":\"([^\"]+)\".*", "$1");
-                        return methodStr;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.error("Failed to extract paymentMethod from logs for order: {}", orderNumber, e);
-        }
+        // 현재 날짜를 YYYYMMDD 형식으로 가져오기
+        java.time.LocalDate today = java.time.LocalDate.now();
+        String datePrefix = today.format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
         
-        // 기본값 대신 예외 발생
-        throw new RuntimeException("Cannot extract paymentMethod from payment logs for order: " + orderNumber);
+        // 시퀀스 번호 가져오기 (8자리로 패딩)
+        Long sequence = paymentMapper.getNextPaymentSequence();
+        String sequenceStr = String.format("%08d", sequence);
+        
+        // 최종 Payment ID 생성: YYYYMMDDP + 8자리 시퀀스
+        return datePrefix + "P" + sequenceStr;
     }
 }
