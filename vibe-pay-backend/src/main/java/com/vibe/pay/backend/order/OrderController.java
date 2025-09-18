@@ -13,6 +13,17 @@ public class OrderController {
     @Autowired
     private OrderService orderService;
 
+    // 주문번호 채번 API
+    @GetMapping("/generateOrderNumber")
+    public ResponseEntity<String> generateOrderNumber() {
+        try {
+            String orderNumber = orderService.generateOrderNumber();
+            return ResponseEntity.ok(orderNumber);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     // 주문 생성 API (결제 승인 로직 포함)
     @PostMapping
     public ResponseEntity<Order> createOrder(@RequestBody OrderRequest orderRequest) {

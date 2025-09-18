@@ -385,13 +385,13 @@ public class PaymentService {
             headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
             RestTemplate rt = new RestTemplate();
 
-            ResponseEntity<String> response = rt.postForEntity(request.getAuthUrl(), new HttpEntity<>(params, headers), String.class);
-            String responseBody = response.getBody();
+            ResponseEntity<InicisApprovalResponse> response = rt.postForEntity(request.getAuthUrl(), new HttpEntity<>(params, headers), InicisApprovalResponse.class);
+            InicisApprovalResponse inicisResponse = response.getBody();
             
             // 실제 응답 정보를 JSON으로 저장
             responseJson = convertToJson(response);
             
-            log.info("Inicis approval response: {}", responseBody);
+            log.info("Inicis approval response: {}", inicisResponse);
             
             // 실제 API 호출 로그 저장
             if (orderNumber != null) {
@@ -407,36 +407,32 @@ public class PaymentService {
             // 응답 파싱 및 성공 여부 확인
             boolean success = false;
             String tid = null;
-            if (responseBody != null && !responseBody.trim().isEmpty()) {
-                try {
-                    InicisApprovalResponse inicisResponse = objectMapper.readValue(responseBody, InicisApprovalResponse.class);
-                    tid = inicisResponse.getTid(); // 거래 ID 추출 (망취소 시 필요)
+            String responseBodyStr = null;
+            
+            if (inicisResponse != null) {
+                tid = inicisResponse.getTid(); // 거래 ID 추출 (망취소 시 필요)
+                responseBodyStr = convertToJson(inicisResponse); // ApprovalResult에 넘겨줄 JSON 문자열
+                
+                // 승인 성공 조건: resultCode가 "0000"이고 요청 금액과 응답 금액이 일치
+                if ("0000".equals(inicisResponse.getResultCode())) {
+                    String requestPrice = request.getPrice();
+                    String responsePrice = inicisResponse.getTotPrice();
                     
-                    // 승인 성공 조건: resultCode가 "0000"이고 요청 금액과 응답 금액이 일치
-                    if ("0000".equals(inicisResponse.getResultCode())) {
-                        String requestPrice = request.getPrice();
-                        String responsePrice = inicisResponse.getTotPrice();
-                        
-                        if (requestPrice != null && requestPrice.equals(responsePrice)) {
-                            success = true;
-                            log.info("Payment approval successful: tid={}, amount={}", 
-                                    inicisResponse.getTid(), responsePrice);
-                        } else {
-                            log.error("Payment amount mismatch: requested={}, response={}", 
-                                    requestPrice, responsePrice);
-                        }
+                    if (requestPrice != null && requestPrice.equals(responsePrice)) {
+                        success = true;
+                        log.info("Payment approval successful: tid={}, amount={}", 
+                                inicisResponse.getTid(), responsePrice);
                     } else {
-                        log.error("Payment approval failed: resultCode={}, resultMsg={}", 
-                                inicisResponse.getResultCode(), inicisResponse.getResultMsg());
+                        log.error("Payment amount mismatch: requested={}, response={}", 
+                                requestPrice, responsePrice);
                     }
-                } catch (Exception e) {
-                    log.error("Failed to parse Inicis response: {}", responseBody, e);
-                    // JSON 파싱 실패 시 기존 방식으로 폴백
-                    success = responseBody.contains("\"resultCode\":\"0000\"");
+                } else {
+                    log.error("Payment approval failed: resultCode={}, resultMsg={}", 
+                            inicisResponse.getResultCode(), inicisResponse.getResultMsg());
                 }
             }
             
-            return new ApprovalResult(success, responseBody, tid);
+            return new ApprovalResult(success, responseBodyStr, tid);
             
         } catch (Exception e) {
             log.error("Error during Inicis approval process", e);

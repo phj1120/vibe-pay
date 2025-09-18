@@ -364,17 +364,45 @@ const proceedToPayment = async () => {
     isProcessing.value = true;
     console.log('Starting payment process...');
     
-    // 주문 정보 저장
+    // 1. 주문번호 채번
+    console.log('Generating order number...');
+    const orderNumberResponse = await fetch('/api/orders/generateOrderNumber');
+    if (!orderNumberResponse.ok) {
+      throw new Error('주문번호 생성에 실패했습니다.');
+    }
+    const orderNumber = await orderNumberResponse.text();
+    console.log('Generated order number:', orderNumber);
+
+    // 주문 정보 저장 (orderNumber 포함)
     const orderData = {
+      orderNumber: orderNumber,
       memberId: selectedMember.value.id,
-      items: orderItems.value.map(item => ({ 
-        productId: item.productId, 
-        quantity: item.quantity 
+      items: orderItems.value.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity
       })),
-      usedPoints: usedPoints.value
+      usedPoints: usedPoints.value,
+      totalAmount: total.value,
+      finalPaymentAmount: total.value - usedPoints.value
     };
-    localStorage.setItem('pendingOrder', JSON.stringify(orderData));
-    
+
+    // 쿠키에 주문 정보 저장 (SSR에서 읽을 수 있도록)
+    const pendingOrderCookie = useCookie('pendingOrder', {
+      maxAge: 60 * 60, // 1시간
+      secure: false, // 개발환경
+      sameSite: 'none', // 더 관대한 설정
+      httpOnly: false,
+      domain: undefined, // 도메인 제한 없음
+      path: '/' // 전체 경로에서 접근 가능
+    });
+
+    console.log('=== Cookie Save Debug ===');
+    console.log('Order data to save:', orderData);
+
+    pendingOrderCookie.value = JSON.stringify(orderData);
+
+    console.log('Cookie saved:', pendingOrderCookie.value);
+
     // 상품명 생성
     const productNames = orderItems.value.map(item => item.name).join(', ');
     const goodName = productNames.length > 50 ? productNames.substring(0, 47) + '...' : productNames;

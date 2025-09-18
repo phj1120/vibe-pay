@@ -216,7 +216,9 @@ const processPaymentReturn = async () => {
         orderId: paymentId
       }
       
-      localStorage.removeItem('pendingOrder')
+      // 쿠키 삭제
+      const pendingOrderCookie = useCookie('pendingOrder')
+      pendingOrderCookie.value = null
       console.log('Payment completed successfully!')
     } else {
       // 결제 실패

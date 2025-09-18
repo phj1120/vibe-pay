@@ -56,8 +56,9 @@ const goHome = () => {
 }
 
 onMounted(() => {
-  // 임시 주문 정보 정리
-  localStorage.removeItem('pendingOrder')
+  // 임시 주문 정보 정리 - 쿠키 삭제
+  const pendingOrderCookie = useCookie('pendingOrder')
+  pendingOrderCookie.value = null
 })
 </script>
 

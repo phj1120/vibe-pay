@@ -9,3 +9,5 @@
       5번에 저장된 주문의 정보들을 기반으로 주문을 진행하는 /api/orders/order 를 호출하고,
       이 API 내에서 주문 정보를 insert 하고 paymentService.confirmPayment 를 호출 하도록 바꿀거야.
    7. 주문이 완료 되면 주문 완료 페이지로, 실패 했을 경우 실패 페이지로 이동.
+
+    
