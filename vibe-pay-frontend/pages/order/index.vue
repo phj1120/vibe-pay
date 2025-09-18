@@ -430,7 +430,7 @@ const proceedToPayment = async () => {
     const popup = window.open(
       '/order/popup',
       'payment',
-      'width=500,height=600,scrollbars=yes,resizable=yes'
+      'width=840,height=600,scrollbars=yes,resizable=yes'
     );
 
     if (!popup) {
