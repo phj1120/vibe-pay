@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 public class PaymentInterfaceRequestLog {
 
-    private Long id;
+    private Long logId;
     private String paymentId;
     private String requestType;
 
@@ -26,12 +26,12 @@ public class PaymentInterfaceRequestLog {
     }
 
     // Getters and Setters
-    public Long getId() {
-        return id;
+    public Long getLogId() {
+        return logId;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setLogId(Long logId) {
+        this.logId = logId;
     }
 
     public String getPaymentId() {

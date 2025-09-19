@@ -3,7 +3,7 @@
 <mapper namespace="com.vibe.pay.backend.member.MemberMapper">
 
     <resultMap id="memberResultMap" type="com.vibe.pay.backend.member.Member">
-        <id property="id" column="id"/>
+        <id property="memberId" column="member_id"/>
         <result property="name" column="name"/>
         <result property="shippingAddress" column="shipping_address"/>
         <result property="phoneNumber" column="phone_number"/>
@@ -12,23 +12,23 @@
     </resultMap>
 
     <select id="findAll" resultMap="memberResultMap">
-        SELECT id, name, shipping_address, phone_number, email, created_at FROM member
+        SELECT member_id, name, shipping_address, phone_number, email, created_at FROM member
     </select>
 
-    <select id="findById" resultMap="memberResultMap">
-        SELECT id, name, shipping_address, phone_number, email, created_at FROM member WHERE id = #{id}
+    <select id="findByMemberId" resultMap="memberResultMap">
+        SELECT member_id, name, shipping_address, phone_number, email, created_at FROM member WHERE member_id = #{memberId}
     </select>
 
-    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert" useGeneratedKeys="true" keyProperty="memberId">
         INSERT INTO member (name, shipping_address, phone_number, email, created_at) VALUES (#{name}, #{shippingAddress}, #{phoneNumber}, #{email}, #{createdAt})
     </insert>
 
     <update id="update">
-        UPDATE member SET name = #{name}, shipping_address = #{shippingAddress}, phone_number = #{phoneNumber}, email = #{email} WHERE id = #{id}
+        UPDATE member SET name = #{name}, shipping_address = #{shippingAddress}, phone_number = #{phoneNumber}, email = #{email} WHERE member_id = #{memberId}
     </update>
 
     <delete id="delete">
-        DELETE FROM member WHERE id = #{id}
+        DELETE FROM member WHERE member_id = #{memberId}
     </delete>
 
 </mapper>

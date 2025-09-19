@@ -26,7 +26,7 @@
         <v-skeleton-loader type="table-row@5"></v-skeleton-loader>
       </template>
       <template v-slot:item.actions="{ item }">
-        <v-btn small color="primary" @click.stop="goToOrderForm(item.id)">Order</v-btn>
+        <v-btn small color="primary" @click.stop="goToOrderForm(item.memberId)">Order</v-btn>
       </template>
     </v-data-table>
     </v-card>
@@ -42,7 +42,7 @@ const loading = ref(true)
 const members = ref([])
 
 const headers = [
-  { title: 'ID', key: 'id', align: 'start' },
+  { title: 'ID', key: 'memberId', align: 'start' },
   { title: 'Name', key: 'name' },
   { title: 'Address', key: 'shippingAddress' },
   { title: 'Phone Number', key: 'phoneNumber' },
@@ -68,7 +68,7 @@ const fetchMembers = async () => {
 }
 
 const goToMemberDetail = (event, { item }) => {
-  router.push(`/members/${item.id}`)
+  router.push(`/members/${item.memberId}`)
 }
 
 const goToOrderForm = (memberId) => {

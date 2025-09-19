@@ -19,8 +19,8 @@ public class RewardPointsService {
         return rewardPoints;
     }
 
-    public Optional<RewardPoints> getRewardPointsById(Long id) {
-        return Optional.ofNullable(rewardPointsMapper.findById(id));
+    public Optional<RewardPoints> getRewardPointsById(Long rewardPointsId) {
+        return Optional.ofNullable(rewardPointsMapper.findByRewardPointsId(rewardPointsId));
     }
 
     public RewardPoints getRewardPointsByMemberId(Long memberId) {

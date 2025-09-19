@@ -4,8 +4,10 @@ import java.time.LocalDateTime;
 
 public class Payment {
 
-    private String id;
+    private String paymentId;
     private Long memberId;
+    private String orderId;
+    private String claimId;
     private Double amount;
     private String paymentMethod;
     private String pgCompany;
@@ -17,8 +19,10 @@ public class Payment {
     public Payment() {
     }
 
-    public Payment(Long memberId, Double amount, String paymentMethod, String pgCompany, String status, String transactionId) {
+    public Payment(Long memberId, String orderId, String claimId, Double amount, String paymentMethod, String pgCompany, String status, String transactionId) {
         this.memberId = memberId;
+        this.orderId = orderId;
+        this.claimId = claimId;
         this.amount = amount;
         this.paymentMethod = paymentMethod;
         this.pgCompany = pgCompany;
@@ -28,12 +32,28 @@ public class Payment {
     }
 
     // Getters and Setters
-    public String getId() {
-        return id;
+    public String getPaymentId() {
+        return paymentId;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setPaymentId(String paymentId) {
+        this.paymentId = paymentId;
+    }
+
+    public String getOrderId() {
+        return orderId;
+    }
+
+    public void setOrderId(String orderId) {
+        this.orderId = orderId;
+    }
+
+    public String getClaimId() {
+        return claimId;
+    }
+
+    public void setClaimId(String claimId) {
+        this.claimId = claimId;
     }
 
     public Long getMemberId() {

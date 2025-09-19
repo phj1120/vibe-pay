@@ -17,25 +17,25 @@ public class ProductService {
         return product;
     }
 
-    public Optional<Product> getProductById(Long id) {
-        return Optional.ofNullable(productMapper.findById(id));
+    public Optional<Product> getProductById(Long productId) {
+        return Optional.ofNullable(productMapper.findByProductId(productId));
     }
 
     public List<Product> getAllProducts() {
         return productMapper.findAll();
     }
 
-    public Product updateProduct(Long id, Product productDetails) {
-        Product existingProduct = productMapper.findById(id);
+    public Product updateProduct(Long productId, Product productDetails) {
+        Product existingProduct = productMapper.findByProductId(productId);
         if (existingProduct == null) {
-            throw new RuntimeException("Product not found with id " + id);
+            throw new RuntimeException("Product not found with id " + productId);
         }
-        productDetails.setId(id); // Ensure the ID is set for update
+        productDetails.setProductId(productId); // Ensure the ID is set for update
         productMapper.update(productDetails);
         return productDetails;
     }
 
-    public void deleteProduct(Long id) {
-        productMapper.delete(id);
+    public void deleteProduct(Long productId) {
+        productMapper.delete(productId);
     }
 }

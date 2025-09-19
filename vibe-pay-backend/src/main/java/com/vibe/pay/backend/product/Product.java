@@ -2,7 +2,7 @@ package com.vibe.pay.backend.product;
 
 public class Product {
 
-    private Long id;
+    private Long productId;
     private String name;
     private Double price;
 
@@ -16,12 +16,12 @@ public class Product {
     }
 
     // Getters and Setters
-    public Long getId() {
-        return id;
+    public Long getProductId() {
+        return productId;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setProductId(Long productId) {
+        this.productId = productId;
     }
 
     public String getName() {

@@ -1,6 +1,7 @@
 <template>
   <div class="popup-wrap">
-    <div class="popup-card">
+    <!-- 결제 준비 중 상태 -->
+    <div v-if="uiState === 'preparing'" class="popup-card">
       <div class="spinner" aria-label="loading"></div>
       <h2>결제창을 준비 중입니다...</h2>
       <p class="hint">
@@ -11,6 +12,56 @@
         이 페이지는 결제 과정에서만 열립니다. 직접 접근하셨다면 닫아주세요.
       </div>
       <button class="close-btn" type="button" @click="handleClose">창 닫기</button>
+    </div>
+
+    <!-- 결제 완료 상태 -->
+    <div v-else-if="uiState === 'success'" class="popup-card success-card">
+      <div class="result-icon success">✅</div>
+      <h2 class="result-title">결제 완료</h2>
+      <p class="result-message">
+        결제가 성공적으로 완료되었습니다.<br>
+        주문 정보를 처리하고 있습니다
+        <span class="loading-dots"></span>
+      </p>
+      <div class="payment-info">
+        <div class="info-row">
+          <span>주문번호:</span>
+          <span>{{ paymentResult?.orderNumber }}</span>
+        </div>
+        <div class="info-row">
+          <span>결제금액:</span>
+          <span>{{ formatPrice(paymentResult?.price) }}원</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 결제 실패 상태 -->
+    <div v-else-if="uiState === 'failed'" class="popup-card error-card">
+      <div class="result-icon error">❌</div>
+      <h2 class="result-title">결제 실패</h2>
+      <p class="result-message">
+        결제 처리 중 문제가 발생했습니다.<br>
+        잠시 후 이전 페이지로 돌아갑니다
+        <span class="loading-dots"></span>
+      </p>
+      <div class="error-details">
+        <p><strong>오류 코드:</strong> {{ paymentResult?.resultCode }}</p>
+        <p><strong>오류 메시지:</strong> {{ paymentResult?.resultMsg }}</p>
+      </div>
+    </div>
+
+    <!-- 오류 상태 -->
+    <div v-else-if="uiState === 'error'" class="popup-card error-card">
+      <div class="result-icon error">⚠️</div>
+      <h2 class="result-title">오류 발생</h2>
+      <p class="result-message">
+        결제 처리 중 오류가 발생했습니다.<br>
+        잠시 후 이전 페이지로 돌아갑니다
+        <span class="loading-dots"></span>
+      </p>
+      <div class="error-details">
+        <p><strong>오류 내용:</strong> {{ errorMessage }}</p>
+      </div>
     </div>
 
     <!-- 이니시스 결제 폼 -->
@@ -41,6 +92,15 @@
 <script setup lang="ts">
 const directAccess = ref(false);
 const paymentParams = ref(null);
+const uiState = ref('preparing'); // 'preparing', 'success', 'failed', 'error'
+const paymentResult = ref(null);
+const errorMessage = ref('');
+
+// 가격 포맷팅 함수
+const formatPrice = (price) => {
+  if (!price) return '0';
+  return parseInt(price).toLocaleString();
+};
 
 onMounted(async () => {
   console.log('Payment popup mounted');
@@ -54,7 +114,7 @@ onMounted(async () => {
   console.log('Sending POPUP_READY message to parent');
   window.opener.postMessage({ type: 'POPUP_READY' }, '*');
 
-  // 부모창으로부터 결제 파라미터 수신 대기
+  // 부모창으로부터 결제 파라미터 및 결과 수신 대기
   const handleMessage = async (event) => {
     console.log('Received message in popup:', event.data);
 
@@ -62,12 +122,38 @@ onMounted(async () => {
       paymentParams.value = event.data.data;
       console.log('Payment params received via postMessage:', paymentParams.value);
 
-      // 메시지 리스너 제거
-      window.removeEventListener('message', handleMessage);
-
       // 이니시스 SDK 로드 및 결제 실행
       await loadInicisSDK();
       executePayment();
+    }
+    else if (event.data.type === 'PAYMENT_RESULT') {
+      // 결제 결과 처리
+      paymentResult.value = event.data.data;
+      uiState.value = event.data.data.success ? 'success' : 'failed';
+
+      // 결제 성공시 부모창에 주문 생성 요청
+      if (event.data.data.success) {
+        console.log('Payment successful, sending order creation request to parent');
+        window.opener.postMessage({
+          type: 'CREATE_ORDER',
+          data: event.data.data
+        }, '*');
+      }
+
+      // 2초 후 창 닫기
+      setTimeout(() => {
+        window.close();
+      }, 2000);
+    }
+    else if (event.data.type === 'PAYMENT_ERROR') {
+      // 결제 오류 처리
+      uiState.value = 'error';
+      errorMessage.value = event.data.error;
+
+      // 2초 후 창 닫기
+      setTimeout(() => {
+        window.close();
+      }, 2000);
     }
   };
 
@@ -75,7 +161,7 @@ onMounted(async () => {
 
   // 5초 후에도 파라미터를 받지 못했으면 에러 처리
   setTimeout(() => {
-    if (!paymentParams.value) {
+    if (!paymentParams.value && uiState.value === 'preparing') {
       window.removeEventListener('message', handleMessage);
       console.error('결제 파라미터를 받지 못했습니다.');
       alert('결제 파라미터를 받지 못했습니다. 창을 닫고 다시 시도해주세요.');
@@ -131,6 +217,85 @@ function handleClose() {
   text-align: center;
   box-shadow: 0 10px 30px rgba(0,0,0,.35);
 }
+
+/* 결제 성공 카드 */
+.success-card {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+/* 결제 실패/오류 카드 */
+.error-card {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+/* 결과 아이콘 */
+.result-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+}
+
+.result-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.result-message {
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+/* 결제 정보 */
+.payment-info {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.info-row:last-child {
+  margin-bottom: 0;
+}
+
+/* 오류 상세 */
+.error-details {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 20px;
+  text-align: left;
+}
+
+.error-details p {
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+/* 로딩 점 애니메이션 */
+.loading-dots {
+  display: inline-block;
+}
+
+.loading-dots::after {
+  content: '';
+  animation: dots 1.5s infinite;
+}
+
+@keyframes dots {
+  0%, 20% { content: ''; }
+  40% { content: '.'; }
+  60% { content: '..'; }
+  80%, 100% { content: '...'; }
+}
+
 .spinner {
   width: 42px;
   height: 42px;

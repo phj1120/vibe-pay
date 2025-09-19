@@ -4,14 +4,15 @@ import java.time.LocalDateTime;
 
 public class Order {
 
-    private String id;
+    private String orderId;
+    private String claimId;
     private Long memberId;
     private LocalDateTime orderDate;
     private Double totalAmount;
     private Double usedRewardPoints;
     private Double finalPaymentAmount;
     private String status;
-    private String paymentId; // New field
+
 
     public Order() {
     }
@@ -25,12 +26,20 @@ public class Order {
         this.status = status;
     }
 
-    public String getId() {
-        return id;
+    public String getOrderId() {
+        return orderId;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setOrderId(String orderId) {
+        this.orderId = orderId;
+    }
+
+    public String getClaimId() {
+        return claimId;
+    }
+
+    public void setClaimId(String claimId) {
+        this.claimId = claimId;
     }
 
     public Long getMemberId() {
@@ -81,11 +90,5 @@ public class Order {
         this.status = status;
     }
 
-    public String getPaymentId() {
-        return paymentId;
-    }
 
-    public void setPaymentId(String paymentId) {
-        this.paymentId = paymentId;
-    }
 }

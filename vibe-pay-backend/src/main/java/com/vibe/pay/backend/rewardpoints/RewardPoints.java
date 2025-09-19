@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 public class RewardPoints {
 
-    private Long id;
+    private Long rewardPointsId;
     private Long memberId; // Foreign key to Member
     private Double points;
     private LocalDateTime lastUpdated;
@@ -20,12 +20,12 @@ public class RewardPoints {
     }
 
     // Getters and Setters
-    public Long getId() {
-        return id;
+    public Long getRewardPointsId() {
+        return rewardPointsId;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setRewardPointsId(Long rewardPointsId) {
+        this.rewardPointsId = rewardPointsId;
     }
 
     public Long getMemberId() {

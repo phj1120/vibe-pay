@@ -3,35 +3,40 @@
 <mapper namespace="com.vibe.pay.backend.order.OrderItemMapper">
 
     <resultMap id="orderItemResultMap" type="com.vibe.pay.backend.order.OrderItem">
-        <id property="id" column="id"/>
+        <id property="orderItemId" column="order_item_id"/>
         <result property="orderId" column="order_id"/>
+        <result property="claimId" column="claim_id"/>
         <result property="productId" column="product_id"/>
         <result property="quantity" column="quantity"/>
         <result property="priceAtOrder" column="price_at_order"/>
     </resultMap>
 
     <select id="findAll" resultMap="orderItemResultMap">
-        SELECT id, order_id, product_id, quantity, price_at_order FROM order_item
+        SELECT order_item_id, order_id, claim_id, product_id, quantity, price_at_order FROM order_item
     </select>
 
-    <select id="findById" resultMap="orderItemResultMap">
-        SELECT id, order_id, product_id, quantity, price_at_order FROM order_item WHERE id = #{id}
+    <select id="findByOrderItemId" resultMap="orderItemResultMap">
+        SELECT order_item_id, order_id, claim_id, product_id, quantity, price_at_order FROM order_item WHERE order_item_id = #{orderItemId}
     </select>
 
     <select id="findByOrderId" resultMap="orderItemResultMap">
-        SELECT id, order_id, product_id, quantity, price_at_order FROM order_item WHERE order_id = #{orderId}
+        SELECT order_item_id, order_id, claim_id, product_id, quantity, price_at_order FROM order_item WHERE order_id = #{orderId}
     </select>
 
-    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO order_item (order_id, product_id, quantity, price_at_order) VALUES (#{orderId}, #{productId}, #{quantity}, #{priceAtOrder})
+    <select id="findByOrderIdAndClaimId" resultMap="orderItemResultMap">
+        SELECT order_item_id, order_id, claim_id, product_id, quantity, price_at_order FROM order_item WHERE order_id = #{orderId} AND claim_id = #{claimId}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="orderItemId">
+        INSERT INTO order_item (order_id, claim_id, product_id, quantity, price_at_order) VALUES (#{orderId}, #{claimId}, #{productId}, #{quantity}, #{priceAtOrder})
     </insert>
 
     <update id="update">
-        UPDATE order_item SET order_id = #{orderId}, product_id = #{productId}, quantity = #{quantity}, price_at_order = #{priceAtOrder} WHERE id = #{id}
+        UPDATE order_item SET order_id = #{orderId}, claim_id = #{claimId}, product_id = #{productId}, quantity = #{quantity}, price_at_order = #{priceAtOrder} WHERE order_item_id = #{orderItemId}
     </update>
 
     <delete id="delete">
-        DELETE FROM order_item WHERE id = #{id}
+        DELETE FROM order_item WHERE order_item_id = #{orderItemId}
     </delete>
 
 </mapper>

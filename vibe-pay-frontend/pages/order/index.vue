@@ -61,7 +61,7 @@
           v-model="selectedProduct"
           :items="products"
           item-title="name"
-          item-value="id"
+          item-value="productId"
           return-object
           variant="outlined"
           placeholder="상품을 선택해주세요"
@@ -92,7 +92,7 @@
         <div class="order-items">
           <div 
             v-for="item in orderItems" 
-            :key="item.id"
+            :key="item.productId"
             class="order-item"
           >
             <div class="item-info">
@@ -237,7 +237,7 @@ const isProcessing = ref(false)
 watch(selectedMember, async (newMember) => {
   if (newMember) {
     try {
-      const response = await fetch(`/api/rewardpoints/member/${newMember.id}`);
+      const response = await fetch(`/api/rewardpoints/member/${newMember.memberId}`);
       if (!response.ok) throw new Error('Failed to fetch points');
       const data = await response.json();
       newMember.points = data.points;
@@ -279,7 +279,7 @@ const fetchInitialData = async () => {
     // URL 쿼리에서 회원 ID 확인
     const memberIdFromQuery = route.query.memberId;
     if (memberIdFromQuery) {
-      const foundMember = members.value.find(m => m.id === parseInt(memberIdFromQuery));
+      const foundMember = members.value.find(m => m.memberId === parseInt(memberIdFromQuery));
       if (foundMember) {
         selectedMember.value = foundMember;
       }
@@ -291,11 +291,11 @@ const fetchInitialData = async () => {
 
 const addProductToOrder = (product) => {
   if (!product) return
-  const existingItem = orderItems.value.find(item => item.id === product.id)
+  const existingItem = orderItems.value.find(item => item.productId === product.productId)
   if (existingItem) {
     existingItem.quantity++
   } else {
-    orderItems.value.push({...product, productId: product.id, quantity: 1})
+    orderItems.value.push({...product, quantity: 1})
   }
   selectedProduct.value = null
 }
@@ -308,7 +308,7 @@ const updateQuantity = (item, change) => {
 }
 
 const removeProductFromOrder = (itemToRemove) => {
-  orderItems.value = orderItems.value.filter(item => item.id !== itemToRemove.id)
+  orderItems.value = orderItems.value.filter(item => item.productId !== itemToRemove.productId)
 }
 
 const useAllPoints = () => {
@@ -353,7 +353,7 @@ const proceedToPayment = async () => {
     // 주문 정보 저장 (orderNumber 포함)
     const orderData = {
       orderNumber: orderNumber,
-      memberId: selectedMember.value.id,
+      memberId: selectedMember.value.memberId,
       items: orderItems.value.map(item => ({
         productId: item.productId,
         quantity: item.quantity
@@ -385,7 +385,7 @@ const proceedToPayment = async () => {
     const goodName = productNames.length > 50 ? productNames.substring(0, 47) + '...' : productNames;
 
     const initiatePayload = {
-      memberId: selectedMember.value.id,
+      memberId: selectedMember.value.memberId,
       amount: total.value,
       paymentMethod: 'CREDIT_CARD',
       usedMileage: usedPoints.value, // 적립금 사용량 추가
@@ -453,9 +453,9 @@ const proceedToPayment = async () => {
       if (event.data.type === 'POPUP_READY') {
         console.log('Popup is ready, sending payment params');
         sendPaymentParams();
-      } else if (event.data.type === 'PAYMENT_RESULT') {
-        window.removeEventListener('message', handleMessage);
-        handlePaymentResult(event.data.data);
+      } else if (event.data.type === 'CREATE_ORDER') {
+        // 결제 성공 후 주문 생성 처리
+        handleOrderCreation(event.data.data);
       } else if (event.data.type === 'PAYMENT_ERROR') {
         window.removeEventListener('message', handleMessage);
         handlePaymentError(event.data.error);
@@ -476,6 +476,8 @@ const proceedToPayment = async () => {
         window.removeEventListener('message', handleMessage);
         isProcessing.value = false;
         console.log('Payment popup was closed');
+        // 팝업이 닫힌 경우 사용자에게 알림
+        alert('결제 창이 닫혔습니다. 결제를 다시 시도해주세요.');
       }
     }, 1000);
 
@@ -486,87 +488,82 @@ const proceedToPayment = async () => {
   }
 }
 
-// 결제 결과 처리
-const handlePaymentResult = async (paymentData) => {
-  console.log('Processing payment result:', paymentData);
+// 주문 생성 처리 (결제 성공 후)
+const handleOrderCreation = async (paymentData) => {
+  console.log('Processing order creation:', paymentData);
 
-  if (paymentData.success) {
-    try {
-      // 주문 생성 요청 - 저장된 주문 정보와 결제 정보를 함께 전송
-      console.log('Creating order after successful payment...');
-      console.log('Payment data received:', paymentData);
-      console.log('Current order data:', currentOrderData.value);
+  try {
+    // 주문 생성 요청 - 저장된 주문 정보와 결제 정보를 함께 전송
+    console.log('Creating order after successful payment...');
+    console.log('Payment data received:', paymentData);
+    console.log('Current order data:', currentOrderData.value);
 
-      if (!currentOrderData.value) {
-        throw new Error('주문 정보를 찾을 수 없습니다.');
-      }
-
-      const orderRequestPayload = {
-        // 주문 기본 정보 (OrderRequest 필드와 일치)
-        orderNumber: currentOrderData.value.orderNumber,
-        memberId: currentOrderData.value.memberId,
-        items: currentOrderData.value.items, // { productId: Long, quantity: Integer }
-        usedPoints: currentOrderData.value.usedPoints,
-
-        // 결제 정보 (OrderRequest 필드와 일치)
-        authToken: paymentData.authToken,
-        authUrl: paymentData.authUrl,
-        netCancelUrl: paymentData.netCancelUrl,
-        price: paymentData.price ||
-               (currentOrderData.value.finalPaymentAmount > 0 ? currentOrderData.value.finalPaymentAmount.toString() : null) ||
-               (currentOrderData.value.totalAmount > 0 ? currentOrderData.value.totalAmount.toString() : null) ||
-               total.value.toString(),
-        mid: paymentData.mid,
-
-        // 결제 방법 정보 (OrderRequest 필드와 일치)
-        paymentMethod: paymentData.payMethod || 'CREDIT_CARD',
-        usedMileage: currentOrderData.value.usedPoints ? parseFloat(currentOrderData.value.usedPoints) : 0.0
-      };
-
-      console.log('=== Order Request Debug ===');
-      console.log('paymentData:', paymentData);
-      console.log('paymentData.price:', paymentData.price, typeof paymentData.price);
-      console.log('currentOrderData.value:', currentOrderData.value);
-      console.log('currentOrderData.finalPaymentAmount:', currentOrderData.value.finalPaymentAmount, typeof currentOrderData.value.finalPaymentAmount);
-      console.log('currentOrderData.totalAmount:', currentOrderData.value.totalAmount, typeof currentOrderData.value.totalAmount);
-      console.log('Fallback values:');
-      console.log('- paymentData.price || "not found":', paymentData.price || "not found");
-      console.log('- finalPaymentAmount?.toString():', currentOrderData.value.finalPaymentAmount?.toString() || "not found");
-      console.log('- totalAmount?.toString():', currentOrderData.value.totalAmount?.toString() || "not found");
-      console.log('Final price used:', orderRequestPayload.price, typeof orderRequestPayload.price);
-
-      console.log('Sending order creation request:', orderRequestPayload);
-
-      const orderResponse = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderRequestPayload),
-      });
-
-      if (orderResponse.ok) {
-        const orderResult = await orderResponse.json();
-        console.log('Order created:', orderResult);
-
-        // 주문 완료 페이지로 이동 (알럿 제거)
-        router.push(`/order/complete?orderNumber=${orderResult.id || paymentData.orderNumber}`);
-      } else {
-        const errorText = await orderResponse.text();
-        console.error('Order creation failed:', errorText);
-        console.error('주문 생성 중 오류가 발생했습니다.');
-        // 에러 페이지로 이동하거나 토스트 알림 사용 고려
-      }
-    } catch (error) {
-      console.error('Order creation error:', error);
-      console.error('주문 처리 중 오류가 발생했습니다.');
-      // 에러 페이지로 이동하거나 토스트 알림 사용 고려
+    if (!currentOrderData.value) {
+      throw new Error('주문 정보를 찾을 수 없습니다.');
     }
-  } else {
-    console.log('Payment failed:', paymentData.resultMsg);
-    console.error(`결제가 실패했습니다: ${paymentData.resultMsg}`);
-    // 결제 실패 페이지로 이동하거나 토스트 알림 사용 고려
-  }
 
-  isProcessing.value = false;
+    const orderRequestPayload = {
+      // 주문 기본 정보 (OrderRequest 필드와 일치)
+      orderNumber: currentOrderData.value.orderNumber,
+      memberId: currentOrderData.value.memberId,
+      items: currentOrderData.value.items, // { productId: Long, quantity: Integer }
+      usedPoints: currentOrderData.value.usedPoints,
+
+      // 결제 정보 (OrderRequest 필드와 일치)
+      authToken: paymentData.authToken,
+      authUrl: paymentData.authUrl,
+      netCancelUrl: paymentData.netCancelUrl,
+      price: paymentData.price ||
+             (currentOrderData.value.finalPaymentAmount > 0 ? currentOrderData.value.finalPaymentAmount.toString() : null) ||
+             (currentOrderData.value.totalAmount > 0 ? currentOrderData.value.totalAmount.toString() : null) ||
+             total.value.toString(),
+      mid: paymentData.mid,
+
+      // 결제 방법 정보 (OrderRequest 필드와 일치)
+      paymentMethod: paymentData.payMethod || 'CREDIT_CARD',
+      usedMileage: currentOrderData.value.usedPoints ? parseFloat(currentOrderData.value.usedPoints) : 0.0
+    };
+
+    console.log('=== Order Request Debug ===');
+    console.log('paymentData:', paymentData);
+    console.log('paymentData.price:', paymentData.price, typeof paymentData.price);
+    console.log('currentOrderData.value:', currentOrderData.value);
+    console.log('currentOrderData.finalPaymentAmount:', currentOrderData.value.finalPaymentAmount, typeof currentOrderData.value.finalPaymentAmount);
+    console.log('currentOrderData.totalAmount:', currentOrderData.value.totalAmount, typeof currentOrderData.value.totalAmount);
+    console.log('Fallback values:');
+    console.log('- paymentData.price || "not found":', paymentData.price || "not found");
+    console.log('- finalPaymentAmount?.toString():', currentOrderData.value.finalPaymentAmount?.toString() || "not found");
+    console.log('- totalAmount?.toString():', currentOrderData.value.totalAmount?.toString() || "not found");
+    console.log('Final price used:', orderRequestPayload.price, typeof orderRequestPayload.price);
+
+    console.log('Sending order creation request:', orderRequestPayload);
+
+    const orderResponse = await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderRequestPayload),
+    });
+
+    if (orderResponse.ok) {
+      const orderResult = await orderResponse.json();
+      console.log('Order created:', orderResult);
+
+      // 주문 완료 페이지로 이동 (알럿 제거)
+      router.push(`/order/complete?orderNumber=${orderResult.orderId || paymentData.orderNumber}`);
+    } else {
+      const errorText = await orderResponse.text();
+      console.error('Order creation failed:', errorText);
+      alert('주문 생성 중 오류가 발생했습니다.');
+      router.push('/order');
+    }
+  } catch (error) {
+    console.error('Order creation error:', error);
+    alert('주문 처리 중 오류가 발생했습니다.');
+    router.push('/order');
+  } finally {
+    window.removeEventListener('message', handleMessage);
+    isProcessing.value = false;
+  }
 }
 
 // 결제 오류 처리
@@ -574,6 +571,7 @@ const handlePaymentError = (error) => {
   console.error('Payment error:', error);
   alert(`결제 처리 중 오류가 발생했습니다: ${error}`);
   isProcessing.value = false;
+  router.push('/order');
 }
 
 onMounted(() => {

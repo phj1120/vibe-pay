@@ -2,8 +2,9 @@ package com.vibe.pay.backend.order;
 
 public class OrderItem {
 
-    private Long id;
+    private Long orderItemId;
     private String orderId;
+    private String claimId;
     private Long productId;
     private Integer quantity;
     private Double priceAtOrder;
@@ -11,19 +12,20 @@ public class OrderItem {
     public OrderItem() {
     }
 
-    public OrderItem(String orderId, Long productId, Integer quantity, Double priceAtOrder) {
+    public OrderItem(String orderId, String claimId, Long productId, Integer quantity, Double priceAtOrder) {
         this.orderId = orderId;
+        this.claimId = claimId;
         this.productId = productId;
         this.quantity = quantity;
         this.priceAtOrder = priceAtOrder;
     }
 
-    public Long getId() {
-        return id;
+    public Long getOrderItemId() {
+        return orderItemId;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setOrderItemId(Long orderItemId) {
+        this.orderItemId = orderItemId;
     }
 
     public String getOrderId() {
@@ -32,6 +34,14 @@ public class OrderItem {
 
     public void setOrderId(String orderId) {
         this.orderId = orderId;
+    }
+
+    public String getClaimId() {
+        return claimId;
+    }
+
+    public void setClaimId(String claimId) {
+        this.claimId = claimId;
     }
 
     public Long getProductId() {

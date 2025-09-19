@@ -16,9 +16,9 @@ public class RewardPointsController {
         return rewardPointsService.createRewardPoints(rewardPoints);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<RewardPoints> getRewardPointsById(@PathVariable Long id) {
-        return rewardPointsService.getRewardPointsById(id)
+    @GetMapping("/{rewardPointsId}")
+    public ResponseEntity<RewardPoints> getRewardPointsById(@PathVariable Long rewardPointsId) {
+        return rewardPointsService.getRewardPointsById(rewardPointsId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

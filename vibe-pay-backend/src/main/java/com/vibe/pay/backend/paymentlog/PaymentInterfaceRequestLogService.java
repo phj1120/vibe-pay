@@ -17,8 +17,8 @@ public class PaymentInterfaceRequestLogService {
         return log;
     }
 
-    public Optional<PaymentInterfaceRequestLog> getLogById(Long id) {
-        return Optional.ofNullable(paymentInterfaceRequestLogMapper.findById(id));
+    public Optional<PaymentInterfaceRequestLog> getLogById(Long logId) {
+        return Optional.ofNullable(paymentInterfaceRequestLogMapper.findByLogId(logId));
     }
 
     public List<PaymentInterfaceRequestLog> getAllLogs() {

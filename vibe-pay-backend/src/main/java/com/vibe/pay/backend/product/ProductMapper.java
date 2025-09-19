@@ -6,8 +6,8 @@ import java.util.List;
 @Mapper
 public interface ProductMapper {
     List<Product> findAll();
-    Product findById(Long id);
+    Product findByProductId(Long productId);
     void insert(Product product);
     void update(Product product);
-    void delete(Long id);
+    void delete(Long productId);
 }

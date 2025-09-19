@@ -6,9 +6,9 @@ import java.util.List;
 @Mapper
 public interface RewardPointsMapper {
     List<RewardPoints> findAll();
-    RewardPoints findById(Long id);
+    RewardPoints findByRewardPointsId(Long rewardPointsId);
     RewardPoints findByMemberId(Long memberId);
     void insert(RewardPoints rewardPoints);
     void update(RewardPoints rewardPoints);
-    void delete(Long id);
+    void delete(Long rewardPointsId);
 }

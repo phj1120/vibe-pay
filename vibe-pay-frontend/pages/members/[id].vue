@@ -165,9 +165,9 @@ const goBack = () => {
   router.go(-1)
 }
 
-const fetchMemberData = async (id) => {
+const fetchMemberData = async (memberId) => {
   try {
-    const response = await fetch(`/api/members/${id}`)
+    const response = await fetch(`/api/members/${memberId}`)
     if (!response.ok) throw new Error('Failed to fetch member data')
     member.value = await response.json()
   } catch (error) {

@@ -7,12 +7,17 @@ import java.util.List;
 @Mapper
 public interface PaymentMapper {
     List<Payment> findAll();
-    Payment findById(String id);
+    Payment findByPaymentId(String paymentId);
+    Payment findByOrderId(String orderId);
     void insert(Payment payment);
     void update(Payment payment);
-    void delete(String id);
+    void delete(String paymentId);
     
     // 결제번호 생성을 위한 시퀀스 조회
     @Select("SELECT nextval('payment_id_seq')")
     Long getNextPaymentSequence();
+    
+    // 클레임번호 생성을 위한 시퀀스 조회
+    @Select("SELECT nextval('claim_id_seq')")
+    Long getNextClaimSequence();
 }

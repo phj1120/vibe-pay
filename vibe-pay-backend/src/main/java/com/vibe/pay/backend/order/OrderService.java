@@ -35,8 +35,8 @@ public class OrderService {
     private PaymentService paymentService;
 
 
-    public Optional<Order> getOrderById(String id) {
-        return Optional.ofNullable(orderMapper.findById(id));
+    public Optional<Order> getOrderById(String orderId) {
+        return Optional.ofNullable(orderMapper.findByOrderId(orderId));
     }
 
     public List<Order> getOrdersByMemberId(Long memberId) {
@@ -49,15 +49,16 @@ public class OrderService {
 
     @Transactional
     public Order cancelOrder(String orderId) {
-        Order order = orderMapper.findById(orderId);
+        Order order = orderMapper.findByOrderId(orderId);
         if (order == null) {
             throw new RuntimeException("Order not found with id " + orderId);
         }
 
         if (!"CANCELLED".equals(order.getStatus())) {
             // 1. Cancel associated payment
-            if (order.getPaymentId() != null) {
-                paymentService.cancelPayment(order.getPaymentId());
+            Payment payment = paymentService.findByOrderId(orderId);
+            if (payment != null) {
+                paymentService.cancelPayment(payment.getPaymentId());
             }
 
             // 2. Refund reward points
@@ -85,6 +86,20 @@ public class OrderService {
         
         return dateStr + "O" + sequenceStr;
     }
+    
+    // 2. 클레임 번호 채번 (날짜 + C + 시퀀스)
+    public String generateClaimNumber() {
+        // 현재 날짜를 YYYYMMDD 형식으로 포맷
+        String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        
+        // DB 시퀀스에서 다음 번호 조회
+        Long sequence = orderMapper.getNextClaimSequence();
+        
+        // 8자리로 패딩 (00000001 ~ 99999999)
+        String sequenceStr = String.format("%08d", sequence);
+        
+        return dateStr + "C" + sequenceStr;
+    }
 
     // 주문 생성 + 결제 승인
     @Transactional
@@ -110,12 +125,12 @@ public class OrderService {
 
         // 4-2. 결제 승인 성공 시 주문 생성
         Order order = new Order();
-        order.setId(orderRequest.getOrderNumber()); // 주문번호를 ID로 설정
+        order.setOrderId(orderRequest.getOrderNumber()); // 주문번호를 orderId로 설정
+        // claim_id는 주문 취소/클레임 시에만 사용 (현재는 NULL)
         order.setMemberId(orderRequest.getMemberId());
         order.setUsedRewardPoints(orderRequest.getUsedPoints() != null ? orderRequest.getUsedPoints().doubleValue() : 0.0);
         order.setOrderDate(LocalDateTime.now());
         order.setStatus("PAID"); // 결제 완료 상태
-        order.setPaymentId(payment.getId());
 
         // 주문 상품 정보 처리 및 총액 계산
         double calculatedTotalAmount = 0.0;
@@ -152,7 +167,8 @@ public class OrderService {
 
         // 주문 상품 저장
         for (OrderItem item : orderItems) {
-            item.setOrderId(order.getId());
+            item.setOrderId(order.getOrderId());
+            // claim_id는 주문 취소/클레임 시에만 사용 (현재는 NULL)
             orderItemMapper.insert(item);
         }
 

@@ -30,30 +30,30 @@ public class MemberService {
 
         // Create initial reward points for the new member
         // Assuming 0 initial points, can be changed
-        rewardPointsService.createRewardPoints(new RewardPoints(member.getId(), 0.0));
+        rewardPointsService.createRewardPoints(new RewardPoints(member.getMemberId(), 0.0));
 
         return member;
     }
 
-    public Optional<Member> getMemberById(Long id) {
-        return Optional.ofNullable(memberMapper.findById(id));
+    public Optional<Member> getMemberById(Long memberId) {
+        return Optional.ofNullable(memberMapper.findByMemberId(memberId));
     }
 
     public List<Member> getAllMembers() {
         return memberMapper.findAll();
     }
 
-    public Member updateMember(Long id, Member memberDetails) {
-        Member existingMember = memberMapper.findById(id);
+    public Member updateMember(Long memberId, Member memberDetails) {
+        Member existingMember = memberMapper.findByMemberId(memberId);
         if (existingMember == null) {
-            throw new RuntimeException("Member not found with id " + id);
+            throw new RuntimeException("Member not found with id " + memberId);
         }
-        memberDetails.setId(id); // Ensure the ID is set for update
+        memberDetails.setMemberId(memberId); // Ensure the ID is set for update
         memberMapper.update(memberDetails);
         return memberDetails;
     }
 
-    public void deleteMember(Long id) {
-        memberMapper.delete(id);
+    public void deleteMember(Long memberId) {
+        memberMapper.delete(memberId);
     }
 }
