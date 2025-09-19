@@ -11,6 +11,7 @@ public class PaymentInitiateRequest {
     private String buyerName;
     private String buyerTel;
     private String buyerEmail;
+    private String orderId;
 
     public Long getMemberId() {
         return memberId;
@@ -74,5 +75,13 @@ public class PaymentInitiateRequest {
 
     public void setUsedMileage(Double usedMileage) {
         this.usedMileage = usedMileage;
+    }
+
+    public String getOrderId() {
+        return orderId;
+    }
+
+    public void setOrderId(String orderId) {
+        this.orderId = orderId;
     }
 }

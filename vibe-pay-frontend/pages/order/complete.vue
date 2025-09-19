@@ -25,7 +25,7 @@
       <div class="order-info-card" v-if="orderInfo">
         <div class="info-row">
           <span class="label">주문번호</span>
-          <span class="value">{{ orderNumber }}</span>
+          <span class="value">{{ orderId }}</span>
         </div>
         <div class="info-row">
           <span class="label">주문일시</span>
@@ -69,20 +69,20 @@
 const route = useRoute();
 const router = useRouter();
 
-const orderNumber = ref(route.query.orderNumber || '');
+const orderId = ref(route.query.orderId || '');
 const orderInfo = ref(null);
 const loading = ref(false);
 
 // 주문 정보 조회
 const fetchOrderInfo = async () => {
-  if (!orderNumber.value) {
+  if (!orderId.value) {
     console.error('Order number not provided');
     return;
   }
 
   loading.value = true;
   try {
-    const response = await fetch(`/api/orders/${orderNumber.value}`);
+    const response = await fetch(`/api/orders/${orderId.value}`);
     if (response.ok) {
       orderInfo.value = await response.json();
       console.log('Order info loaded:', orderInfo.value);

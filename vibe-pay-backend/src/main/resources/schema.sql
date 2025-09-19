@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS reward_points (
 -- Order Table
 CREATE TABLE IF NOT EXISTS orders (
                                       order_id VARCHAR(17),
+                                      ord_seq INTEGER NOT NULL,
+                                      ord_proc_seq INTEGER NOT NULL,
                                       claim_id VARCHAR(17),
                                       member_id BIGINT NOT NULL,
                                       order_date TIMESTAMP NOT NULL,
@@ -45,7 +47,7 @@ CREATE TABLE IF NOT EXISTS orders (
                                       final_payment_amount DOUBLE PRECISION NOT NULL,
                                       status VARCHAR(50) NOT NULL,
                                       CONSTRAINT fk_member_order FOREIGN KEY (member_id) REFERENCES member(member_id),
-                                      CONSTRAINT pk PRIMARY KEY (order_id, claim_id)
+                                      CONSTRAINT pk PRIMARY KEY (order_id, ord_seq, ord_proc_seq)
 );
 
 -- Payment Table
@@ -53,7 +55,7 @@ CREATE TABLE IF NOT EXISTS payment (
                                        payment_id VARCHAR(17) PRIMARY KEY,
                                        member_id BIGINT NOT NULL,
                                        order_id VARCHAR(17) NOT NULL,
-                                       claim_id VARCHAR(17) NOT NULL,
+                                       claim_id VARCHAR(17),
                                        amount DOUBLE PRECISION NOT NULL,
                                        payment_method VARCHAR(50) NOT NULL,
                                        pg_company VARCHAR(50) NOT NULL,
@@ -68,12 +70,12 @@ CREATE TABLE IF NOT EXISTS payment (
 CREATE TABLE IF NOT EXISTS order_item (
     order_item_id BIGSERIAL PRIMARY KEY,
     order_id VARCHAR(17) NOT NULL,
-    claim_id VARCHAR(17),
+    ord_seq INTEGER NOT NULL,
+    ord_proc_seq INTEGER NOT NULL,
     product_id BIGINT NOT NULL,
     quantity INTEGER NOT NULL,
     price_at_order DOUBLE PRECISION NOT NULL,
-    CONSTRAINT fk_order_item_product FOREIGN KEY (product_id) REFERENCES product(product_id),
-    CONSTRAINT fk_order_item_order FOREIGN KEY (order_id, claim_id) REFERENCES orders(order_id, claim_id)
+    CONSTRAINT fk_order_item_product FOREIGN KEY (product_id) REFERENCES product(product_id)
 );
 
 
@@ -154,6 +156,7 @@ CREATE SEQUENCE IF NOT EXISTS reward_points_id_seq
 -- 초기 데이터 세팅
 insert into member (member_id, name, email, phone_number) values (nextval('member_id_seq'), '현준', 'test@test.com', '010-1234-5678');
 insert into product values (nextval('product_id_seq'), '상품1', 1000);
+insert into product values (nextval('product_id_seq'), '상품2', 1000);
 insert into reward_points (reward_points_id, member_id, points, last_updated) values (nextval('reward_points_id_seq'), currval('member_id_seq'), 1000, now());
 
 
@@ -164,3 +167,5 @@ select * from orders;
 select * from reward_points;
 select * from product;
 select * from member;
+
+select nextval('payment_id_seq')

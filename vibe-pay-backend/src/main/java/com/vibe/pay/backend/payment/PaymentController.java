@@ -129,10 +129,10 @@ public class PaymentController {
                 confirmRequest.setAuthUrl(params.get("authUrl"));
                 confirmRequest.setNetCancelUrl(params.get("netCancelUrl"));
                 confirmRequest.setMid(params.get("mid"));
-                confirmRequest.setOrderNumber(params.get("oid"));
+                confirmRequest.setOrderId(params.get("oid"));
                 confirmRequest.setPrice(params.get("price"));
 
-                log.info("Processing payment confirmation for OID: {}", confirmRequest.getOrderNumber());
+                log.info("Processing payment confirmation for OID: {}", confirmRequest.getOrderId());
 
                 // 결제 승인 처리
                 var confirmedPayment = paymentService.confirmPayment(confirmRequest);

@@ -347,20 +347,20 @@ const proceedToPayment = async () => {
     if (!orderNumberResponse.ok) {
       throw new Error('주문번호 생성에 실패했습니다.');
     }
-    const orderNumber = await orderNumberResponse.text();
-    console.log('Generated order number:', orderNumber);
+    const orderId = await orderNumberResponse.text();
+    console.log('Generated order ID:', orderId);
 
-    // 주문 정보 저장 (orderNumber 포함)
+    // 주문 정보 저장 (orderId 포함)
     const orderData = {
-      orderNumber: orderNumber,
+      orderId: orderId,
       memberId: selectedMember.value.memberId,
       items: orderItems.value.map(item => ({
         productId: item.productId,
         quantity: item.quantity
       })),
       usedPoints: usedPoints.value,
-      totalAmount: total.value,
-      finalPaymentAmount: total.value - usedPoints.value
+      totalAmount: subtotal.value,
+      finalPaymentAmount: total.value
     };
 
     // 쿠키에 주문 정보 저장 (SSR에서 읽을 수 있도록)
@@ -393,6 +393,7 @@ const proceedToPayment = async () => {
       buyerName: selectedMember.value.name,
       buyerTel: selectedMember.value.phoneNumber,
       buyerEmail: selectedMember.value.email,
+      orderId: orderId,
     };
 
     // 결제 준비
@@ -453,11 +454,6 @@ const proceedToPayment = async () => {
       if (event.data.type === 'POPUP_READY') {
         console.log('Popup is ready, sending payment params');
         sendPaymentParams();
-      } else if (event.data.type === 'CREATE_ORDER') {
-        clearInterval(checkClosed);
-        window.removeEventListener('message', handleMessage);
-        // 결제 성공 후 주문 생성 처리
-        handleOrderCreation(event.data.data);
       } else if (event.data.type === 'PAYMENT_RESULT') {
         // progress-popup.vue에서 전달받은 결제 결과 처리
         console.log('Received PAYMENT_RESULT from progress-popup');
@@ -521,7 +517,7 @@ const handleOrderCreation = async (paymentData) => {
 
     const orderRequestPayload = {
       // 주문 기본 정보 (OrderRequest 필드와 일치)
-      orderNumber: currentOrderData.value.orderNumber,
+      orderNumber: currentOrderData.value.orderId,
       memberId: currentOrderData.value.memberId,
       items: currentOrderData.value.items, // { productId: Long, quantity: Integer }
       usedPoints: currentOrderData.value.usedPoints,
@@ -566,7 +562,7 @@ const handleOrderCreation = async (paymentData) => {
       console.log('Order created:', orderResult);
 
       // 주문 완료 페이지로 이동 (알럿 제거)
-      router.push(`/order/complete?orderNumber=${orderResult.orderId || paymentData.orderNumber}`);
+      router.push(`/order/complete?orderId=${orderResult.orderId || paymentData.orderNumber}`);
     } else {
       const errorText = await orderResponse.text();
       console.error('Order creation failed:', errorText);
@@ -578,7 +574,6 @@ const handleOrderCreation = async (paymentData) => {
     alert('주문 처리 중 오류가 발생했습니다.');
     router.push('/order');
   } finally {
-    window.removeEventListener('message', handleMessage);
     isProcessing.value = false;
   }
 }

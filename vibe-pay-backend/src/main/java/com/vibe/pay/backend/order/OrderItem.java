@@ -4,7 +4,8 @@ public class OrderItem {
 
     private Long orderItemId;
     private String orderId;
-    private String claimId;
+    private Integer ordSeq;
+    private Integer ordProcSeq;
     private Long productId;
     private Integer quantity;
     private Double priceAtOrder;
@@ -12,9 +13,10 @@ public class OrderItem {
     public OrderItem() {
     }
 
-    public OrderItem(String orderId, String claimId, Long productId, Integer quantity, Double priceAtOrder) {
+    public OrderItem(String orderId, Integer ordSeq, Integer ordProcSeq, Long productId, Integer quantity, Double priceAtOrder) {
         this.orderId = orderId;
-        this.claimId = claimId;
+        this.ordSeq = ordSeq;
+        this.ordProcSeq = ordProcSeq;
         this.productId = productId;
         this.quantity = quantity;
         this.priceAtOrder = priceAtOrder;
@@ -36,12 +38,20 @@ public class OrderItem {
         this.orderId = orderId;
     }
 
-    public String getClaimId() {
-        return claimId;
+    public Integer getOrdSeq() {
+        return ordSeq;
     }
 
-    public void setClaimId(String claimId) {
-        this.claimId = claimId;
+    public void setOrdSeq(Integer ordSeq) {
+        this.ordSeq = ordSeq;
+    }
+
+    public Integer getOrdProcSeq() {
+        return ordProcSeq;
+    }
+
+    public void setOrdProcSeq(Integer ordProcSeq) {
+        this.ordProcSeq = ordProcSeq;
     }
 
     public Long getProductId() {

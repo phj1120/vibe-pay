@@ -158,8 +158,8 @@ onMounted(() => {
       if (window.opener) {
         console.log('부모창에 결제 결과 전달');
         window.opener.postMessage({
-          type: paymentResult.value.success ? "CREATE_ORDER" : "PAYMENT_ERROR",
-          data: paymentResult.value.success ? JSON.parse(JSON.stringify(paymentResult.value)) : paymentResult.value.resultMsg
+          type: "PAYMENT_RESULT",
+          data: JSON.parse(JSON.stringify(paymentResult.value))
         }, "*");
       }
 

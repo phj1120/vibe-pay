@@ -135,10 +135,11 @@ public class PaymentService {
         log.info("Generated payment ID: {}", paymentId);
 
         // 결제 프로세스 시작: 주문번호는 화면에서 전달된 값 사용
-        // 주문번호를 별도로 생성하지 않고, 요청에서 전달받은 값 사용 예정
-        // 현재는 임시로 타임스탬프 기반 ID 생성
-        String orderNumber = "ORD" + System.currentTimeMillis();
-        log.info("Using order number: {}", orderNumber);
+        String orderId = request.getOrderId();
+        if (orderId == null || orderId.trim().isEmpty()) {
+            throw new RuntimeException("Order ID is required for payment initiation");
+        }
+        log.info("Using provided order ID: {}", orderId);
 
         // 인터페이스 로그 먼저 기록 (결제 요청 시작) - 결제ID로 로그 저장
         String requestJson = convertToJson(request);
@@ -156,7 +157,7 @@ public class PaymentService {
         inicisParams.setMid(inicisMid);
 
         // 채번된 주문번호를 OID로 직접 사용
-        String oid = orderNumber;
+        String oid = orderId;
         inicisParams.setOid(oid);
 
         // price: 요청 금액을 정수 문자열로 변환
@@ -226,7 +227,7 @@ public class PaymentService {
         );
         paymentInterfaceRequestLogMapper.insert(parametersLog);
 
-        log.info("Payment initiation parameters issued for paymentId={}, order={}, oid={}", paymentId, orderNumber, oid);
+        log.info("Payment initiation parameters issued for paymentId={}, order={}, oid={}", paymentId, orderId, oid);
         return inicisParams;
     }
 
@@ -234,16 +235,16 @@ public class PaymentService {
     public Payment confirmPayment(PaymentConfirmRequest request) {
         log.info("Processing payment confirmation: {}", request);
         log.info("Request details - authToken: {}, authUrl: {}, orderNumber: {}, price: {}", 
-                request.getAuthToken(), request.getAuthUrl(), request.getOrderNumber(), request.getPrice());
+                request.getAuthToken(), request.getAuthUrl(), request.getOrderId(), request.getPrice());
         
-        // 주문번호 추출 (orderNumber 필드 사용)
-        String orderNumber = request.getOrderNumber();
-        
-        if (orderNumber == null || orderNumber.trim().isEmpty()) {
-            throw new RuntimeException("Order number is required");
+        // 주문번호 추출 (orderId 필드 사용)
+        String orderId = request.getOrderId();
+
+        if (orderId == null || orderId.trim().isEmpty()) {
+            throw new RuntimeException("Order ID is required");
         }
-        
-        log.info("Extracted order number: {}", orderNumber);
+
+        log.info("Extracted order ID: {}", orderId);
 
         // 결제 ID를 미리 생성 (로그에 일관되게 사용)
         String paymentId = generatePaymentId();
@@ -266,7 +267,7 @@ public class PaymentService {
         String actualResponse = null;
         
         if (request.getAuthToken() != null && request.getAuthUrl() != null) {
-                log.info("Starting Inicis approval process for order: {}", orderNumber);
+                log.info("Starting Inicis approval process for order: {}", orderId);
             try {
                 // 실제 이니시스 승인 API 호출
                 ApprovalResult result = processInicisApprovalWithResponse(request, paymentId);
@@ -276,20 +277,20 @@ public class PaymentService {
                 if (approvalSuccess) {
                     // 이니시스에서 받은 실제 거래 ID 사용
                     transactionId = result.getTransactionId();
-                    log.info("Payment approved successfully for order: {}, transactionId: {}", orderNumber, transactionId);
+                    log.info("Payment approved successfully for order: {}, transactionId: {}", orderId, transactionId);
                 } else {
-                    log.error("Payment approval failed for order: {}", orderNumber);
+                    log.error("Payment approval failed for order: {}", orderId);
                     // 승인 실패 시 망취소 시도
                     if (request.getNetCancelUrl() != null) {
-                        log.info("Attempting net cancel due to approval failure for order: {}", orderNumber);
+                        log.info("Attempting net cancel due to approval failure for order: {}", orderId);
                         safeNetCancel(request.getNetCancelUrl(), request.getAuthToken());
                     }
                 }
             } catch (Exception e) {
-                log.error("Error during Inicis approval process for order: {}", orderNumber, e);
+                log.error("Error during Inicis approval process for order: {}", orderId, e);
                 // 에러 발생 시 망취소 시도
                 if (request.getNetCancelUrl() != null) {
-                    log.info("Attempting net cancel due to error for order: {}", orderNumber);
+                    log.info("Attempting net cancel due to error for order: {}", orderId);
                     safeNetCancel(request.getNetCancelUrl(), request.getAuthToken());
                 }
             }
@@ -323,7 +324,7 @@ public class PaymentService {
             
             payment = new Payment(
                     memberId, // request에서 가져온 memberId 사용
-                    orderNumber, // 주문번호 설정
+                    orderId, // 주문번호 설정
                     null, // claim_id는 주문 취소/클레임 시에만 사용 (현재는 NULL)
                     Double.valueOf(request.getPrice()),
                     paymentMethod,
@@ -334,11 +335,11 @@ public class PaymentService {
             payment.setPaymentId(paymentId); // 미리 생성된 paymentId 사용
             paymentMapper.insert(payment);
             
-            log.info("Payment record created successfully: paymentId={}, memberId={}, order={}", 
-                    payment.getPaymentId(), memberId, orderNumber);
+            log.info("Payment record created successfully: paymentId={}, memberId={}, order={}",
+                    payment.getPaymentId(), memberId, orderId);
         } else {
             // 실패한 경우 Payment 테이블에는 저장하지 않음
-            log.info("Payment failed, no record created in Payment table for order: {}", orderNumber);
+            log.info("Payment failed, no record created in Payment table for order: {}", orderId);
             throw new RuntimeException("Payment approval failed");
         }
 
@@ -352,9 +353,9 @@ public class PaymentService {
         
         try {
             // 주문번호 추출 (로그 저장용)
-            orderNumber = request.getOrderNumber();
+            orderNumber = request.getOrderId();
             if (orderNumber == null || orderNumber.trim().isEmpty()) {
-                log.warn("No order number provided for logging");
+                log.warn("No order ID provided for logging");
             }
             
             String timestamp = String.valueOf(System.currentTimeMillis());

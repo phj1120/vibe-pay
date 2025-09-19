@@ -108,7 +108,7 @@ public class OrderService {
         PaymentConfirmRequest paymentConfirmRequest = new PaymentConfirmRequest();
         paymentConfirmRequest.setAuthToken(orderRequest.getAuthToken());
         paymentConfirmRequest.setAuthUrl(orderRequest.getAuthUrl());
-        paymentConfirmRequest.setOrderNumber(orderRequest.getOrderNumber());
+        paymentConfirmRequest.setOrderId(orderRequest.getOrderNumber());
         paymentConfirmRequest.setPrice(orderRequest.getPrice());
         paymentConfirmRequest.setMid(orderRequest.getMid());
         paymentConfirmRequest.setNetCancelUrl(orderRequest.getNetCancelUrl());
@@ -126,6 +126,8 @@ public class OrderService {
         // 4-2. 결제 승인 성공 시 주문 생성
         Order order = new Order();
         order.setOrderId(orderRequest.getOrderNumber()); // 주문번호를 orderId로 설정
+        order.setOrdSeq(1); // 첫 번째 주문은 항상 1
+        order.setOrdProcSeq(1); // 주문 시에는 항상 1
         // claim_id는 주문 취소/클레임 시에만 사용 (현재는 NULL)
         order.setMemberId(orderRequest.getMemberId());
         order.setUsedRewardPoints(orderRequest.getUsedPoints() != null ? orderRequest.getUsedPoints().doubleValue() : 0.0);
@@ -166,9 +168,11 @@ public class OrderService {
         orderMapper.insert(order);
 
         // 주문 상품 저장
+        int seqCounter = 1;
         for (OrderItem item : orderItems) {
             item.setOrderId(order.getOrderId());
-            // claim_id는 주문 취소/클레임 시에만 사용 (현재는 NULL)
+            item.setOrdSeq(seqCounter++); // 1, 2, 3...
+            item.setOrdProcSeq(1);
             orderItemMapper.insert(item);
         }
 
