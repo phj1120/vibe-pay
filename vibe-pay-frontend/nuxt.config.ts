@@ -2,17 +2,10 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: ['vuetify-nuxt-module'],
-  
+
   // 백엔드 API 프록시 설정
-  vite: {
-    server: {
-      proxy: {
-        '/api': {
-          target: 'http://localhost:8080',
-          changeOrigin: true,
-        }
-      }
-    }
+  routeRules: {
+    '/api/**': { proxy: 'http://localhost:8080/api/**' }
   },
   
   // Vuetify 테마 설정 (토스 스타일)

@@ -454,9 +454,24 @@ const proceedToPayment = async () => {
         console.log('Popup is ready, sending payment params');
         sendPaymentParams();
       } else if (event.data.type === 'CREATE_ORDER') {
+        clearInterval(checkClosed);
+        window.removeEventListener('message', handleMessage);
         // 결제 성공 후 주문 생성 처리
         handleOrderCreation(event.data.data);
+      } else if (event.data.type === 'PAYMENT_RESULT') {
+        // progress-popup.vue에서 전달받은 결제 결과 처리
+        console.log('Received PAYMENT_RESULT from progress-popup');
+        if (event.data.data.success) {
+          clearInterval(checkClosed);
+          window.removeEventListener('message', handleMessage);
+          handleOrderCreation(event.data.data);
+        } else {
+          clearInterval(checkClosed);
+          window.removeEventListener('message', handleMessage);
+          handlePaymentError(event.data.data.resultMsg || '결제가 실패했습니다.');
+        }
       } else if (event.data.type === 'PAYMENT_ERROR') {
+        clearInterval(checkClosed);
         window.removeEventListener('message', handleMessage);
         handlePaymentError(event.data.error);
       }
@@ -469,15 +484,17 @@ const proceedToPayment = async () => {
       sendPaymentParams();
     }, 1000);
 
-    // 팝업이 닫힌 경우 처리
+    // 팝업이 닫힌 경우 처리 (3초 딜레이 후 체크)
     const checkClosed = setInterval(() => {
       if (popup.closed) {
         clearInterval(checkClosed);
-        window.removeEventListener('message', handleMessage);
-        isProcessing.value = false;
-        console.log('Payment popup was closed');
-        // 팝업이 닫힌 경우 사용자에게 알림
-        alert('결제 창이 닫혔습니다. 결제를 다시 시도해주세요.');
+        // 3초 후에 메시지가 처리되지 않았으면 취소로 간주
+        setTimeout(() => {
+          window.removeEventListener('message', handleMessage);
+          isProcessing.value = false;
+          console.log('Payment popup was closed - likely cancelled by user');
+          alert('결제 창이 닫혔습니다. 결제를 다시 시도해주세요.');
+        }, 3000);
       }
     }, 1000);
 

@@ -38,6 +38,10 @@
 </template>
 
 <script setup>
+// useState로 SSR과 CSR 간 데이터 공유
+const paymentResult = useState('paymentResult', () => null)
+const paymentError = useState('paymentError', () => null)
+
 // 팝업창에서 이니시스 POST 요청 처리 함수
 const processPaymentReturnInPopup = async () => {
   const event = useRequestEvent()
@@ -70,12 +74,18 @@ const processPaymentReturnInPopup = async () => {
       }
       console.log('Parsed POST body:', parsedBody)
 
-      // 이니시스 파라미터 추출
+      // 전체 POST 데이터 로그 (필드명 확인용)
+      console.log('=== All POST parameters ===');
+      for (const [key, value] of Object.entries(parsedBody)) {
+        console.log(`${key}: ${value}`);
+      }
+
+      // 이니시스 파라미터 추출 (다양한 필드명 시도)
       const resultCode = parsedBody.resultCode
       const resultMsg = parsedBody.resultMsg
       const oid = parsedBody.orderNumber || parsedBody.oid
-      const price = parsedBody.price
-      const payMethod = parsedBody.payMethod
+      const price = parsedBody.price || parsedBody.amount
+      const payMethod = parsedBody.payMethod || parsedBody.paymethod || parsedBody.method
       const authToken = parsedBody.authToken
       const authUrl = parsedBody.authUrl
       const netCancelUrl = parsedBody.netCancelUrl
@@ -107,38 +117,17 @@ const processPaymentReturnInPopup = async () => {
         mid
       }
 
-      // 클라이언트로 리다이렉트해서 결제 데이터 전달
-      const redirectUrl = `/order/progress-popup?` +
-        `success=true&` +
-        `resultCode=${encodeURIComponent(paymentData.resultCode)}&` +
-        `resultMsg=${encodeURIComponent(paymentData.resultMsg)}&` +
-        `orderNumber=${encodeURIComponent(paymentData.orderNumber)}&` +
-        `price=${encodeURIComponent(paymentData.price)}&` +
-        `payMethod=${encodeURIComponent(paymentData.payMethod)}&` +
-        `authToken=${encodeURIComponent(paymentData.authToken)}&` +
-        `authUrl=${encodeURIComponent(paymentData.authUrl)}&` +
-        `netCancelUrl=${encodeURIComponent(paymentData.netCancelUrl)}&` +
-        `mid=${encodeURIComponent(paymentData.mid)}`;
-
-      event.node.res.writeHead(302, {
-        'Location': redirectUrl
-      })
-      event.node.res.end()
-      return
+      // useState로 결제 데이터 설정 (SSR과 CSR 간 공유)
+      paymentResult.value = paymentData
+      console.log('useState에 결제 데이터 설정:', paymentData)
 
     } catch (error) {
       console.error('팝업 결제 처리 중 오류:', error)
 
-      // 에러 시에도 리다이렉트로 전달
-      const errorUrl = `/order/progress-popup?` +
-        `success=false&` +
-        `error=${encodeURIComponent(error.message || '알 수 없는 오류')}`;
-
-      event.node.res.writeHead(302, {
-        'Location': errorUrl
-      })
-      event.node.res.end()
-      return
+      // useState로 에러 데이터 설정
+      const errorMessage = error.message || '알 수 없는 오류'
+      paymentError.value = errorMessage
+      console.log('useState에 에러 데이터 설정:', errorMessage)
     }
   } else {
     console.log('GET 요청 또는 다른 메서드:', event.node.req.method)
@@ -146,124 +135,57 @@ const processPaymentReturnInPopup = async () => {
   }
 }
 
-// SSR에서 실행
-if (process.server) {
+// SSR에서 실행 (POST 요청 처리)
+if (import.meta.server) {
+  console.log('SSR 환경에서 processPaymentReturnInPopup 실행 시작')
   processPaymentReturnInPopup()
+  console.log('SSR 환경에서 processPaymentReturnInPopup 실행 완료')
 }
-
-// 반응형 데이터
-const paymentResult = ref(null);
-const paymentError = ref(null);
 
 // 클라이언트에서 실행
 onMounted(() => {
-  console.log('progress-popup mounted');
+  console.log('Vue 컴포넌트 마운트됨');
 
-  if (process.client) {
-    // 전역 데이터에서 결제 결과 확인 (POST 요청 처리 결과)
-    // @ts-ignore
-    const paymentData = globalThis.paymentResultData;
-    // @ts-ignore
-    const errorData = globalThis.paymentErrorData;
+  if (import.meta.client) {
+    // useState에서 결제 데이터 확인
+    console.log('=== 클라이언트에서 useState 데이터 확인 ===');
+    console.log('paymentResult.value:', paymentResult.value);
+    console.log('paymentError.value:', paymentError.value);
 
-    if (paymentData) {
-      console.log('전역 데이터에서 결제 성공 데이터 발견:', paymentData);
+    if (paymentResult.value) {
+      console.log('결제 데이터 발견:', paymentResult.value);
 
-      // popup.vue를 거치지 않고 직접 부모창(order/index.vue)에 CREATE_ORDER 메시지 전달
-      if (window.opener && window.opener.opener) {
-        console.log('최상위 부모창에 주문 생성 요청 직접 전달');
-        window.opener.opener.postMessage({
-          type: "CREATE_ORDER",
-          data: paymentData
-        }, "*");
-
-        // popup.vue도 닫기
-        setTimeout(() => {
-          try {
-            window.opener.close();
-          } catch(e) {
-            console.log('popup.vue 닫기 실패:', e);
-          }
-        }, 500);
-      } else if (window.opener) {
-        console.log('부모창에 결제 결과 전달 (fallback)');
+      if (window.opener) {
+        console.log('부모창에 결제 결과 전달');
         window.opener.postMessage({
-          type: "PAYMENT_RESULT",
-          data: paymentData
+          type: paymentResult.value.success ? "CREATE_ORDER" : "PAYMENT_ERROR",
+          data: paymentResult.value.success ? JSON.parse(JSON.stringify(paymentResult.value)) : paymentResult.value.resultMsg
         }, "*");
       }
 
       setTimeout(() => {
-        console.log('progress-popup 닫기');
+        console.log('팝업 닫기');
         window.close();
       }, 1000);
-    } else if (errorData) {
-      console.log('전역 데이터에서 결제 에러 발견:', errorData);
 
-      // 에러도 최상위 부모창에 직접 전달
-      if (window.opener && window.opener.opener) {
-        console.log('최상위 부모창에 결제 에러 직접 전달');
-        window.opener.opener.postMessage({
-          type: "PAYMENT_ERROR",
-          error: errorData
-        }, "*");
+    } else if (paymentError.value) {
+      console.log('에러 데이터 발견:', paymentError.value);
 
-        // popup.vue도 닫기
-        setTimeout(() => {
-          try {
-            window.opener.close();
-          } catch(e) {
-            console.log('popup.vue 닫기 실패:', e);
-          }
-        }, 500);
-      } else if (window.opener) {
-        console.log('부모창에 에러 메시지 전달 (fallback)');
+      if (window.opener) {
+        console.log('부모창에 에러 메시지 전달');
         window.opener.postMessage({
           type: "PAYMENT_ERROR",
-          error: errorData
+          error: paymentError.value
         }, "*");
       }
 
       setTimeout(() => {
-        console.log('progress-popup 닫기');
+        console.log('팝업 닫기');
         window.close();
       }, 1000);
+
     } else {
-      // URL 파라미터도 확인 (redirect 방식)
-      const urlParams = new URLSearchParams(window.location.search);
-      const resultCode = urlParams.get('resultCode');
-
-      if (resultCode) {
-        console.log('URL에서 결제 결과 파라미터 발견');
-
-        const urlPaymentData = {
-          success: resultCode === '0000',
-          resultCode: resultCode,
-          resultMsg: urlParams.get('resultMsg'),
-          orderNumber: urlParams.get('orderNumber') || urlParams.get('oid'),
-          price: urlParams.get('price'),
-          payMethod: urlParams.get('payMethod'),
-          authToken: urlParams.get('authToken'),
-          authUrl: urlParams.get('authUrl'),
-          netCancelUrl: urlParams.get('netCancelUrl'),
-          mid: urlParams.get('mid')
-        };
-
-        console.log('URL 결제 데이터:', urlPaymentData);
-
-        if (window.opener) {
-          console.log('부모창에 URL 결제 결과 전달');
-          window.opener.postMessage({
-            type: "PAYMENT_RESULT",
-            data: urlPaymentData
-          }, "*");
-
-          setTimeout(() => {
-            console.log('팝업 닫기');
-            window.close();
-          }, 1000);
-        }
-      }
+      console.log('결제 관련 데이터를 찾을 수 없음 - 대기 상태 유지');
     }
   }
 })
