@@ -47,7 +47,7 @@
           color="primary"
           variant="outlined"
           size="large"
-          @click="$router.push('/orders')"
+          @click="goToMemberPage"
           class="action-btn"
         >
           주문내역 확인
@@ -113,6 +113,16 @@ const formatDate = (dateString) => {
 const formatCurrency = (amount) => {
   if (!amount) return '0원';
   return new Intl.NumberFormat('ko-KR').format(amount) + '원';
+};
+
+// 회원 페이지로 이동
+const goToMemberPage = () => {
+  if (orderInfo.value && orderInfo.value.memberId) {
+    router.push(`/members/${orderInfo.value.memberId}`);
+  } else {
+    // 주문 정보가 없을 경우 기본 회원 ID로 이동 (임시)
+    router.push('/members/1');
+  }
 };
 
 // 컴포넌트 마운트 시 주문 정보 조회

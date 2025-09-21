@@ -2,6 +2,7 @@ package com.vibe.pay.backend.order;
 
 import com.vibe.pay.backend.payment.Payment;
 import com.vibe.pay.backend.payment.PaymentService;
+import com.vibe.pay.backend.payment.PaymentMapper;
 import com.vibe.pay.backend.payment.PaymentConfirmRequest;
 import com.vibe.pay.backend.product.Product;
 import com.vibe.pay.backend.product.ProductService;
@@ -32,6 +33,9 @@ public class OrderService {
     private RewardPointsService rewardPointsService;
 
     @Autowired
+    private PaymentMapper paymentMapper;
+
+    @Autowired
     private PaymentService paymentService;
 
 
@@ -41,6 +45,38 @@ public class OrderService {
 
     public List<Order> getOrdersByMemberId(Long memberId) {
         return orderMapper.findByMemberId(memberId);
+    }
+
+    /**
+     * 회원별 주문 상세 정보 조회 (상품 정보 + 결제 정보 포함)
+     */
+    public List<OrderDetailDto> getOrderDetailsWithPaymentsByMemberId(Long memberId) {
+        List<Order> orders = orderMapper.findByMemberId(memberId);
+        List<OrderDetailDto> orderDetails = new ArrayList<>();
+
+        for (Order order : orders) {
+            OrderDetailDto orderDetail = new OrderDetailDto(order);
+
+            // 주문 상품 정보 조회
+            List<OrderItem> orderItems = orderItemMapper.findByOrderIdAndOrdSeqAndOrdProcSeq(
+                    order.getOrderId(), order.getOrdSeq(), order.getOrdProcSeq());
+
+            List<OrderItemDto> orderItemDtos = new ArrayList<>();
+            for (OrderItem orderItem : orderItems) {
+                Optional<Product> product = productService.getProductById(orderItem.getProductId());
+                String productName = product.map(Product::getName).orElse("상품명 없음");
+                orderItemDtos.add(new OrderItemDto(orderItem, productName));
+            }
+            orderDetail.setOrderItems(orderItemDtos);
+
+            // 해당 주문의 모든 결제 정보 조회 (카드 + 포인트)
+            List<Payment> payments = paymentMapper.findByOrderId(order.getOrderId());
+            orderDetail.setPayments(payments);
+
+            orderDetails.add(orderDetail);
+        }
+
+        return orderDetails;
     }
 
     public List<Order> findAll() {

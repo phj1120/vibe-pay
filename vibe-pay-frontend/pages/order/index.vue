@@ -460,6 +460,16 @@ const proceedToPayment = async () => {
         if (event.data.data.success) {
           clearInterval(checkClosed);
           window.removeEventListener('message', handleMessage);
+
+          // 팝업이 닫힐 때까지 기다린 후 페이지 이동
+          const waitForPopupClose = setInterval(() => {
+            if (popup.closed) {
+              clearInterval(waitForPopupClose);
+              router.push(`/order/complete?orderId=${event.data.data.orderNumber}`);
+            }
+          }, 100);
+
+          // 백그라운드에서 주문 생성 처리
           handleOrderCreation(event.data.data);
         } else {
           clearInterval(checkClosed);
@@ -561,8 +571,8 @@ const handleOrderCreation = async (paymentData) => {
       const orderResult = await orderResponse.json();
       console.log('Order created:', orderResult);
 
-      // 주문 완료 페이지로 이동 (알럿 제거)
-      router.push(`/order/complete?orderId=${orderResult.orderId || paymentData.orderNumber}`);
+      // 페이지 이동은 이미 handleMessage에서 처리됨
+      console.log('주문 생성 완료, 페이지는 이미 이동됨');
     } else {
       const errorText = await orderResponse.text();
       console.error('Order creation failed:', errorText);

@@ -1,5 +1,8 @@
 package com.vibe.pay.backend.rewardpoints;
 
+import com.vibe.pay.backend.pointhistory.PointHistoryService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,8 +13,13 @@ import java.util.Optional;
 @Service
 public class RewardPointsService {
 
+    private static final Logger log = LoggerFactory.getLogger(RewardPointsService.class);
+
     @Autowired
     private RewardPointsMapper rewardPointsMapper;
+
+    @Autowired
+    private PointHistoryService pointHistoryService;
 
     public RewardPoints createRewardPoints(RewardPoints rewardPoints) {
         rewardPoints.setLastUpdated(LocalDateTime.now());
@@ -30,14 +38,35 @@ public class RewardPointsService {
     @Transactional
     public RewardPoints addPoints(Long memberId, Double pointsToAdd) {
         RewardPoints rewardPoints = rewardPointsMapper.findByMemberId(memberId);
+        Double previousBalance = 0.0;
+
         if (rewardPoints == null) {
             rewardPoints = new RewardPoints(memberId, pointsToAdd);
             rewardPointsMapper.insert(rewardPoints);
         } else {
+            previousBalance = rewardPoints.getPoints();
             rewardPoints.setPoints(rewardPoints.getPoints() + pointsToAdd);
             rewardPoints.setLastUpdated(LocalDateTime.now());
             rewardPointsMapper.update(rewardPoints);
         }
+
+        // 포인트 충전 내역 기록
+        try {
+            pointHistoryService.recordPointEarn(
+                memberId,
+                pointsToAdd,
+                "MANUAL_CHARGE", // reference_type
+                rewardPoints.getRewardPointsId().toString(), // reward_points_id를 reference_id로 사용
+                "마일리지 수동 충전"
+            );
+            log.info("Point earning recorded: memberId={}, pointsAdded={}, newBalance={}",
+                     memberId, pointsToAdd, rewardPoints.getPoints());
+        } catch (Exception e) {
+            log.error("Failed to record point earning history: memberId={}, pointsAdded={}",
+                      memberId, pointsToAdd, e);
+            // 포인트 내역 기록 실패해도 충전은 계속 진행
+        }
+
         return rewardPoints;
     }
 

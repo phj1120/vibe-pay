@@ -35,10 +35,10 @@
       </v-card-title>
       <v-card-text>
         <!-- 현재 마일리지 표시 -->
-        <v-alert 
-          v-if="currentPoints !== null" 
-          type="info" 
-          variant="tonal" 
+        <v-alert
+          v-if="currentPoints !== null"
+          type="info"
+          variant="tonal"
           class="mb-4"
         >
           <div class="d-flex align-center">
@@ -46,6 +46,7 @@
             <span class="text-h6">현재 마일리지: {{ formatNumber(currentPoints) }}원</span>
           </div>
         </v-alert>
+
 
         <!-- 마일리지 충전 -->
         <v-row>
@@ -92,31 +93,237 @@
       </v-card-text>
     </v-card>
 
+    <!-- 포인트 내역 (기존 회원만) -->
+    <v-card class="content-card" v-if="!isNewMember">
+      <v-card-title class="text-h6 d-flex align-center">
+        <v-icon class="mr-2" color="secondary">mdi-history</v-icon>
+        포인트 내역
+      </v-card-title>
+      <v-card-text>
+        <!-- 포인트 필터 -->
+        <div class="mb-4">
+          <v-chip-group v-model="selectedPointFilter" mandatory>
+            <v-chip
+              v-for="filter in pointFilters"
+              :key="filter.value"
+              :value="filter.value"
+              variant="outlined"
+              color="primary"
+            >
+              {{ filter.label }}
+            </v-chip>
+          </v-chip-group>
+        </div>
+
+        <!-- 포인트 내역 리스트 -->
+        <v-timeline side="end" density="compact" v-if="filteredPointHistory.length > 0">
+          <v-timeline-item
+            v-for="history in filteredPointHistory"
+            :key="history.pointHistoryId"
+            :dot-color="getPointHistoryColor(history.transactionType)"
+            size="small"
+          >
+            <template v-slot:icon>
+              <v-icon size="16">{{ getPointHistoryIcon(history.transactionType) }}</v-icon>
+            </template>
+            <v-card variant="outlined" class="point-history-card">
+              <v-card-text class="pa-3">
+                <div class="d-flex justify-space-between align-center mb-2">
+                  <span class="text-subtitle2">{{ history.description }}</span>
+                  <span
+                    class="text-h6 font-weight-bold"
+                    :class="getPointAmountClass(history.transactionType)"
+                  >
+                    {{ formatPointAmount(history.pointAmount, history.transactionType) }}
+                  </span>
+                </div>
+                <div class="d-flex justify-space-between text-body-2 text-medium-emphasis">
+                  <span>{{ formatDateTime(history.createdAt) }}</span>
+                  <span>잔액: {{ formatNumber(history.balanceAfter) }}P</span>
+                </div>
+                <div v-if="history.referenceId" class="text-caption text-medium-emphasis mt-1">
+                  참조: {{ history.referenceId }}
+                </div>
+              </v-card-text>
+            </v-card>
+          </v-timeline-item>
+        </v-timeline>
+        <v-alert v-else type="info" variant="tonal">
+          포인트 내역이 없습니다.
+        </v-alert>
+      </v-card-text>
+    </v-card>
+
     <!-- 주문 내역 (기존 회원만) -->
     <v-card class="content-card" v-if="!isNewMember">
       <v-card-title class="text-h6 d-flex align-center">
-        <v-icon class="mr-2" color="info">mdi-history</v-icon>
+        <v-icon class="mr-2" color="info">mdi-shopping</v-icon>
         주문 내역
       </v-card-title>
       <v-card-text>
-        <v-data-table
-          :headers="orderHeaders"
-          :items="orders"
-          :loading="ordersLoading"
-          no-data-text="주문 내역이 없습니다."
-        >
-          <template v-slot:item.actions="{ item }">
-            <v-btn 
-              v-if="item.status === 'PAID'"
-              color="error"
-              size="small"
-              variant="outlined"
-              @click="cancelOrder(item.orderId)"
-            >
-              취소
-            </v-btn>
-          </template>
-        </v-data-table>
+        <v-expansion-panels v-if="orders.length > 0" multiple>
+          <v-expansion-panel
+            v-for="order in orders"
+            :key="order.orderId"
+            class="order-expansion-panel"
+          >
+            <v-expansion-panel-title>
+              <div class="d-flex justify-space-between align-center w-100 mr-4">
+                <div>
+                  <div class="text-subtitle1 font-weight-medium">
+                    주문번호: {{ order.orderId }}
+                  </div>
+                  <div class="text-body-2 text-medium-emphasis">
+                    {{ formatDateTime(order.orderDate) }}
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="text-h6 font-weight-bold text-primary">
+                    {{ formatNumber(order.finalPaymentAmount) }}원
+                  </div>
+                  <v-chip
+                    :color="getOrderStatusColor(order.status)"
+                    size="small"
+                    variant="flat"
+                  >
+                    {{ getOrderStatusText(order.status) }}
+                  </v-chip>
+                </div>
+              </div>
+            </v-expansion-panel-title>
+            <v-expansion-panel-text>
+              <v-row>
+                <!-- 주문 상품 정보 -->
+                <v-col cols="12">
+                  <v-card variant="outlined" class="pa-3 mb-3">
+                    <div class="text-subtitle2 mb-3">주문 상품</div>
+                    <div v-if="order.orderItems && order.orderItems.length > 0">
+                      <div
+                        v-for="item in order.orderItems"
+                        :key="item.orderItemId"
+                        class="product-item"
+                      >
+                        <div class="d-flex justify-space-between align-center">
+                          <div>
+                            <div class="text-subtitle2">{{ item.productName }}</div>
+                            <div class="text-body-2 text-medium-emphasis">
+                              {{ formatNumber(item.priceAtOrder) }}원 × {{ item.quantity }}개
+                            </div>
+                          </div>
+                          <div class="text-h6 font-weight-bold">
+                            {{ formatNumber(item.totalPrice) }}원
+                          </div>
+                        </div>
+                        <v-divider v-if="order.orderItems.indexOf(item) < order.orderItems.length - 1" class="my-2"></v-divider>
+                      </div>
+                    </div>
+                    <div v-else class="text-body-2 text-medium-emphasis">
+                      상품 정보를 불러올 수 없습니다.
+                    </div>
+                  </v-card>
+                </v-col>
+
+                <!-- 결제 상세 -->
+                <v-col cols="12" md="6">
+                  <v-card variant="outlined" class="pa-3">
+                    <div class="text-subtitle2 mb-2">결제 상세</div>
+                    <div class="payment-detail-item">
+                      <span>총 주문금액</span>
+                      <span class="font-weight-medium">{{ formatNumber(order.totalAmount) }}원</span>
+                    </div>
+
+                    <!-- 포인트 결제 정보 -->
+                    <div v-if="order.pointPayments && order.pointPayments.length > 0">
+                      <div
+                        v-for="pointPayment in order.pointPayments"
+                        :key="pointPayment.paymentId"
+                        class="payment-detail-item"
+                      >
+                        <span>포인트 결제</span>
+                        <span class="font-weight-medium text-orange">-{{ formatNumber(pointPayment.amount) }}P</span>
+                      </div>
+                    </div>
+
+                    <!-- 카드 결제 정보 -->
+                    <div v-if="order.cardPayments && order.cardPayments.length > 0">
+                      <div
+                        v-for="cardPayment in order.cardPayments"
+                        :key="cardPayment.paymentId"
+                        class="payment-detail-item"
+                      >
+                        <span>{{ getPaymentMethodText(cardPayment.paymentMethod) }}</span>
+                        <span class="font-weight-medium">{{ formatNumber(cardPayment.amount) }}원</span>
+                      </div>
+                    </div>
+
+                    <v-divider class="my-2"></v-divider>
+                    <div class="payment-detail-item">
+                      <span class="text-subtitle2">최종 결제금액</span>
+                      <span class="text-h6 font-weight-bold text-primary">{{ formatNumber(order.finalPaymentAmount) }}원</span>
+                    </div>
+                  </v-card>
+                </v-col>
+
+                <!-- 주문 정보 -->
+                <v-col cols="12" md="6">
+                  <v-card variant="outlined" class="pa-3">
+                    <div class="text-subtitle2 mb-2">주문 정보</div>
+                    <div class="order-info-item">
+                      <span>주문상태</span>
+                      <v-chip
+                        :color="getOrderStatusColor(order.status)"
+                        size="small"
+                        variant="flat"
+                      >
+                        {{ getOrderStatusText(order.status) }}
+                      </v-chip>
+                    </div>
+                    <div v-if="order.payments && order.payments.length > 0" class="order-info-item">
+                      <span>결제방법</span>
+                      <div>
+                        <v-chip
+                          v-for="payment in order.payments"
+                          :key="payment.paymentId"
+                          size="small"
+                          variant="outlined"
+                          class="mr-1 mb-1"
+                        >
+                          {{ getPaymentMethodText(payment.paymentMethod) }}
+                        </v-chip>
+                      </div>
+                    </div>
+                    <div v-if="order.cardPayments && order.cardPayments.length > 0" class="order-info-item">
+                      <span>거래번호</span>
+                      <div>
+                        <div
+                          v-for="cardPayment in order.cardPayments"
+                          :key="cardPayment.paymentId"
+                          class="text-caption mb-1"
+                        >
+                          {{ cardPayment.transactionId }}
+                        </div>
+                      </div>
+                    </div>
+                  </v-card>
+                </v-col>
+              </v-row>
+              <v-card-actions class="px-0">
+                <v-spacer></v-spacer>
+                <v-btn
+                  v-if="order.status === 'PAID'"
+                  color="error"
+                  variant="outlined"
+                  @click="cancelOrder(order.orderId)"
+                >
+                  주문 취소
+                </v-btn>
+              </v-card-actions>
+            </v-expansion-panel-text>
+          </v-expansion-panel>
+        </v-expansion-panels>
+        <v-alert v-else type="info" variant="tonal">
+          주문 내역이 없습니다.
+        </v-alert>
       </v-card-text>
     </v-card>
   </div>
@@ -135,9 +342,20 @@ const currentPoints = ref(null)
 const addingPoints = ref(false)
 const orders = ref([])
 const ordersLoading = ref(false)
+const pointHistory = ref([])
+const pointStats = ref(null)
+const selectedPointFilter = ref(0)
 
 // 빠른 충전 금액들
 const quickAmounts = [1000, 5000, 10000, 30000, 50000, 100000]
+
+// 포인트 필터 옵션
+const pointFilters = [
+  { label: '전체', value: 'all' },
+  { label: '적립', value: 'EARN' },
+  { label: '사용', value: 'USE' },
+  { label: '환불', value: 'REFUND' }
+]
 
 const orderHeaders = [
   { title: '주문번호', key: 'orderId' },
@@ -150,6 +368,15 @@ const orderHeaders = [
 const isNewMember = computed(() => route.params.id === 'new')
 const pageTitle = computed(() => isNewMember.value ? '새 회원 등록' : '회원 정보 수정')
 
+// 필터된 포인트 내역
+const filteredPointHistory = computed(() => {
+  const filterValue = pointFilters[selectedPointFilter.value]?.value
+  if (!filterValue || filterValue === 'all') {
+    return pointHistory.value
+  }
+  return pointHistory.value.filter(item => item.transactionType === filterValue)
+})
+
 const rules = {
   required: value => !!value || '필수 입력 항목입니다.',
   minAmount: value => value > 0 || '0보다 큰 금액을 입력해주세요.',
@@ -158,6 +385,82 @@ const rules = {
 // 숫자 포맷팅
 const formatNumber = (value) => {
   return new Intl.NumberFormat('ko-KR').format(value)
+}
+
+// 날짜/시간 포맷팅
+const formatDateTime = (dateString) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return date.toLocaleString('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+// 포인트 내역 아이콘
+const getPointHistoryIcon = (transactionType) => {
+  switch (transactionType) {
+    case 'EARN': return 'mdi-plus-circle'
+    case 'USE': return 'mdi-minus-circle'
+    case 'REFUND': return 'mdi-restore'
+    default: return 'mdi-circle'
+  }
+}
+
+// 포인트 내역 색상
+const getPointHistoryColor = (transactionType) => {
+  switch (transactionType) {
+    case 'EARN': return 'success'
+    case 'USE': return 'error'
+    case 'REFUND': return 'info'
+    default: return 'grey'
+  }
+}
+
+// 포인트 금액 클래스
+const getPointAmountClass = (transactionType) => {
+  switch (transactionType) {
+    case 'EARN': return 'text-success'
+    case 'USE': return 'text-error'
+    case 'REFUND': return 'text-info'
+    default: return ''
+  }
+}
+
+// 포인트 금액 포맷팅 (부호 포함)
+const formatPointAmount = (amount, transactionType) => {
+  const formattedAmount = formatNumber(Math.abs(amount))
+  switch (transactionType) {
+    case 'EARN': return `+${formattedAmount}P`
+    case 'USE': return `-${formattedAmount}P`
+    case 'REFUND': return `+${formattedAmount}P`
+    default: return `${formattedAmount}P`
+  }
+}
+
+// 주문 상태 색상
+const getOrderStatusColor = (status) => {
+  switch (status) {
+    case 'COMPLETED':
+    case 'PAID': return 'success'
+    case 'PENDING': return 'warning'
+    case 'CANCELLED': return 'error'
+    default: return 'grey'
+  }
+}
+
+// 주문 상태 텍스트
+const getOrderStatusText = (status) => {
+  switch (status) {
+    case 'COMPLETED': return '완료'
+    case 'PAID': return '결제완료'
+    case 'PENDING': return '진행중'
+    case 'CANCELLED': return '취소'
+    default: return status
+  }
 }
 
 // 뒤로가기
@@ -179,14 +482,51 @@ const fetchMemberData = async (memberId) => {
 const fetchOrderHistory = async (memberId) => {
   ordersLoading.value = true
   try {
-    const response = await fetch(`/api/orders/member/${memberId}`)
-    if (!response.ok) throw new Error('Failed to fetch orders')
+    const response = await fetch(`/api/orders/member/${memberId}/details`)
+    if (!response.ok) throw new Error('Failed to fetch order details')
     const data = await response.json()
-    orders.value = data.map(o => ({...o, orderDate: new Date(o.orderDate).toLocaleString()}))
+    orders.value = data.map(o => ({
+      ...o,
+      orderDate: new Date(o.orderDate).toLocaleString(),
+      // 결제 정보 분리
+      cardPayments: o.payments?.filter(p => p.paymentMethod !== 'POINT') || [],
+      pointPayments: o.payments?.filter(p => p.paymentMethod === 'POINT') || []
+    }))
+    console.log('주문 상세 정보 조회 성공:', orders.value)
   } catch (error) {
-    console.error(error)
+    console.error('주문 상세 정보 조회 실패:', error)
   } finally {
     ordersLoading.value = false
+  }
+}
+
+// 포인트 내역 조회
+const fetchPointHistory = async (memberId) => {
+  try {
+    const response = await fetch(`/api/point-history/member/${memberId}`)
+    if (response.ok) {
+      pointHistory.value = await response.json()
+      console.log('포인트 내역 조회 성공:', pointHistory.value)
+    } else {
+      console.error('포인트 내역 조회 실패 - 응답 상태:', response.status)
+    }
+  } catch (error) {
+    console.error('포인트 내역 조회 실패:', error)
+  }
+}
+
+// 포인트 통계 조회
+const fetchPointStats = async (memberId) => {
+  try {
+    const response = await fetch(`/api/point-history/member/${memberId}/statistics`)
+    if (response.ok) {
+      pointStats.value = await response.json()
+      console.log('포인트 통계 조회 성공:', pointStats.value)
+    } else {
+      console.error('포인트 통계 조회 실패 - 응답 상태:', response.status)
+    }
+  } catch (error) {
+    console.error('포인트 통계 조회 실패:', error)
   }
 }
 
@@ -278,6 +618,8 @@ onMounted(() => {
     fetchMemberData(route.params.id)
     fetchOrderHistory(route.params.id)
     fetchCurrentPoints(route.params.id)
+    fetchPointHistory(route.params.id)
+    fetchPointStats(route.params.id)
   }
 })
 </script>
@@ -323,5 +665,31 @@ onMounted(() => {
 .v-chip--variant-outlined:hover {
   background-color: rgba(0, 100, 255, 0.1);
   transform: translateY(-1px);
+}
+
+/* 포인트 내역 카드 */
+.point-history-card {
+  margin-bottom: 8px;
+}
+
+/* 결제 상세 항목 */
+.payment-detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+/* 주문 정보 항목 */
+.order-info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+/* 주문 확장 패널 */
+.order-expansion-panel {
+  margin-bottom: 8px;
 }
 </style>

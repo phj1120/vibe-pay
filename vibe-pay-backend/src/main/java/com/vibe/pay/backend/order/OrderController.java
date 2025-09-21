@@ -57,6 +57,11 @@ public class OrderController {
         return orderService.getOrdersByMemberId(memberId);
     }
 
+    @GetMapping("/member/{memberId}/details")
+    public List<OrderDetailDto> getOrderDetailsWithPaymentsByMemberId(@PathVariable Long memberId) {
+        return orderService.getOrderDetailsWithPaymentsByMemberId(memberId);
+    }
+
     @PostMapping("/{id}/cancel")
     public ResponseEntity<Order> cancelOrder(@PathVariable String id) {
         try {
