@@ -16,6 +16,7 @@ public class PaymentConfirmRequest {
     // 결제 승인 시 필요한 추가 정보
     private Long memberId;
     private String paymentMethod;
+    private Double usedPoints; // 사용한 포인트
 
     public Long getPaymentId() {
         return paymentId;
@@ -103,5 +104,13 @@ public class PaymentConfirmRequest {
 
     public void setPaymentMethod(String paymentMethod) {
         this.paymentMethod = paymentMethod;
+    }
+
+    public Double getUsedPoints() {
+        return usedPoints;
+    }
+
+    public void setUsedPoints(Double usedPoints) {
+        this.usedPoints = usedPoints;
     }
 }

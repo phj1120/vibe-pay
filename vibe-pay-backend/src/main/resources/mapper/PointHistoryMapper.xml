@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.vibe.pay.backend.pointhistory.PointHistoryMapper">
+
+    <resultMap id="pointHistoryResultMap" type="com.vibe.pay.backend.pointhistory.PointHistory">
+        <id property="pointHistoryId" column="point_history_id"/>
+        <result property="memberId" column="member_id"/>
+        <result property="pointAmount" column="point_amount"/>
+        <result property="balanceAfter" column="balance_after"/>
+        <result property="transactionType" column="transaction_type"/>
+        <result property="referenceType" column="reference_type"/>
+        <result property="referenceId" column="reference_id"/>
+        <result property="description" column="description"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <insert id="insert">
+        INSERT INTO point_history (point_history_id, member_id, point_amount, balance_after, transaction_type, reference_type, reference_id, description, created_at)
+        VALUES (nextval('point_history_id_seq'), #{memberId}, #{pointAmount}, #{balanceAfter}, #{transactionType}, #{referenceType}, #{referenceId}, #{description}, #{createdAt})
+    </insert>
+
+    <select id="findByPointHistoryId" resultMap="pointHistoryResultMap">
+        SELECT point_history_id, member_id, point_amount, balance_after, transaction_type, reference_type, reference_id, description, created_at
+        FROM point_history
+        WHERE point_history_id = #{pointHistoryId}
+    </select>
+
+    <select id="findByMemberId" resultMap="pointHistoryResultMap">
+        SELECT point_history_id, member_id, point_amount, balance_after, transaction_type, reference_type, reference_id, description, created_at
+        FROM point_history
+        WHERE member_id = #{memberId}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="findByMemberIdAndReferenceId" resultMap="pointHistoryResultMap">
+        SELECT point_history_id, member_id, point_amount, balance_after, transaction_type, reference_type, reference_id, description, created_at
+        FROM point_history
+        WHERE member_id = #{memberId} AND reference_id = #{referenceId}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="findByReferenceTypeAndId" resultMap="pointHistoryResultMap">
+        SELECT point_history_id, member_id, point_amount, balance_after, transaction_type, reference_type, reference_id, description, created_at
+        FROM point_history
+        WHERE reference_type = #{referenceType} AND reference_id = #{referenceId}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="findByMemberIdAndTransactionType" resultMap="pointHistoryResultMap">
+        SELECT point_history_id, member_id, point_amount, balance_after, transaction_type, reference_type, reference_id, description, created_at
+        FROM point_history
+        WHERE member_id = #{memberId} AND transaction_type = #{transactionType}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="findAll" resultMap="pointHistoryResultMap">
+        SELECT point_history_id, member_id, point_amount, balance_after, transaction_type, reference_type, reference_id, description, created_at
+        FROM point_history
+        ORDER BY created_at DESC
+    </select>
+
+    <update id="update">
+        UPDATE point_history
+        SET point_amount = #{pointAmount}, balance_after = #{balanceAfter}, transaction_type = #{transactionType},
+            reference_type = #{referenceType}, reference_id = #{referenceId}, description = #{description}
+        WHERE point_history_id = #{pointHistoryId}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM point_history WHERE point_history_id = #{pointHistoryId}
+    </delete>
+
+    <select id="getNextPointHistorySequence" resultType="java.lang.Long">
+        SELECT nextval('point_history_id_seq')
+    </select>
+
+</mapper>

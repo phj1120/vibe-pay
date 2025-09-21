@@ -11,7 +11,7 @@ public interface PaymentMapper {
     Payment findByOrderId(String orderId);
     void insert(Payment payment);
     void update(Payment payment);
-    void delete(String paymentId);
+    void delete(Payment payment); // 복합키를 위해 Payment 객체 사용
     
     // 결제번호 생성을 위한 시퀀스 조회
     @Select("SELECT nextval('payment_id_seq')")

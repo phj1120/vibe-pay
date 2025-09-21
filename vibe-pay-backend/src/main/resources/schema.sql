@@ -1,4 +1,5 @@
 DROP TABLE IF EXISTS payment_interface_request_log CASCADE;
+DROP TABLE IF EXISTS point_history CASCADE;
 DROP TABLE IF EXISTS order_item CASCADE;
 DROP TABLE IF EXISTS payment CASCADE;
 DROP TABLE IF EXISTS orders CASCADE;
@@ -52,17 +53,20 @@ CREATE TABLE IF NOT EXISTS orders (
 
 -- Payment Table
 CREATE TABLE IF NOT EXISTS payment (
-                                       payment_id VARCHAR(17) PRIMARY KEY,
+                                       payment_id VARCHAR(17) NOT NULL,
                                        member_id BIGINT NOT NULL,
                                        order_id VARCHAR(17) NOT NULL,
                                        claim_id VARCHAR(17),
                                        amount DOUBLE PRECISION NOT NULL,
+                                       used_points DOUBLE PRECISION DEFAULT 0.0, -- 사용된 포인트
                                        payment_method VARCHAR(50) NOT NULL,
-                                       pg_company VARCHAR(50) NOT NULL,
+                                       pay_type VARCHAR(20) NOT NULL DEFAULT 'PAYMENT', -- PAYMENT(결제), REFUND(환불)
+                                       pg_company VARCHAR(50), -- 포인트 결제 시 null
                                        status VARCHAR(50) NOT NULL,
                                        transaction_id VARCHAR(255),
                                        payment_date TIMESTAMP NOT NULL,
-                                       CONSTRAINT fk_member_payment FOREIGN KEY (member_id) REFERENCES member(member_id)
+                                       CONSTRAINT fk_member_payment FOREIGN KEY (member_id) REFERENCES member(member_id),
+                                       CONSTRAINT pk_payment PRIMARY KEY (payment_id, payment_method, order_id, pay_type)
 );
 
 
@@ -87,6 +91,20 @@ CREATE TABLE IF NOT EXISTS payment_interface_request_log (
     request_payload TEXT,
     response_payload TEXT,
     timestamp TIMESTAMP NOT NULL
+);
+
+-- PointHistory Table
+CREATE TABLE IF NOT EXISTS point_history (
+    point_history_id BIGSERIAL PRIMARY KEY,
+    member_id BIGINT NOT NULL,
+    point_amount DOUBLE PRECISION NOT NULL, -- 포인트 변동량 (+ 적립, - 사용)
+    balance_after DOUBLE PRECISION NOT NULL, -- 변동 후 잔액
+    transaction_type VARCHAR(20) NOT NULL, -- EARN(적립), USE(사용), REFUND(환불)
+    reference_type VARCHAR(20), -- PAYMENT(결제), CANCEL(취소), MANUAL(수동)
+    reference_id VARCHAR(50), -- 연관된 ID (payment_id, order_id 등)
+    description VARCHAR(255), -- 설명
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_member_point_history FOREIGN KEY (member_id) REFERENCES member(member_id)
 );
 
 select * from payment_interface_request_log;
@@ -152,6 +170,13 @@ CREATE SEQUENCE IF NOT EXISTS reward_points_id_seq
     MINVALUE 1
     MAXVALUE 99999999;
 
+-- point_history_id_seq ID Sequence (8자리, 99999999까지)
+CREATE SEQUENCE IF NOT EXISTS point_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    MAXVALUE 99999999;
+
 
 -- 초기 데이터 세팅
 insert into member (member_id, name, email, phone_number) values (nextval('member_id_seq'), '현준', 'test@test.com', '010-1234-5678');
@@ -167,5 +192,7 @@ select * from orders;
 select * from reward_points;
 select * from product;
 select * from member;
+select * from point_history;
 
 select nextval('payment_id_seq')
+

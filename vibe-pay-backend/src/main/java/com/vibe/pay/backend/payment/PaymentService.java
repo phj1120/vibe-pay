@@ -3,6 +3,7 @@ package com.vibe.pay.backend.payment;
 import com.vibe.pay.backend.paymentlog.PaymentInterfaceRequestLog;
 import com.vibe.pay.backend.paymentlog.PaymentInterfaceRequestLogMapper;
 import com.vibe.pay.backend.order.OrderMapper;
+import com.vibe.pay.backend.pointhistory.PointHistoryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,9 +44,9 @@ public class PaymentService {
 
     @Autowired
     private OrderMapper orderMapper;
-    
 
-
+    @Autowired
+    private PointHistoryService pointHistoryService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -107,8 +108,12 @@ public class PaymentService {
         return paymentDetails;
     }
 
-    public void deletePayment(String id) {
-        paymentMapper.delete(id);
+    public void deletePayment(String paymentId) {
+        Payment payment = paymentMapper.findByPaymentId(paymentId);
+        if (payment == null) {
+            throw new RuntimeException("Payment not found with id " + paymentId);
+        }
+        paymentMapper.delete(payment);
     }
 
     @Transactional
@@ -322,11 +327,15 @@ public class PaymentService {
                 throw new RuntimeException("Payment method is required for payment confirmation");
             }
             
+            // 포인트 사용 정보 포함하여 Payment 생성
+            Double usedPoints = request.getUsedPoints() != null ? request.getUsedPoints() : 0.0;
+
             payment = new Payment(
                     memberId, // request에서 가져온 memberId 사용
                     orderId, // 주문번호 설정
                     null, // claim_id는 주문 취소/클레임 시에만 사용 (현재는 NULL)
                     Double.valueOf(request.getPrice()),
+                    usedPoints, // 사용한 포인트
                     paymentMethod,
                     "INICIS",
                     "SUCCESS",
@@ -334,9 +343,32 @@ public class PaymentService {
             );
             payment.setPaymentId(paymentId); // 미리 생성된 paymentId 사용
             paymentMapper.insert(payment);
-            
-            log.info("Payment record created successfully: paymentId={}, memberId={}, order={}",
-                    payment.getPaymentId(), memberId, orderId);
+
+            // 포인트 사용 내역 기록 (포인트를 실제로 사용한 경우만)
+            if (usedPoints > 0) {
+                try {
+                    pointHistoryService.recordPointUsage(
+                            memberId,
+                            usedPoints,
+                            paymentId, // payment_id를 reference_id로 사용
+                            "결제 시 포인트 사용 - 주문번호: " + orderId
+                    );
+                    log.info("Point usage recorded: memberId={}, usedPoints={}, paymentId={}",
+                            memberId, usedPoints, paymentId);
+                } catch (Exception e) {
+                    log.error("Failed to record point usage history: memberId={}, usedPoints={}, paymentId={}",
+                            memberId, usedPoints, paymentId, e);
+                    // 포인트 히스토리 기록 실패해도 결제는 성공으로 처리
+                }
+            }
+
+            log.info("Payment record created successfully: paymentId={}, memberId={}, order={}, usedPoints={}",
+                    payment.getPaymentId(), memberId, orderId, usedPoints);
+
+            // 포인트로만 결제하는 경우 별도 Payment 레코드 생성
+            if (usedPoints > 0) {
+                createPointPaymentRecord(memberId, orderId, usedPoints, paymentId);
+            }
         } else {
             // 실패한 경우 Payment 테이블에는 저장하지 않음
             log.info("Payment failed, no record created in Payment table for order: {}", orderId);
@@ -479,6 +511,24 @@ public class PaymentService {
         // transactionId는 그대로 유지 (임의로 변경하지 않음)
         paymentMapper.update(payment);
 
+        // 포인트 복원 처리 (포인트를 실제로 사용한 경우만)
+        if (payment.getUsedPoints() != null && payment.getUsedPoints() > 0) {
+            try {
+                pointHistoryService.recordPointRefund(
+                        payment.getMemberId(),
+                        payment.getUsedPoints(),
+                        paymentId, // payment_id를 reference_id로 사용
+                        "결제 취소로 인한 포인트 복원 - 주문번호: " + payment.getOrderId()
+                );
+                log.info("Point refund recorded: memberId={}, refundPoints={}, paymentId={}",
+                        payment.getMemberId(), payment.getUsedPoints(), paymentId);
+            } catch (Exception e) {
+                log.error("Failed to record point refund history: memberId={}, refundPoints={}, paymentId={}",
+                        payment.getMemberId(), payment.getUsedPoints(), paymentId, e);
+                // 포인트 히스토리 기록 실패해도 취소는 성공으로 처리
+            }
+        }
+
         // Create PaymentInterfaceRequestLog entry for cancellation (실제 객체만 저장)
         PaymentInterfaceRequestLog log = new PaymentInterfaceRequestLog(
                 payment.getPaymentId(),
@@ -487,6 +537,9 @@ public class PaymentService {
                 null // 취소 시 별도 response 없음
         );
         paymentInterfaceRequestLogMapper.insert(log);
+
+        // 환불 Payment 레코드 생성
+        createRefundPaymentRecord(payment);
 
         // In a real scenario, you might also update the associated Order status here
         // or handle it in OrderService.cancelOrder
@@ -654,5 +707,100 @@ public class PaymentService {
         
         // 최종 Claim ID 생성: YYYYMMDDC + 8자리 시퀀스
         return datePrefix + "C" + sequenceStr;
+    }
+
+    /**
+     * 포인트 결제 건을 위한 별도 Payment 레코드 생성
+     */
+    @Transactional
+    private void createPointPaymentRecord(Long memberId, String orderId, Double usedPoints, String relatedPaymentId) {
+        try {
+            // 포인트 결제용 Payment ID 생성
+            String pointPaymentId = generatePaymentId();
+
+            Payment pointPayment = new Payment(
+                    memberId,
+                    orderId,
+                    null, // claim_id
+                    usedPoints, // 포인트 사용 금액
+                    usedPoints, // 사용된 포인트 (동일)
+                    "POINT", // payment_method
+                    "PAYMENT", // pay_type
+                    null, // pg_company (포인트 결제이므로 null)
+                    "SUCCESS", // status
+                    relatedPaymentId // transaction_id (관련 결제 ID)
+            );
+
+            pointPayment.setPaymentId(pointPaymentId);
+            paymentMapper.insert(pointPayment);
+
+            log.info("Point payment record created: paymentId={}, memberId={}, order={}, usedPoints={}",
+                    pointPaymentId, memberId, orderId, usedPoints);
+
+        } catch (Exception e) {
+            log.error("Failed to create point payment record: memberId={}, orderId={}, usedPoints={}",
+                    memberId, orderId, usedPoints, e);
+            // 포인트 결제 레코드 생성 실패해도 메인 결제는 성공으로 처리
+        }
+    }
+
+    /**
+     * 환불 시 REFUND payment 레코드 생성
+     */
+    @Transactional
+    private void createRefundPaymentRecord(Payment originalPayment) {
+        try {
+            // 환불용 Payment ID 생성
+            String refundPaymentId = generatePaymentId();
+
+            // 원본 결제건에 대한 환불 레코드 생성 (PG 결제건)
+            Payment refundPayment = new Payment(
+                    originalPayment.getMemberId(),
+                    originalPayment.getOrderId(),
+                    null, // claim_id
+                    originalPayment.getAmount(), // 환불 금액
+                    0.0, // 환불 시에는 포인트 사용 없음
+                    originalPayment.getPaymentMethod(),
+                    "REFUND", // pay_type
+                    originalPayment.getPgCompany(),
+                    "SUCCESS", // status
+                    originalPayment.getPaymentId() // transaction_id (원본 결제 ID)
+            );
+
+            refundPayment.setPaymentId(refundPaymentId);
+            paymentMapper.insert(refundPayment);
+
+            log.info("Refund payment record created: paymentId={}, originalPaymentId={}, amount={}",
+                    refundPaymentId, originalPayment.getPaymentId(), originalPayment.getAmount());
+
+            // 포인트 환불 레코드도 생성 (포인트를 사용한 경우)
+            if (originalPayment.getUsedPoints() != null && originalPayment.getUsedPoints() > 0) {
+                String pointRefundPaymentId = generatePaymentId();
+
+                Payment pointRefundPayment = new Payment(
+                        originalPayment.getMemberId(),
+                        originalPayment.getOrderId(),
+                        null, // claim_id
+                        originalPayment.getUsedPoints(), // 포인트 환불 금액
+                        originalPayment.getUsedPoints(), // 환불되는 포인트
+                        "POINT", // payment_method
+                        "REFUND", // pay_type
+                        null, // pg_company (포인트이므로 null)
+                        "SUCCESS", // status
+                        originalPayment.getPaymentId() // transaction_id (원본 결제 ID)
+                );
+
+                pointRefundPayment.setPaymentId(pointRefundPaymentId);
+                paymentMapper.insert(pointRefundPayment);
+
+                log.info("Point refund payment record created: paymentId={}, originalPaymentId={}, usedPoints={}",
+                        pointRefundPaymentId, originalPayment.getPaymentId(), originalPayment.getUsedPoints());
+            }
+
+        } catch (Exception e) {
+            log.error("Failed to create refund payment record: originalPaymentId={}, orderId={}",
+                    originalPayment.getPaymentId(), originalPayment.getOrderId(), e);
+            // 환불 레코드 생성 실패해도 취소는 성공으로 처리
+        }
     }
 }

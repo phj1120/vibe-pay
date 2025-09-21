@@ -93,3 +93,9 @@ point 에 대한 부분을 수정할거야.
 2. 
 point_history 테이블을 하나 생성해서 적립 사용에 대한 내역을 볼 수 있도록 개발해.
 ```
+
+20250921 14:23
+포인트 사용시 payment 테이블에도 쌓이게 하고 싶어.
+1. pay_type 을 추가해서 결제인지 환불인지 관리 해줘.
+2. payment 테이블의 pk 를 payment_id, payment_method, order_id, pay_type 이렇게 수정해.
+3. 포인트 결제건의 경우 payment_method 에 POINT, pg_company 에 null을 넣어줘.

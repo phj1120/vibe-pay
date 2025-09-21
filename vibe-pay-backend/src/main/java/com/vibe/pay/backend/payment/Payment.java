@@ -9,7 +9,9 @@ public class Payment {
     private String orderId;
     private String claimId;
     private Double amount;
+    private Double usedPoints; // 사용된 포인트
     private String paymentMethod;
+    private String payType; // PAYMENT(결제), REFUND(환불)
     private String pgCompany;
     private String status;
     private String transactionId;
@@ -24,7 +26,40 @@ public class Payment {
         this.orderId = orderId;
         this.claimId = claimId;
         this.amount = amount;
+        this.usedPoints = 0.0; // 기본값 0
         this.paymentMethod = paymentMethod;
+        this.payType = "PAYMENT"; // 기본값 PAYMENT
+        this.pgCompany = pgCompany;
+        this.status = status;
+        this.transactionId = transactionId;
+        this.paymentDate = LocalDateTime.now();
+    }
+
+    // 포인트 사용 정보 포함 생성자
+    public Payment(Long memberId, String orderId, String claimId, Double amount, Double usedPoints, String paymentMethod, String pgCompany, String status, String transactionId) {
+        this.memberId = memberId;
+        this.orderId = orderId;
+        this.claimId = claimId;
+        this.amount = amount;
+        this.usedPoints = usedPoints;
+        this.paymentMethod = paymentMethod;
+        this.payType = "PAYMENT"; // 기본값 PAYMENT
+        this.pgCompany = pgCompany;
+        this.status = status;
+        this.transactionId = transactionId;
+        this.paymentDate = LocalDateTime.now();
+    }
+
+    // 완전한 생성자 (payType 포함)
+    public Payment(Long memberId, String orderId, String claimId, Double amount, Double usedPoints,
+                   String paymentMethod, String payType, String pgCompany, String status, String transactionId) {
+        this.memberId = memberId;
+        this.orderId = orderId;
+        this.claimId = claimId;
+        this.amount = amount;
+        this.usedPoints = usedPoints;
+        this.paymentMethod = paymentMethod;
+        this.payType = payType;
         this.pgCompany = pgCompany;
         this.status = status;
         this.transactionId = transactionId;
@@ -72,12 +107,28 @@ public class Payment {
         this.amount = amount;
     }
 
+    public Double getUsedPoints() {
+        return usedPoints;
+    }
+
+    public void setUsedPoints(Double usedPoints) {
+        this.usedPoints = usedPoints;
+    }
+
     public String getPaymentMethod() {
         return paymentMethod;
     }
 
     public void setPaymentMethod(String paymentMethod) {
         this.paymentMethod = paymentMethod;
+    }
+
+    public String getPayType() {
+        return payType;
+    }
+
+    public void setPayType(String payType) {
+        this.payType = payType;
     }
 
     public String getPgCompany() {

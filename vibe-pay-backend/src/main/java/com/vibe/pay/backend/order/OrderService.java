@@ -114,6 +114,7 @@ public class OrderService {
         paymentConfirmRequest.setNetCancelUrl(orderRequest.getNetCancelUrl());
         paymentConfirmRequest.setMemberId(orderRequest.getMemberId());
         paymentConfirmRequest.setPaymentMethod(orderRequest.getPaymentMethod());
+        paymentConfirmRequest.setUsedPoints(orderRequest.getUsedMileage()); // usedMileage를 usedPoints로 전달
 
         // 결제 승인 처리
         Payment payment;
