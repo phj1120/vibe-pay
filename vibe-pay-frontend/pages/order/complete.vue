@@ -84,7 +84,9 @@ const fetchOrderInfo = async () => {
   try {
     const response = await fetch(`/api/orders/${orderId.value}`);
     if (response.ok) {
-      orderInfo.value = await response.json();
+      const orders = await response.json();
+      // 배열에서 첫 번째 주문(원본 주문, ord_proc_seq=1)을 사용
+      orderInfo.value = orders.length > 0 ? orders[0] : null;
       console.log('Order info loaded:', orderInfo.value);
     } else {
       console.error('Failed to fetch order info');

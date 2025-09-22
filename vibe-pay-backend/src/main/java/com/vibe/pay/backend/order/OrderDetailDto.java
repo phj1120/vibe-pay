@@ -13,8 +13,6 @@ public class OrderDetailDto {
     private Long memberId;
     private LocalDateTime orderDate;
     private Double totalAmount;
-    private Double usedRewardPoints;
-    private Double finalPaymentAmount;
     private String status;
 
     // 주문 상품 정보
@@ -22,6 +20,9 @@ public class OrderDetailDto {
 
     // 결제 정보 (카드 + 포인트)
     private List<Payment> payments;
+
+    // 주문 처리 이력 (주문 + 취소)
+    private List<Order> orderProcesses;
 
     // 기본 생성자
     public OrderDetailDto() {}
@@ -35,8 +36,6 @@ public class OrderDetailDto {
         this.memberId = order.getMemberId();
         this.orderDate = order.getOrderDate();
         this.totalAmount = order.getTotalAmount();
-        this.usedRewardPoints = order.getUsedRewardPoints();
-        this.finalPaymentAmount = order.getFinalPaymentAmount();
         this.status = order.getStatus();
     }
 
@@ -97,21 +96,7 @@ public class OrderDetailDto {
         this.totalAmount = totalAmount;
     }
 
-    public Double getUsedRewardPoints() {
-        return usedRewardPoints;
-    }
 
-    public void setUsedRewardPoints(Double usedRewardPoints) {
-        this.usedRewardPoints = usedRewardPoints;
-    }
-
-    public Double getFinalPaymentAmount() {
-        return finalPaymentAmount;
-    }
-
-    public void setFinalPaymentAmount(Double finalPaymentAmount) {
-        this.finalPaymentAmount = finalPaymentAmount;
-    }
 
     public String getStatus() {
         return status;
@@ -135,5 +120,13 @@ public class OrderDetailDto {
 
     public void setPayments(List<Payment> payments) {
         this.payments = payments;
+    }
+
+    public List<Order> getOrderProcesses() {
+        return orderProcesses;
+    }
+
+    public void setOrderProcesses(List<Order> orderProcesses) {
+        this.orderProcesses = orderProcesses;
     }
 }

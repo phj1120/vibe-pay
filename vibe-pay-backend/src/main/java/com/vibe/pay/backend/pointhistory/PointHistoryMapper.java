@@ -11,6 +11,8 @@ public interface PointHistoryMapper {
     PointHistory findByPointHistoryId(@Param("pointHistoryId") Long pointHistoryId);
 
     List<PointHistory> findByMemberId(@Param("memberId") Long memberId);
+    
+    List<PointHistory> findByMemberIdWithPaging(@Param("memberId") Long memberId, @Param("offset") int offset, @Param("limit") int limit);
 
     List<PointHistory> findByMemberIdAndReferenceId(@Param("memberId") Long memberId, @Param("referenceId") String referenceId);
 

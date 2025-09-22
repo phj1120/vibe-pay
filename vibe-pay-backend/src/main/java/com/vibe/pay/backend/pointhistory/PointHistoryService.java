@@ -128,6 +128,14 @@ public class PointHistoryService {
     }
 
     /**
+     * 회원별 포인트 내역 페이징 조회
+     */
+    public List<PointHistory> getPointHistoryByMemberWithPaging(Long memberId, int page, int size) {
+        int offset = page * size;
+        return pointHistoryMapper.findByMemberIdWithPaging(memberId, offset, size);
+    }
+
+    /**
      * 특정 거래와 관련된 포인트 내역 조회
      */
     public List<PointHistory> getPointHistoryByReference(String referenceType, String referenceId) {

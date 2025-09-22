@@ -10,37 +10,43 @@
         <result property="memberId" column="member_id"/>
         <result property="orderDate" column="order_date"/>
         <result property="totalAmount" column="total_amount"/>
-        <result property="usedRewardPoints" column="used_reward_points"/>
-        <result property="finalPaymentAmount" column="final_payment_amount"/>
         <result property="status" column="status"/>
     </resultMap>
 
     <select id="findAll" resultMap="orderResultMap">
-        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, used_reward_points, final_payment_amount, status FROM orders
+        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, status FROM orders
     </select>
 
     <select id="findByOrderId" resultMap="orderResultMap">
-        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, used_reward_points, final_payment_amount, status FROM orders WHERE order_id = #{orderId}
+        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, status FROM orders WHERE order_id = #{orderId} ORDER BY ord_proc_seq
     </select>
 
     <select id="findByOrderIdAndOrdProcSeq" resultMap="orderResultMap">
-        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, used_reward_points, final_payment_amount, status FROM orders WHERE order_id = #{orderId} AND ord_proc_seq = #{ordProcSeq}
+        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, status FROM orders WHERE order_id = #{orderId} AND ord_proc_seq = #{ordProcSeq}
     </select>
 
     <select id="findByOrderIdAndClaimId" resultMap="orderResultMap">
-        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, used_reward_points, final_payment_amount, status FROM orders WHERE order_id = #{orderId} AND claim_id = #{claimId}
+        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, status FROM orders WHERE order_id = #{orderId} AND claim_id = #{claimId}
     </select>
 
     <select id="findByMemberId" resultMap="orderResultMap">
-        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, used_reward_points, final_payment_amount, status FROM orders WHERE member_id = #{memberId} ORDER BY order_date DESC
+        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, status FROM orders WHERE member_id = #{memberId} ORDER BY order_date DESC
+    </select>
+
+    <select id="findByMemberIdAndOrdProcSeq" resultMap="orderResultMap">
+        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, status FROM orders WHERE member_id = #{memberId} AND ord_proc_seq = #{ordProcSeq} ORDER BY order_date DESC
+    </select>
+
+    <select id="findByMemberIdAndOrdProcSeqWithPaging" resultMap="orderResultMap">
+        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, status FROM orders WHERE member_id = #{memberId} AND ord_proc_seq = #{ordProcSeq} ORDER BY order_date DESC LIMIT #{limit} OFFSET #{offset}
     </select>
 
     <insert id="insert">
-        INSERT INTO orders (order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, used_reward_points, final_payment_amount, status) VALUES (#{orderId}, #{ordSeq}, #{ordProcSeq}, #{claimId}, #{memberId}, #{orderDate}, #{totalAmount}, #{usedRewardPoints}, #{finalPaymentAmount}, #{status})
+        INSERT INTO orders (order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, status) VALUES (#{orderId}, #{ordSeq}, #{ordProcSeq}, #{claimId}, #{memberId}, #{orderDate}, #{totalAmount}, #{status})
     </insert>
 
     <update id="update">
-        UPDATE orders SET member_id = #{memberId}, order_date = #{orderDate}, total_amount = #{totalAmount}, used_reward_points = #{usedRewardPoints}, final_payment_amount = #{finalPaymentAmount}, status = #{status} WHERE order_id = #{orderId} AND ord_seq = #{ordSeq} AND ord_proc_seq = #{ordProcSeq}
+        UPDATE orders SET member_id = #{memberId}, order_date = #{orderDate}, total_amount = #{totalAmount}, status = #{status} WHERE order_id = #{orderId} AND ord_seq = #{ordSeq} AND ord_proc_seq = #{ordProcSeq}
     </update>
 
     <delete id="delete">

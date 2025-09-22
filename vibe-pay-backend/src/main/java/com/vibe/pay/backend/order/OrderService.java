@@ -7,6 +7,8 @@ import com.vibe.pay.backend.payment.PaymentConfirmRequest;
 import com.vibe.pay.backend.product.Product;
 import com.vibe.pay.backend.product.ProductService;
 import com.vibe.pay.backend.rewardpoints.RewardPointsService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +21,8 @@ import java.util.Optional;
 
 @Service
 public class OrderService {
+
+    private static final Logger log = LoggerFactory.getLogger(OrderService.class);
 
     @Autowired
     private OrderMapper orderMapper;
@@ -39,8 +43,8 @@ public class OrderService {
     private PaymentService paymentService;
 
 
-    public Optional<Order> getOrderById(String orderId) {
-        return Optional.ofNullable(orderMapper.findByOrderId(orderId));
+    public List<Order> getOrderById(String orderId) {
+        return orderMapper.findByOrderId(orderId);
     }
 
     public List<Order> getOrdersByMemberId(Long memberId) {
@@ -48,17 +52,23 @@ public class OrderService {
     }
 
     /**
-     * 회원별 주문 상세 정보 조회 (상품 정보 + 결제 정보 포함)
+     * 회원별 주문 상세 정보 페이징 조회 (상품 정보 + 결제 정보 포함)
      */
-    public List<OrderDetailDto> getOrderDetailsWithPaymentsByMemberId(Long memberId) {
-        List<Order> orders = orderMapper.findByMemberId(memberId);
+    public List<OrderDetailDto> getOrderDetailsWithPaymentsByMemberIdWithPaging(Long memberId, int page, int size) {
+        int offset = page * size;
+        // 원본 주문만 조회 (ord_proc_seq = 1) with paging
+        List<Order> originalOrders = orderMapper.findByMemberIdAndOrdProcSeqWithPaging(memberId, 1, offset, size);
         List<OrderDetailDto> orderDetails = new ArrayList<>();
 
-        for (Order order : orders) {
-            OrderDetailDto orderDetail = new OrderDetailDto(order);
+        for (Order originalOrder : originalOrders) {
+            OrderDetailDto orderDetail = new OrderDetailDto(originalOrder);
 
-            // 주문 상품 정보 조회
-            List<OrderItem> orderItems = orderItemMapper.findByOrderId(order.getOrderId());
+            // 동일 주문번호의 모든 처리건 조회 (주문 + 취소)
+            List<Order> allOrderProcesses = orderMapper.findByOrderId(originalOrder.getOrderId());
+            orderDetail.setOrderProcesses(allOrderProcesses);
+
+            // 원본 주문의 상품 정보 조회 (ord_proc_seq = 1)
+            List<OrderItem> orderItems = orderItemMapper.findByOrderIdAndOrdProcSeq(originalOrder.getOrderId(), 1);
 
             List<OrderItemDto> orderItemDtos = new ArrayList<>();
             for (OrderItem orderItem : orderItems) {
@@ -69,7 +79,43 @@ public class OrderService {
             orderDetail.setOrderItems(orderItemDtos);
 
             // 해당 주문의 모든 결제 정보 조회 (카드 + 포인트)
-            List<Payment> payments = paymentMapper.findByOrderId(order.getOrderId());
+            List<Payment> payments = paymentMapper.findByOrderId(originalOrder.getOrderId());
+            orderDetail.setPayments(payments);
+
+            orderDetails.add(orderDetail);
+        }
+
+        return orderDetails;
+    }
+
+    /**
+     * 회원별 주문 상세 정보 조회 (상품 정보 + 결제 정보 포함)
+     */
+    public List<OrderDetailDto> getOrderDetailsWithPaymentsByMemberId(Long memberId) {
+        // 원본 주문만 조회 (ord_proc_seq = 1)
+        List<Order> originalOrders = orderMapper.findByMemberIdAndOrdProcSeq(memberId, 1);
+        List<OrderDetailDto> orderDetails = new ArrayList<>();
+
+        for (Order originalOrder : originalOrders) {
+            OrderDetailDto orderDetail = new OrderDetailDto(originalOrder);
+
+            // 동일 주문번호의 모든 처리건 조회 (주문 + 취소)
+            List<Order> allOrderProcesses = orderMapper.findByOrderId(originalOrder.getOrderId());
+            orderDetail.setOrderProcesses(allOrderProcesses);
+
+            // 원본 주문의 상품 정보 조회 (ord_proc_seq = 1)
+            List<OrderItem> orderItems = orderItemMapper.findByOrderIdAndOrdProcSeq(originalOrder.getOrderId(), 1);
+
+            List<OrderItemDto> orderItemDtos = new ArrayList<>();
+            for (OrderItem orderItem : orderItems) {
+                Optional<Product> product = productService.getProductById(orderItem.getProductId());
+                String productName = product.map(Product::getName).orElse("상품명 없음");
+                orderItemDtos.add(new OrderItemDto(orderItem, productName));
+            }
+            orderDetail.setOrderItems(orderItemDtos);
+
+            // 해당 주문의 모든 결제 정보 조회 (카드 + 포인트)
+            List<Payment> payments = paymentMapper.findByOrderId(originalOrder.getOrderId());
             orderDetail.setPayments(payments);
 
             orderDetails.add(orderDetail);
@@ -107,8 +153,7 @@ public class OrderService {
         cancelOrder.setMemberId(originalOrder.getMemberId());
         cancelOrder.setOrderDate(LocalDateTime.now()); // 취소 일시
         cancelOrder.setTotalAmount(-originalOrder.getTotalAmount()); // 마이너스 금액
-        cancelOrder.setUsedRewardPoints(-originalOrder.getUsedRewardPoints()); // 마이너스 포인트
-        cancelOrder.setFinalPaymentAmount(-originalOrder.getFinalPaymentAmount()); // 마이너스 최종결제금액
+
         cancelOrder.setStatus("CANCELLED");
 
         // 5. 취소건 주문 저장
@@ -128,18 +173,23 @@ public class OrderService {
             orderItemMapper.insert(cancelItem);
         }
 
-        // 7. 결제 취소 처리
+        // 7. 결제 취소 처리 (포인트 환불은 한 번만 처리)
         List<Payment> payments = paymentService.findByOrderId(orderId);
+        boolean pointRefundProcessed = false;
         if (!payments.isEmpty()) {
             for (Payment payment : payments) {
-                paymentService.cancelPayment(payment.getPaymentId());
+                // 포인트 사용 결제인 경우 첫 번째 건에서만 포인트 환불 처리
+                if ("POINT".equals(payment.getPaymentMethod()) && !pointRefundProcessed) {
+                    paymentService.cancelPayment(payment.getPaymentId());
+                    pointRefundProcessed = true;
+                } else if (!"POINT".equals(payment.getPaymentMethod())) {
+                    // 카드 결제 등 PG 결제는 정상 취소 처리
+                    paymentService.cancelPayment(payment.getPaymentId());
+                }
             }
         }
 
-        // 8. 포인트 환불 처리
-        if (originalOrder.getUsedRewardPoints() > 0) {
-            rewardPointsService.addPoints(originalOrder.getMemberId(), originalOrder.getUsedRewardPoints());
-        }
+        // 8. 포인트 환불 처리는 Payment 취소에서 자동으로 처리됨
 
         return cancelOrder; // 취소건 주문 반환
     }
@@ -202,14 +252,16 @@ public class OrderService {
         order.setOrdProcSeq(1); // 주문 시에는 항상 1
         // claim_id는 주문 취소/클레임 시에만 사용 (현재는 NULL)
         order.setMemberId(orderRequest.getMemberId());
-        order.setUsedRewardPoints(orderRequest.getUsedPoints() != null ? orderRequest.getUsedPoints().doubleValue() : 0.0);
+
         order.setOrderDate(LocalDateTime.now());
         order.setStatus("PAID"); // 결제 완료 상태
 
         // 주문 상품 정보 처리 및 총액 계산
+        log.info("Processing {} order items", orderRequest.getItems() != null ? orderRequest.getItems().size() : 0);
         double calculatedTotalAmount = 0.0;
         List<OrderItem> orderItems = new ArrayList<>();
         for (OrderItemRequest itemRequest : orderRequest.getItems()) {
+            log.info("Processing item: productId={}, quantity={}", itemRequest.getProductId(), itemRequest.getQuantity());
             Product product = productService.getProductById(itemRequest.getProductId())
                     .orElseThrow(() -> new RuntimeException("Product not found with id " + itemRequest.getProductId()));
 
@@ -223,28 +275,20 @@ public class OrderService {
         }
         order.setTotalAmount(calculatedTotalAmount);
 
-        // 적립금 사용 처리
-        if (order.getUsedRewardPoints() > 0) {
-            rewardPointsService.usePoints(order.getMemberId(), order.getUsedRewardPoints());
-            order.setFinalPaymentAmount(order.getTotalAmount() - order.getUsedRewardPoints());
-        } else {
-            order.setFinalPaymentAmount(order.getTotalAmount());
-        }
-
-        // 최종 결제 금액이 음수가 되지 않도록 보정
-        if (order.getFinalPaymentAmount() < 0) {
-            order.setFinalPaymentAmount(0.0);
-        }
+        // 적립금 사용 처리는 Payment 테이블에서 별도로 관리
 
         // 주문 저장
         orderMapper.insert(order);
 
         // 주문 상품 저장
+        log.info("Saving {} order items to database", orderItems.size());
         int seqCounter = 1;
         for (OrderItem item : orderItems) {
             item.setOrderId(order.getOrderId());
             item.setOrdSeq(seqCounter++); // 1, 2, 3...
             item.setOrdProcSeq(1);
+            log.info("Inserting order item: orderId={}, ordSeq={}, productId={}, quantity={}", 
+                    item.getOrderId(), item.getOrdSeq(), item.getProductId(), item.getQuantity());
             orderItemMapper.insert(item);
         }
 

@@ -8,7 +8,7 @@
         <result property="orderId" column="order_id"/>
         <result property="claimId" column="claim_id"/>
         <result property="amount" column="amount"/>
-        <result property="usedPoints" column="used_points"/>
+
         <result property="paymentMethod" column="payment_method"/>
         <result property="payType" column="pay_type"/>
         <result property="pgCompany" column="pg_company"/>
@@ -18,23 +18,23 @@
     </resultMap>
 
     <select id="findAll" resultMap="paymentResultMap">
-        SELECT payment_id, member_id, order_id, claim_id, amount, used_points, payment_method, pay_type, pg_company, status, transaction_id, payment_date FROM payment
+        SELECT payment_id, member_id, order_id, claim_id, amount, payment_method, pay_type, pg_company, status, transaction_id, payment_date FROM payment
     </select>
 
     <select id="findByPaymentId" resultMap="paymentResultMap">
-        SELECT payment_id, member_id, order_id, claim_id, amount, used_points, payment_method, pay_type, pg_company, status, transaction_id, payment_date FROM payment WHERE payment_id = #{paymentId}
+        SELECT payment_id, member_id, order_id, claim_id, amount, payment_method, pay_type, pg_company, status, transaction_id, payment_date FROM payment WHERE payment_id = #{paymentId}
     </select>
 
     <select id="findByOrderId" resultMap="paymentResultMap">
-        SELECT payment_id, member_id, order_id, claim_id, amount, used_points, payment_method, pay_type, pg_company, status, transaction_id, payment_date FROM payment WHERE order_id = #{orderId}
+        SELECT payment_id, member_id, order_id, claim_id, amount, payment_method, pay_type, pg_company, status, transaction_id, payment_date FROM payment WHERE order_id = #{orderId}
     </select>
 
     <insert id="insert">
-        INSERT INTO payment (payment_id, member_id, order_id, claim_id, amount, used_points, payment_method, pay_type, pg_company, status, transaction_id, payment_date) VALUES (#{paymentId}, #{memberId}, #{orderId}, #{claimId}, #{amount}, #{usedPoints}, #{paymentMethod}, #{payType}, #{pgCompany}, #{status}, #{transactionId}, #{paymentDate})
+        INSERT INTO payment (payment_id, member_id, order_id, claim_id, amount, payment_method, pay_type, pg_company, status, transaction_id, payment_date) VALUES (#{paymentId}, #{memberId}, #{orderId}, #{claimId}, #{amount}, #{paymentMethod}, #{payType}, #{pgCompany}, #{status}, #{transactionId}, #{paymentDate})
     </insert>
 
     <update id="update">
-        UPDATE payment SET member_id = #{memberId}, order_id = #{orderId}, claim_id = #{claimId}, amount = #{amount}, used_points = #{usedPoints}, payment_method = #{paymentMethod}, pay_type = #{payType}, pg_company = #{pgCompany}, status = #{status}, transaction_id = #{transactionId}, payment_date = #{paymentDate} WHERE payment_id = #{paymentId} AND payment_method = #{paymentMethod} AND order_id = #{orderId} AND pay_type = #{payType}
+        UPDATE payment SET member_id = #{memberId}, order_id = #{orderId}, claim_id = #{claimId}, amount = #{amount}, payment_method = #{paymentMethod}, pay_type = #{payType}, pg_company = #{pgCompany}, status = #{status}, transaction_id = #{transactionId}, payment_date = #{paymentDate} WHERE payment_id = #{paymentId} AND payment_method = #{paymentMethod} AND order_id = #{orderId} AND pay_type = #{payType}
     </update>
 
     <delete id="delete">

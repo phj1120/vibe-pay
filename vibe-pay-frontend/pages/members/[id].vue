@@ -29,11 +29,17 @@
 
     <!-- 마일리지 관리 (기존 회원만) -->
     <v-card class="content-card" v-if="!isNewMember">
-      <v-card-title class="text-h6 d-flex align-center">
+      <v-card-title
+        class="text-h6 d-flex align-center cursor-pointer"
+        @click="toggleMileageExpansion"
+      >
         <v-icon class="mr-2" color="secondary">mdi-wallet</v-icon>
         마일리지 관리
+        <v-spacer></v-spacer>
+        <v-icon>{{ mileageExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
       </v-card-title>
-      <v-card-text>
+      <v-expand-transition>
+        <v-card-text v-show="mileageExpanded">
         <!-- 현재 마일리지 표시 -->
         <v-alert
           v-if="currentPoints !== null"
@@ -90,7 +96,8 @@
             </v-chip>
           </v-chip-group>
         </div>
-      </v-card-text>
+        </v-card-text>
+      </v-expand-transition>
     </v-card>
 
     <!-- 포인트 내역 (기존 회원만) -->
@@ -151,6 +158,17 @@
         <v-alert v-else type="info" variant="tonal">
           포인트 내역이 없습니다.
         </v-alert>
+
+        <!-- 더 보기 버튼 -->
+        <div v-if="pointHistoryHasMore && filteredPointHistory.length > 0" class="text-center mt-4">
+          <v-btn
+            @click="loadMorePointHistory"
+            variant="outlined"
+            :loading="pointHistoryLoading"
+          >
+            더 보기
+          </v-btn>
+        </div>
       </v-card-text>
     </v-card>
 
@@ -324,6 +342,17 @@
         <v-alert v-else type="info" variant="tonal">
           주문 내역이 없습니다.
         </v-alert>
+
+        <!-- 더 보기 버튼 -->
+        <div v-if="orderHistoryHasMore && orders.length > 0" class="text-center mt-4">
+          <v-btn
+            @click="loadMoreOrderHistory"
+            variant="outlined"
+            :loading="ordersLoading"
+          >
+            더 보기
+          </v-btn>
+        </div>
       </v-card-text>
     </v-card>
   </div>
@@ -345,6 +374,12 @@ const ordersLoading = ref(false)
 const pointHistory = ref([])
 const pointStats = ref(null)
 const selectedPointFilter = ref(0)
+const mileageExpanded = ref(false)
+const pointHistoryPage = ref(0)
+const orderHistoryPage = ref(0)
+const pointHistoryLoading = ref(false)
+const pointHistoryHasMore = ref(true)
+const orderHistoryHasMore = ref(true)
 
 // 빠른 충전 금액들
 const quickAmounts = [1000, 5000, 10000, 30000, 50000, 100000]
@@ -447,7 +482,7 @@ const getOrderStatusColor = (status) => {
     case 'COMPLETED':
     case 'PAID': return 'success'
     case 'PENDING': return 'warning'
-    case 'CANCELLED': return 'error'
+    case 'FAIL': return 'error'
     default: return 'grey'
   }
 }
@@ -458,7 +493,7 @@ const getOrderStatusText = (status) => {
     case 'COMPLETED': return '완료'
     case 'PAID': return '결제완료'
     case 'PENDING': return '진행중'
-    case 'CANCELLED': return '취소'
+    case 'FAIL': return '실패'
     default: return status
   }
 }
@@ -490,20 +525,27 @@ const fetchMemberData = async (memberId) => {
   }
 }
 
-const fetchOrderHistory = async (memberId) => {
+const fetchOrderHistory = async (memberId, page = 0, append = false) => {
   ordersLoading.value = true
   try {
-    const response = await fetch(`/api/orders/member/${memberId}/details`)
+    const response = await fetch(`/api/members/${memberId}/order-history?page=${page}&size=10`)
     if (!response.ok) throw new Error('Failed to fetch order details')
     const data = await response.json()
-    orders.value = data.map(o => ({
+    const processedData = data.map(o => ({
       ...o,
       // orderDate는 그대로 두고 템플릿에서 formatDateTime으로 포맷
       // 결제 정보 분리
       cardPayments: o.payments?.filter(p => p.paymentMethod !== 'POINT') || [],
       pointPayments: o.payments?.filter(p => p.paymentMethod === 'POINT') || []
     }))
-    console.log('주문 상세 정보 조회 성공:', orders.value)
+
+    if (append) {
+      orders.value = [...orders.value, ...processedData]
+    } else {
+      orders.value = processedData
+    }
+    orderHistoryHasMore.value = data.length === 10
+    console.log('주문 상세 정보 조회 성공:', processedData)
   } catch (error) {
     console.error('주문 상세 정보 조회 실패:', error)
   } finally {
@@ -511,19 +553,47 @@ const fetchOrderHistory = async (memberId) => {
   }
 }
 
-// 포인트 내역 조회
-const fetchPointHistory = async (memberId) => {
+// 주문 내역 더 불러오기
+const loadMoreOrderHistory = async () => {
+  if (!orderHistoryHasMore.value || ordersLoading.value) return
+  orderHistoryPage.value += 1
+  await fetchOrderHistory(route.params.id, orderHistoryPage.value, true)
+}
+
+// 마일리지 관리 펼침/접힘 토글
+const toggleMileageExpansion = () => {
+  mileageExpanded.value = !mileageExpanded.value
+}
+
+// 포인트 내역 조회 (페이징)
+const fetchPointHistory = async (memberId, page = 0, append = false) => {
+  pointHistoryLoading.value = true
   try {
-    const response = await fetch(`/api/point-history/member/${memberId}`)
+    const response = await fetch(`/api/members/${memberId}/point-history?page=${page}&size=10`)
     if (response.ok) {
-      pointHistory.value = await response.json()
-      console.log('포인트 내역 조회 성공:', pointHistory.value)
+      const data = await response.json()
+      if (append) {
+        pointHistory.value = [...pointHistory.value, ...data]
+      } else {
+        pointHistory.value = data
+      }
+      pointHistoryHasMore.value = data.length === 10
+      console.log('포인트 내역 조회 성공:', data)
     } else {
       console.error('포인트 내역 조회 실패 - 응답 상태:', response.status)
     }
   } catch (error) {
     console.error('포인트 내역 조회 실패:', error)
+  } finally {
+    pointHistoryLoading.value = false
   }
+}
+
+// 포인트 내역 더 불러오기
+const loadMorePointHistory = async () => {
+  if (!pointHistoryHasMore.value || pointHistoryLoading.value) return
+  pointHistoryPage.value += 1
+  await fetchPointHistory(route.params.id, pointHistoryPage.value, true)
 }
 
 // 포인트 통계 조회
@@ -603,6 +673,10 @@ const addPoints = async () => {
     
     alert(`${formatNumber(pointsToAdd.value)}원이 성공적으로 충전되었습니다!`)
     pointsToAdd.value = 0
+
+    // 포인트 내역 새로고침
+    pointHistoryPage.value = 0
+    await fetchPointHistory(route.params.id, 0, false)
   } catch (error) {
     console.error('마일리지 충전 실패:', error)
     alert('마일리지 충전에 실패했습니다. 다시 시도해주세요.')
@@ -616,7 +690,16 @@ const cancelOrder = async (orderId) => {
   try {
     const response = await fetch(`/api/orders/${orderId}/cancel`, { method: 'POST' });
     if (!response.ok) throw new Error('Failed to cancel order');
-    await fetchOrderHistory(route.params.id);
+
+    // 주문 내역과 포인트 내역, 현재 포인트 새로고침
+    orderHistoryPage.value = 0
+    pointHistoryPage.value = 0
+    await Promise.all([
+      fetchOrderHistory(route.params.id, 0, false),
+      fetchPointHistory(route.params.id, 0, false),
+      fetchCurrentPoints(route.params.id)
+    ]);
+
     alert('주문이 성공적으로 취소되었습니다.');
   } catch (error) {
     console.error(error);
@@ -627,9 +710,9 @@ const cancelOrder = async (orderId) => {
 onMounted(() => {
   if (!isNewMember.value) {
     fetchMemberData(route.params.id)
-    fetchOrderHistory(route.params.id)
+    fetchOrderHistory(route.params.id, 0, false)
     fetchCurrentPoints(route.params.id)
-    fetchPointHistory(route.params.id)
+    fetchPointHistory(route.params.id, 0, false)
     fetchPointStats(route.params.id)
   }
 })
@@ -702,5 +785,10 @@ onMounted(() => {
 /* 주문 확장 패널 */
 .order-expansion-panel {
   margin-bottom: 8px;
+}
+
+/* 커서 포인터 */
+.cursor-pointer {
+  cursor: pointer;
 }
 </style>

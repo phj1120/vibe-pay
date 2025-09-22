@@ -478,6 +478,18 @@ const proceedToPayment = async () => {
         clearInterval(checkClosed);
         window.removeEventListener('message', handleMessage);
         handlePaymentError(event.data.error);
+      } else if (event.data.type === 'PAYMENT_CANCELLED') {
+        console.log('Payment cancelled by user');
+        clearInterval(checkClosed);
+        window.removeEventListener('message', handleMessage);
+        isProcessing.value = false;
+
+        // 쿠키 정리
+        const pendingOrderCookie = useCookie('pendingOrder');
+        pendingOrderCookie.value = null;
+
+        // 사용자에게 알림 (선택사항)
+        // alert('결제가 취소되었습니다.');
       }
     };
 

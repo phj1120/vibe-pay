@@ -6,7 +6,7 @@ public class OrderRequest {
     private String orderNumber; // 1단계에서 채번된 주문번호
     private Long memberId;
     private List<OrderItemRequest> items;
-    private Integer usedPoints;
+
     
     // 결제 정보 (2단계에서 받은 결제 응답 정보)
     private String authToken;
@@ -35,13 +35,7 @@ public class OrderRequest {
         this.items = items;
     }
 
-    public Integer getUsedPoints() {
-        return usedPoints;
-    }
 
-    public void setUsedPoints(Integer usedPoints) {
-        this.usedPoints = usedPoints;
-    }
 
     public String getOrderNumber() {
         return orderNumber;

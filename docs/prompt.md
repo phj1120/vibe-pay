@@ -121,3 +121,99 @@ point_history 테이블을 하나 생성해서 적립 사용에 대한 내역을
 목록에서는 주문 번호 기준으로 하나만 나오고
 클릭해서 상세가 열리면 거기서 주문 내역 나오고 취소 내역이 구분되어 나오면 좋겠어.   
 ```
+
+20250922 13:29
+```
+20250922P00000039,14,20250922O00000041,,100,900,CREDIT_CARD,PAYMENT,INICIS,CANCELLED,StdpayCARDINIpayTest20250922101107264892,2025-09-22 10:11:21.069926
+20250922P00000041,14,20250922O00000041,,100,0,CREDIT_CARD,REFUND,INICIS,SUCCESS,20250922P00000039,2025-09-22 10:14:34.591810
+20250922P00000042,14,20250922O00000041,,900,900,POINT,REFUND,,SUCCESS,20250922P00000039,2025-09-22 10:14:34.597028
+20250922P00000040,14,20250922O00000041,,900,900,POINT,PAYMENT,,CANCELLED,20250922P00000039,2025-09-22 10:11:21.139368
+20250922P00000043,14,20250922O00000041,,900,0,POINT,REFUND,,SUCCESS,20250922P00000040,2025-09-22 10:14:34.602474
+20250922P00000044,14,20250922O00000041,,900,900,POINT,REFUND,,SUCCESS,20250922P00000040,2025-09-22 10:14:34.603593
+
+현재 payment 에 이렇게 쌓이는데, 포인트가 중복으로 쌓이고 있는 문제가 있어.
+
+used_points 컬럼을 지우고, 아래와 같이 쌓이게 하고 싶어.
+20250922P00000039,14,20250922O00000041,,100,CREDIT_CARD,PAYMENT,INICIS,CANCELLED,StdpayCARDINIpayTest20250922101107264892,2025-09-22 10:11:21.069926
+20250922P00000041,14,20250922O00000041,,100,CREDIT_CARD,REFUND,INICIS,PAYED,20250922P00000039,2025-09-22 10:14:34.591810
+20250922P00000040,14,20250922O00000041,,900,POINT,PAYMENT,,CANCELLED,20250922P00000039,2025-09-22 10:11:21.139368
+20250922P00000043,14,20250922O00000041,,900,POINT,REFUND,,PAYED,20250922P00000040,2025-09-22 10:14:34.602474
+```
+
+20250922 14:21
+```
+20250922P00000101,16,20250922O00000056,,1000,0,CREDIT_CARD,PAYMENT,INICIS,SUCCESS,StdpayCARDINIpayTest20250922141247944483,2025-09-22 14:12:50.348316
+20250922P00000103,16,20250922O00000056,,1000,0,CREDIT_CARD,REFUND,INICIS,SUCCESS,20250922P00000101,2025-09-22 14:19:14.546887
+20250922P00000102,16,20250922O00000056,,1000,0,POINT,PAYMENT,,SUCCESS,20250922P00000101,2025-09-22 14:12:50.361560
+20250922P00000104,16,20250922O00000056,,1000,0,POINT,REFUND,,SUCCESS,20250922P00000102,2025-09-22 14:19:14.551628
+
+으로 정정할게
+
+paymethod 에는 카드면 CREDIT_CARD, 포인트면 POINT 를
+pay_type 에는 결제면 PAYMENT, 환불이면 REFUND 를
+status 에는 성공시 SUCCESS 실패시 FAIL 
+
+```
+
+202509221359
+```
+현재 결제하기 팝업에서 이니시스 창을 order/popup 에서 띄우고 닫힐 경우 결제 취소 화면으로 이동하는데, 
+이니시스 창이 닫힐경우 해당 팝업을 닫고 싶어.
+그리고 해당 팝업이 닫히면 부모창에 반영 되기까지 시간이 너무 걸리는 것 같아 이를 줄이고 싶어.
+```
+
+# TODO
+20250922 14:42
+```
+orders 테이블에 쌓일 떄,  상품단위로 각각 쌓이도록 해줘.
+20250922O00000059,1,1,,19,2025-09-22 14:40:24.731523,1000,PAID
+20250922O00000059,1,2,,19,2025-09-22 14:40:24.731523,1000,PAID
+
+        log.info("Processing {} order items", orderRequest.getItems() != null ? orderRequest.getItems().size() : 0);
+        double calculatedTotalAmount = 0.0;
+        List<OrderItem> orderItems = new ArrayList<>();
+        for (OrderItemRequest itemRequest : orderRequest.getItems()) {
+            log.info("Processing item: productId={}, quantity={}", itemRequest.getProductId(), itemRequest.getQuantity());
+            Product product = productService.getProductById(itemRequest.getProductId())
+                    .orElseThrow(() -> new RuntimeException("Product not found with id " + itemRequest.getProductId()));
+
+            OrderItem orderItem = new OrderItem();
+            orderItem.setProductId(itemRequest.getProductId());
+            orderItem.setQuantity(itemRequest.getQuantity());
+            orderItem.setPriceAtOrder(product.getPrice());
+
+            orderItems.add(orderItem);
+            calculatedTotalAmount += product.getPrice() * orderItem.getQuantity();
+        }
+        order.setTotalAmount(calculatedTotalAmount);
+
+        // 적립금 사용 처리는 Payment 테이블에서 별도로 관리
+
+        // 주문 저장
+        orderMapper.insert(order);
+        
+여기서 order 도 List 로 만들고 받아서 insert 해주게끔 수정해줘.
+```
+
+20250922 14:08
+```
+카드로 결제해야할 금액이 100원 이하일 경우,
+100원 이하는 결제 불가능합니다 모달창이 나오고 이후 프로세스 진행 안되게 해줘.
+```
+
+20250922 14:07
+```
+FO 주문서에 임시로 약관 하나 두고, 약관 동의 해야지만 주문 가능하도록 개발 진행해줘. 
+```
+
+20250922 13:17
+```
+1. 현재 프로젝트의 구조가 구조화 되어있지 않아.
+구조화하고 싶은데 하기전에 나한테 어떤 방식으로 하는 것을 추천하는지 정리해서 보내줘.
+
+2. 예외처리 하는 방식이 디버깅하기에 불편해.
+controller 에서 예외를 잡고 ResponseEntity 에 저렇게 담는 것 보다 그냥 예외를 던지고 화면에서 처리하게끔 하면 안되나?
+아니면 REST API 방식으로 응답상태코드 기반을 동작하게끔하려고 그런거야? 
+그런거라면 예외 처리할때 넘어온 에러를 예외로 찍어서 로그에라도 남기게끔 해야 디버깅할떄 편할 것 같아.
+추천 방식을 정리해서 보내줘
+```

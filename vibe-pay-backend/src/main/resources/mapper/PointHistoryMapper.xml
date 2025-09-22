@@ -32,6 +32,14 @@
         ORDER BY created_at DESC
     </select>
 
+    <select id="findByMemberIdWithPaging" resultMap="pointHistoryResultMap">
+        SELECT point_history_id, member_id, point_amount, balance_after, transaction_type, reference_type, reference_id, description, created_at
+        FROM point_history
+        WHERE member_id = #{memberId}
+        ORDER BY created_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
     <select id="findByMemberIdAndReferenceId" resultMap="pointHistoryResultMap">
         SELECT point_history_id, member_id, point_amount, balance_after, transaction_type, reference_type, reference_id, description, created_at
         FROM point_history

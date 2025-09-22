@@ -11,22 +11,18 @@ public class Order {
     private Long memberId;
     private LocalDateTime orderDate;
     private Double totalAmount;
-    private Double usedRewardPoints;
-    private Double finalPaymentAmount;
     private String status;
 
 
     public Order() {
     }
 
-    public Order(Long memberId, Double totalAmount, Double usedRewardPoints, Double finalPaymentAmount, String status) {
+    public Order(Long memberId, Double totalAmount, String status) {
         this.memberId = memberId;
         this.ordSeq = 1; // 기본값
         this.ordProcSeq = 1; // 기본값
         this.orderDate = LocalDateTime.now();
         this.totalAmount = totalAmount;
-        this.usedRewardPoints = usedRewardPoints;
-        this.finalPaymentAmount = finalPaymentAmount;
         this.status = status;
     }
 
@@ -86,21 +82,7 @@ public class Order {
         this.totalAmount = totalAmount;
     }
 
-    public Double getUsedRewardPoints() {
-        return usedRewardPoints;
-    }
 
-    public void setUsedRewardPoints(Double usedRewardPoints) {
-        this.usedRewardPoints = usedRewardPoints;
-    }
-
-    public Double getFinalPaymentAmount() {
-        return finalPaymentAmount;
-    }
-
-    public void setFinalPaymentAmount(Double finalPaymentAmount) {
-        this.finalPaymentAmount = finalPaymentAmount;
-    }
 
     public String getStatus() {
         return status;

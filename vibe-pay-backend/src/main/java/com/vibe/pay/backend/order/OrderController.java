@@ -46,10 +46,12 @@ public class OrderController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Order> getOrderById(@PathVariable String id) {
-        return orderService.getOrderById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<List<Order>> getOrderById(@PathVariable String id) {
+        List<Order> orders = orderService.getOrderById(id);
+        if (orders.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(orders);
     }
 
     @GetMapping("/member/{memberId}")

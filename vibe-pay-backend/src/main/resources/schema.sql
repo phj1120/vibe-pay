@@ -44,8 +44,6 @@ CREATE TABLE IF NOT EXISTS orders (
                                       member_id BIGINT NOT NULL,
                                       order_date TIMESTAMP NOT NULL,
                                       total_amount DOUBLE PRECISION NOT NULL,
-                                      used_reward_points DOUBLE PRECISION NOT NULL DEFAULT 0.0,
-                                      final_payment_amount DOUBLE PRECISION NOT NULL,
                                       status VARCHAR(50) NOT NULL,
                                       CONSTRAINT fk_member_order FOREIGN KEY (member_id) REFERENCES member(member_id),
                                       CONSTRAINT pk PRIMARY KEY (order_id, ord_seq, ord_proc_seq)
@@ -58,7 +56,6 @@ CREATE TABLE IF NOT EXISTS payment (
                                        order_id VARCHAR(17) NOT NULL,
                                        claim_id VARCHAR(17),
                                        amount DOUBLE PRECISION NOT NULL,
-                                       used_points DOUBLE PRECISION DEFAULT 0.0, -- 사용된 포인트
                                        payment_method VARCHAR(50) NOT NULL,
                                        pay_type VARCHAR(20) NOT NULL DEFAULT 'PAYMENT', -- PAYMENT(결제), REFUND(환불)
                                        pg_company VARCHAR(50), -- 포인트 결제 시 null
