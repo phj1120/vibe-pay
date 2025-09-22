@@ -9,6 +9,7 @@ public interface OrderItemMapper {
     List<OrderItem> findAll();
     OrderItem findByOrderItemId(Long orderItemId);
     List<OrderItem> findByOrderId(String orderId);
+    List<OrderItem> findByOrderIdAndOrdSeqAndOrdProcSeq(@Param("orderId") String orderId, @Param("ordSeq") Integer ordSeq, @Param("ordProcSeq") Integer ordProcSeq);
     List<OrderItem> findByOrderIdAndClaimId(@Param("orderId") String orderId, @Param("claimId") String claimId);
     void insert(OrderItem orderItem);
     void update(OrderItem orderItem);

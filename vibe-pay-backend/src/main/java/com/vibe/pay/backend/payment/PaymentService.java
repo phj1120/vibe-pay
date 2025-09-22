@@ -90,7 +90,7 @@ public class PaymentService {
         return Optional.ofNullable(paymentMapper.findByPaymentId(paymentId));
     }
 
-    public Payment findByOrderId(String orderId) {
+    public List<Payment> findByOrderId(String orderId) {
         return paymentMapper.findByOrderId(orderId);
     }
 

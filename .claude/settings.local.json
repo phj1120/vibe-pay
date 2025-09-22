@@ -15,7 +15,12 @@
       "mcp__jetbrains__execute_terminal_command",
       "Bash(npm run build:*)",
       "Bash(npm run dev:*)",
-      "Bash(psql:*)"
+      "Bash(psql:*)",
+      "Bash(./mvnw:*)",
+      "mcp__jetbrains__get_project_problems",
+      "mcp__jetbrains__get_all_open_file_paths",
+      "Bash(curl:*)",
+      "Bash(pkill:*)"
     ],
     "deny": [],
     "ask": []

@@ -28,7 +28,7 @@
     </select>
 
     <select id="findByMemberId" resultMap="orderResultMap">
-        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, used_reward_points, final_payment_amount, status FROM orders WHERE member_id = #{memberId}
+        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, used_reward_points, final_payment_amount, status FROM orders WHERE member_id = #{memberId} ORDER BY order_date DESC
     </select>
 
     <insert id="insert">

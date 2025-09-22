@@ -99,3 +99,8 @@ point_history 테이블을 하나 생성해서 적립 사용에 대한 내역을
 1. pay_type 을 추가해서 결제인지 환불인지 관리 해줘.
 2. payment 테이블의 pk 를 payment_id, payment_method, order_id, pay_type 이렇게 수정해.
 3. 포인트 결제건의 경우 payment_method 에 POINT, pg_company 에 null을 넣어줘.
+
+20250922 09:53
+1. 회원 상세에서 포인트 사용기록은 잘 보이는데, 주문 내역은 보이지 않고 있어.
+    mapper 에 findByOrderIdAndOrdSeqAndOrdProcSeq 가 없어서 그런 것으로 보여.
+2. 현재 주문이 완료 됐다는 API 응답이 오지 않아도 주문 완료 페이지로 이동하고 있어. 주문 완료 응답이 오고(createOrder), 이 응답이 정상 응답일 경우 주문 완료 페이지로 이동하고, 실패 했을 경우 주문 실패 페이지로 이동하게 개발해줘.

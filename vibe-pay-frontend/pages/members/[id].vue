@@ -463,6 +463,17 @@ const getOrderStatusText = (status) => {
   }
 }
 
+// 결제수단 텍스트
+const getPaymentMethodText = (paymentMethod) => {
+  switch (paymentMethod) {
+    case 'CREDIT_CARD': return '신용카드'
+    case 'DEBIT_CARD': return '체크카드'
+    case 'POINT': return '포인트'
+    case 'BANK_TRANSFER': return '계좌이체'
+    default: return paymentMethod
+  }
+}
+
 // 뒤로가기
 const goBack = () => {
   router.go(-1)
@@ -487,7 +498,7 @@ const fetchOrderHistory = async (memberId) => {
     const data = await response.json()
     orders.value = data.map(o => ({
       ...o,
-      orderDate: new Date(o.orderDate).toLocaleString(),
+      // orderDate는 그대로 두고 템플릿에서 formatDateTime으로 포맷
       // 결제 정보 분리
       cardPayments: o.payments?.filter(p => p.paymentMethod !== 'POINT') || [],
       pointPayments: o.payments?.filter(p => p.paymentMethod === 'POINT') || []

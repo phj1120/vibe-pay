@@ -461,16 +461,14 @@ const proceedToPayment = async () => {
           clearInterval(checkClosed);
           window.removeEventListener('message', handleMessage);
 
-          // 팝업이 닫힐 때까지 기다린 후 페이지 이동
+          // 팝업이 닫힐 때까지 기다린 후 주문 생성 처리
           const waitForPopupClose = setInterval(() => {
             if (popup.closed) {
               clearInterval(waitForPopupClose);
-              router.push(`/order/complete?orderId=${event.data.data.orderNumber}`);
+              // 주문 생성 후 결과에 따라 페이지 이동
+              handleOrderCreation(event.data.data);
             }
           }, 100);
-
-          // 백그라운드에서 주문 생성 처리
-          handleOrderCreation(event.data.data);
         } else {
           clearInterval(checkClosed);
           window.removeEventListener('message', handleMessage);
@@ -569,20 +567,22 @@ const handleOrderCreation = async (paymentData) => {
 
     if (orderResponse.ok) {
       const orderResult = await orderResponse.json();
-      console.log('Order created:', orderResult);
+      console.log('Order created successfully:', orderResult);
 
-      // 페이지 이동은 이미 handleMessage에서 처리됨
-      console.log('주문 생성 완료, 페이지는 이미 이동됨');
+      // 주문 생성 성공 시 완료 페이지로 이동
+      router.push(`/order/complete?orderId=${orderResult.orderId || paymentData.orderNumber}`);
     } else {
       const errorText = await orderResponse.text();
       console.error('Order creation failed:', errorText);
-      alert('주문 생성 중 오류가 발생했습니다.');
-      router.push('/order');
+
+      // 주문 생성 실패 시 실패 페이지로 이동
+      router.push(`/order/failed?error=${encodeURIComponent('주문 생성 중 오류가 발생했습니다.')}`);
     }
   } catch (error) {
     console.error('Order creation error:', error);
-    alert('주문 처리 중 오류가 발생했습니다.');
-    router.push('/order');
+
+    // 주문 처리 중 오류 발생 시 실패 페이지로 이동
+    router.push(`/order/failed?error=${encodeURIComponent(error.message || '주문 처리 중 오류가 발생했습니다.')}`);
   } finally {
     isProcessing.value = false;
   }

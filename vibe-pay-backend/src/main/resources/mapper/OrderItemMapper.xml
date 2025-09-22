@@ -24,8 +24,12 @@
         SELECT order_item_id, order_id, ord_seq, ord_proc_seq, product_id, quantity, price_at_order FROM order_item WHERE order_id = #{orderId}
     </select>
 
-    <select id="findByOrderIdAndClaimId" resultMap="orderItemResultMap">
+    <select id="findByOrderIdAndOrdSeqAndOrdProcSeq" resultMap="orderItemResultMap">
         SELECT order_item_id, order_id, ord_seq, ord_proc_seq, product_id, quantity, price_at_order FROM order_item WHERE order_id = #{orderId} AND ord_seq = #{ordSeq} AND ord_proc_seq = #{ordProcSeq}
+    </select>
+
+    <select id="findByOrderIdAndClaimId" resultMap="orderItemResultMap">
+        SELECT order_item_id, order_id, ord_seq, ord_proc_seq, product_id, quantity, price_at_order FROM order_item WHERE order_id = #{orderId} AND claim_id = #{claimId}
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="orderItemId">

@@ -58,8 +58,7 @@ public class OrderService {
             OrderDetailDto orderDetail = new OrderDetailDto(order);
 
             // 주문 상품 정보 조회
-            List<OrderItem> orderItems = orderItemMapper.findByOrderIdAndOrdSeqAndOrdProcSeq(
-                    order.getOrderId(), order.getOrdSeq(), order.getOrdProcSeq());
+            List<OrderItem> orderItems = orderItemMapper.findByOrderId(order.getOrderId());
 
             List<OrderItemDto> orderItemDtos = new ArrayList<>();
             for (OrderItem orderItem : orderItems) {
@@ -92,9 +91,11 @@ public class OrderService {
 
         if (!"CANCELLED".equals(order.getStatus())) {
             // 1. Cancel associated payment
-            Payment payment = paymentService.findByOrderId(orderId);
-            if (payment != null) {
-                paymentService.cancelPayment(payment.getPaymentId());
+            List<Payment> payments = paymentService.findByOrderId(orderId);
+            if (!payments.isEmpty()) {
+                for (Payment payment : payments) {
+                    paymentService.cancelPayment(payment.getPaymentId());
+                }
             }
 
             // 2. Refund reward points

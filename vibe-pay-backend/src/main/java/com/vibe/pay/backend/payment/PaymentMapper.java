@@ -8,7 +8,7 @@ import java.util.List;
 public interface PaymentMapper {
     List<Payment> findAll();
     Payment findByPaymentId(String paymentId);
-    Payment findByOrderId(String orderId);
+    List<Payment> findByOrderId(String orderId);
     void insert(Payment payment);
     void update(Payment payment);
     void delete(Payment payment); // 복합키를 위해 Payment 객체 사용

@@ -1,7 +1,7 @@
 package com.vibe.pay.backend.payment;
 
 /**
- * ¹x °ü| ô” t˜¤
+ * ê²°ì œ ìŠ¹ì¸ ê²°ê³¼
  */
 public class ApprovalResult {
     private final boolean success;
