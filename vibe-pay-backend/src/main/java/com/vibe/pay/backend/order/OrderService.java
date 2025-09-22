@@ -84,30 +84,64 @@ public class OrderService {
 
     @Transactional
     public Order cancelOrder(String orderId) {
-        Order order = orderMapper.findByOrderId(orderId);
-        if (order == null) {
+        // 1. 원본 주문 조회 (ord_proc_seq = 1인 원본만)
+        Order originalOrder = orderMapper.findByOrderIdAndOrdProcSeq(orderId, 1);
+        if (originalOrder == null) {
             throw new RuntimeException("Order not found with id " + orderId);
         }
 
-        if (!"CANCELLED".equals(order.getStatus())) {
-            // 1. Cancel associated payment
-            List<Payment> payments = paymentService.findByOrderId(orderId);
-            if (!payments.isEmpty()) {
-                for (Payment payment : payments) {
-                    paymentService.cancelPayment(payment.getPaymentId());
-                }
-            }
-
-            // 2. Refund reward points
-            if (order.getUsedRewardPoints() > 0) {
-                rewardPointsService.addPoints(order.getMemberId(), order.getUsedRewardPoints());
-            }
-
-            // 3. Update order status
-            order.setStatus("CANCELLED");
-            orderMapper.update(order);
+        // 2. 이미 취소된 주문인지 확인 (ord_proc_seq가 1보다 큰 경우 이미 취소됨)
+        if (originalOrder.getOrdProcSeq() > 1) {
+            throw new RuntimeException("Order is already cancelled");
         }
-        return order;
+
+        // 3. 클레임 번호 생성
+        String claimId = generateClaimNumber();
+
+        // 4. 취소건 주문 생성 (ord_proc_seq +1)
+        Order cancelOrder = new Order();
+        cancelOrder.setOrderId(originalOrder.getOrderId());
+        cancelOrder.setOrdSeq(originalOrder.getOrdSeq());
+        cancelOrder.setOrdProcSeq(originalOrder.getOrdProcSeq() + 1); // +1 증가
+        cancelOrder.setClaimId(claimId);
+        cancelOrder.setMemberId(originalOrder.getMemberId());
+        cancelOrder.setOrderDate(LocalDateTime.now()); // 취소 일시
+        cancelOrder.setTotalAmount(-originalOrder.getTotalAmount()); // 마이너스 금액
+        cancelOrder.setUsedRewardPoints(-originalOrder.getUsedRewardPoints()); // 마이너스 포인트
+        cancelOrder.setFinalPaymentAmount(-originalOrder.getFinalPaymentAmount()); // 마이너스 최종결제금액
+        cancelOrder.setStatus("CANCELLED");
+
+        // 5. 취소건 주문 저장
+        orderMapper.insert(cancelOrder);
+
+        // 6. 취소건 주문 상품들 생성
+        List<OrderItem> originalOrderItems = orderItemMapper.findByOrderId(orderId);
+        for (OrderItem originalItem : originalOrderItems) {
+            OrderItem cancelItem = new OrderItem();
+            cancelItem.setOrderId(cancelOrder.getOrderId());
+            cancelItem.setOrdSeq(originalItem.getOrdSeq());
+            cancelItem.setOrdProcSeq(cancelOrder.getOrdProcSeq()); // 취소건의 ord_proc_seq 사용
+            cancelItem.setProductId(originalItem.getProductId());
+            cancelItem.setQuantity(-originalItem.getQuantity()); // 마이너스 수량
+            cancelItem.setPriceAtOrder(originalItem.getPriceAtOrder());
+            
+            orderItemMapper.insert(cancelItem);
+        }
+
+        // 7. 결제 취소 처리
+        List<Payment> payments = paymentService.findByOrderId(orderId);
+        if (!payments.isEmpty()) {
+            for (Payment payment : payments) {
+                paymentService.cancelPayment(payment.getPaymentId());
+            }
+        }
+
+        // 8. 포인트 환불 처리
+        if (originalOrder.getUsedRewardPoints() > 0) {
+            rewardPointsService.addPoints(originalOrder.getMemberId(), originalOrder.getUsedRewardPoints());
+        }
+
+        return cancelOrder; // 취소건 주문 반환
     }
 
     // 1. 주문 번호 채번 (날짜 + O + 시퀀스)

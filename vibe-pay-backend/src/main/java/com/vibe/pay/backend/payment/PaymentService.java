@@ -58,6 +58,9 @@ public class PaymentService {
     @Value("${inicis.signKey}")
     private String inicisSignKey;
 
+    @Value("${inicis.apiKey}")
+    private String inicisApiKey;
+
     @Value("${inicis.returnUrl}")
     private String inicisReturnUrl;
 
@@ -75,6 +78,9 @@ public class PaymentService {
 
     @Value("${inicis.acceptmethod}")
     private String inicisAcceptmethod;
+
+    @Value("${inicis.refundUrl}")
+    private String inicisRefundUrl;
 
     public Payment createPayment(Payment payment) {
         // Generate payment ID if not already set
@@ -501,10 +507,31 @@ public class PaymentService {
             throw new RuntimeException("Payment is already cancelled.");
         }
 
-        // 실제 PG 취소 로직이 필요한 부분
-        // TODO: 이니시스 취소 API 연동 구현 필요
-        log.warn("Cancellation requested for payment ID: {} with PG: {} - actual PG cancel API not implemented yet", 
-                paymentId, payment.getPgCompany());
+        // 실제 이니시스 취소 API 호출
+        boolean refundSuccess = false;
+        String refundResponse = null;
+        
+        if ("INICIS".equals(payment.getPgCompany()) && payment.getTransactionId() != null) {
+            try {
+                refundResponse = processInicisRefund(payment.getTransactionId(), paymentId);
+                refundSuccess = true;
+                log.info("INICIS refund processed successfully for payment: {}, tid: {}", 
+                        paymentId, payment.getTransactionId());
+            } catch (Exception e) {
+                log.error("INICIS refund failed for payment: {}, tid: {}", 
+                        paymentId, payment.getTransactionId(), e);
+                refundSuccess = false;
+                refundResponse = "REFUND_FAILED: " + e.getMessage();
+            }
+        } else {
+            log.warn("No PG refund required for payment: {} (PG: {}, TID: {})", 
+                    paymentId, payment.getPgCompany(), payment.getTransactionId());
+            refundSuccess = true; // 포인트 결제 등은 PG 취소 불필요
+        }
+        
+        if (!refundSuccess) {
+            throw new RuntimeException("PG refund failed for payment: " + paymentId);
+        }
 
         // Update payment status
         payment.setStatus("CANCELLED");
@@ -530,13 +557,13 @@ public class PaymentService {
         }
 
         // Create PaymentInterfaceRequestLog entry for cancellation (실제 객체만 저장)
-        PaymentInterfaceRequestLog log = new PaymentInterfaceRequestLog(
+        PaymentInterfaceRequestLog cancelLog = new PaymentInterfaceRequestLog(
                 payment.getPaymentId(),
                 "CANCEL_PAYMENT",
                 convertToJson(payment), // 실제 payment 객체
-                null // 취소 시 별도 response 없음
+                refundResponse // 이니시스 취소 응답
         );
-        paymentInterfaceRequestLogMapper.insert(log);
+        paymentInterfaceRequestLogMapper.insert(cancelLog);
 
         // 환불 Payment 레코드 생성
         createRefundPaymentRecord(payment);
@@ -588,6 +615,20 @@ public class PaymentService {
             return String.format("%064x", new BigInteger(1, md.digest()));
         } catch (Exception e) {
             throw new RuntimeException("Failed to compute SHA-256", e);
+        }
+    }
+    
+    private static String sha512Hex(String text) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-512");
+            byte[] digest = md.digest(text.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to compute SHA-512", e);
         }
     }
     
@@ -801,6 +842,106 @@ public class PaymentService {
             log.error("Failed to create refund payment record: originalPaymentId={}, orderId={}",
                     originalPayment.getPaymentId(), originalPayment.getOrderId(), e);
             // 환불 레코드 생성 실패해도 취소는 성공으로 처리
+        }
+    }
+
+    /**
+     * 이니시스 취소 API 호출
+     */
+    private String processInicisRefund(String transactionId, String paymentId) {
+        try {
+            log.info("Starting INICIS refund process for TID: {}, PaymentID: {}", transactionId, paymentId);
+            
+            // 타임스탬프 형식: YYYYMMDDhhmmss
+            String timestamp = java.time.LocalDateTime.now().format(
+                    java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+            
+            // 이니시스 취소 요청 파라미터 생성
+            InicisRefundRequest refundRequest = new InicisRefundRequest();
+            refundRequest.setMid(inicisMid);
+            refundRequest.setTimestamp(timestamp);
+            refundRequest.setClientIp("127.0.0.1"); // 서버 IP (실제 환경에서는 실제 IP 사용)
+            
+            // data 객체 생성
+            InicisRefundRequest.RefundData refundData = new InicisRefundRequest.RefundData(
+                    transactionId, "취소");
+            refundRequest.setData(refundData);
+            
+            // v2 API 서명 생성: INIAPIKey + " " + mid + " " + type + " " + timestamp + " " + data (SHA512)
+            String dataForHash = convertToJson(refundData); // data를 JSON 문자열로 변환
+            String signingText = inicisApiKey + inicisMid + refundRequest.getType() + timestamp + dataForHash;
+            String hashData = sha512Hex(signingText);
+            
+            log.debug("Hash PlainText: {}", signingText);
+            log.debug("Hash Text: {}", hashData);
+            refundRequest.setHashData(hashData);
+            
+            // JSON 요청으로 변경
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            
+            RestTemplate restTemplate = new RestTemplate();
+            
+            // 요청 로그 저장
+            String requestJson = convertToJson(refundRequest);
+            PaymentInterfaceRequestLog requestLog = new PaymentInterfaceRequestLog(
+                    paymentId,
+                    "INICIS_REFUND_REQUEST",
+                    requestJson,
+                    null
+            );
+            paymentInterfaceRequestLogMapper.insert(requestLog);
+            
+            log.info("Sending INICIS refund request to: {}", inicisRefundUrl);
+            log.debug("Request JSON: {}", requestJson);
+            
+            // 이니시스 취소 API 호출 (JSON)
+            ResponseEntity<InicisRefundResponse> response = restTemplate.postForEntity(
+                    inicisRefundUrl,
+                    new HttpEntity<>(refundRequest, headers),
+                    InicisRefundResponse.class
+            );
+            
+            InicisRefundResponse refundResponse = response.getBody();
+            String responseJson = convertToJson(refundResponse);
+            
+            log.info("INICIS refund response: {}", refundResponse);
+            
+            // 응답 로그 저장
+            PaymentInterfaceRequestLog responseLog = new PaymentInterfaceRequestLog(
+                    paymentId,
+                    "INICIS_REFUND_RESPONSE",
+                    requestJson,
+                    responseJson
+            );
+            paymentInterfaceRequestLogMapper.insert(responseLog);
+            
+            // 취소 성공 여부 확인
+            if (refundResponse != null && "00".equals(refundResponse.getResultCode())) {
+                log.info("INICIS refund successful: TID={}, CancelDate={}", 
+                        refundResponse.getTid(), refundResponse.getCancelDate());
+                return responseJson;
+            } else {
+                String errorMsg = refundResponse != null ?
+                        refundResponse.getResultMsg() : "Unknown error";
+                log.error("INICIS refund failed: Code={}, Message={}", 
+                        refundResponse != null ? refundResponse.getResultCode() : "NULL", errorMsg);
+                throw new RuntimeException("INICIS refund failed: " + errorMsg);
+            }
+            
+        } catch (Exception e) {
+            log.error("Error during INICIS refund process for TID: {}", transactionId, e);
+            
+            // 에러 로그 저장
+            PaymentInterfaceRequestLog errorLog = new PaymentInterfaceRequestLog(
+                    paymentId,
+                    "INICIS_REFUND_ERROR",
+                    "TID: " + transactionId,
+                    "ERROR: " + e.getMessage()
+            );
+            paymentInterfaceRequestLogMapper.insert(errorLog);
+            
+            throw new RuntimeException("INICIS refund API call failed", e);
         }
     }
 }

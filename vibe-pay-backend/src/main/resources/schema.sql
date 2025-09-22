@@ -195,4 +195,3 @@ select * from member;
 select * from point_history;
 
 select nextval('payment_id_seq')
-

@@ -9,6 +9,7 @@ import java.util.List;
 public interface OrderMapper {
     List<Order> findAll();
     Order findByOrderId(String orderId);
+    Order findByOrderIdAndOrdProcSeq(@Param("orderId") String orderId, @Param("ordProcSeq") Integer ordProcSeq);
     Order findByOrderIdAndClaimId(@Param("orderId") String orderId, @Param("claimId") String claimId);
     List<Order> findByMemberId(Long memberId);
     void insert(Order order);

@@ -23,6 +23,10 @@
         SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, used_reward_points, final_payment_amount, status FROM orders WHERE order_id = #{orderId}
     </select>
 
+    <select id="findByOrderIdAndOrdProcSeq" resultMap="orderResultMap">
+        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, used_reward_points, final_payment_amount, status FROM orders WHERE order_id = #{orderId} AND ord_proc_seq = #{ordProcSeq}
+    </select>
+
     <select id="findByOrderIdAndClaimId" resultMap="orderResultMap">
         SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, used_reward_points, final_payment_amount, status FROM orders WHERE order_id = #{orderId} AND claim_id = #{claimId}
     </select>
