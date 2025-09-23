@@ -57,9 +57,10 @@ CREATE TABLE IF NOT EXISTS payment (
                                        claim_id VARCHAR(17),
                                        amount DOUBLE PRECISION NOT NULL,
                                        payment_method VARCHAR(50) NOT NULL,
-                                       pay_type VARCHAR(20) NOT NULL DEFAULT 'PAYMENT', -- PAYMENT(결제), REFUND(환불)
+                                       pay_type VARCHAR(20) NOT NULL, -- PAYMENT(결제), REFUND(환불)
                                        pg_company VARCHAR(50), -- 포인트 결제 시 null
                                        status VARCHAR(50) NOT NULL,
+                                       order_status VARCHAR(50) NOT NULL, -- ORDER(주문), CANCELED(취소)
                                        transaction_id VARCHAR(255),
                                        payment_date TIMESTAMP NOT NULL,
                                        CONSTRAINT fk_member_payment FOREIGN KEY (member_id) REFERENCES member(member_id),

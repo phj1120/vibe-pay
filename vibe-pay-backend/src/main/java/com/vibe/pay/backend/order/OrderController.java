@@ -64,6 +64,30 @@ public class OrderController {
         return orderService.getOrderDetailsWithPaymentsByMemberId(memberId);
     }
 
+    @GetMapping("/details/{orderId}")
+    public ResponseEntity<List<OrderDetailDto>> getOrderDetailsByOrderId(@PathVariable String orderId) {
+        try {
+            // 주문번호로 회원 ID 조회 후 해당 주문의 상세 정보 반환
+            List<Order> orders = orderService.getOrderById(orderId);
+            if (orders.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            Long memberId = orders.get(0).getMemberId();
+            List<OrderDetailDto> allOrderDetails = orderService.getOrderDetailsWithPaymentsByMemberId(memberId);
+            
+            // 해당 주문번호와 일치하는 주문 상세 정보만 필터링
+            List<OrderDetailDto> filteredDetails = allOrderDetails.stream()
+                    .filter(detail -> orderId.equals(detail.getOrderId()))
+                    .toList();
+            
+            return ResponseEntity.ok(filteredDetails);
+        } catch (Exception e) {
+            log.error("Failed to get order details for orderId={}", orderId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     @PostMapping("/{id}/cancel")
     public ResponseEntity<Order> cancelOrder(@PathVariable String id) {
         try {

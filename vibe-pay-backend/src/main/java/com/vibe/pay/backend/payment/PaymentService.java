@@ -344,6 +344,7 @@ public class PaymentService {
                     "SUCCESS",
                     transactionId
             );
+            payment.setOrderStatus("ORDER"); // 주문시 ORDER
             payment.setPaymentId(paymentId); // 미리 생성된 paymentId 사용
             paymentMapper.insert(payment);
 
@@ -534,7 +535,24 @@ public class PaymentService {
         // transactionId는 그대로 유지 (임의로 변경하지 않음)
         paymentMapper.update(payment);
 
-        // 포인트 복원 처리는 별도의 포인트 결제 취소에서 처리됨
+        // 포인트 결제인 경우 포인트 환불 처리
+        if ("POINT".equals(payment.getPaymentMethod())) {
+            try {
+                // 포인트 환불 내역 기록
+                pointHistoryService.recordPointRefund(
+                        payment.getMemberId(),
+                        payment.getAmount(),
+                        payment.getPaymentId(),
+                        "주문 취소로 인한 포인트 환불 - 주문번호: " + payment.getOrderId()
+                );
+                log.info("Point refund recorded: memberId={}, refundAmount={}, paymentId={}",
+                        payment.getMemberId(), payment.getAmount(), payment.getPaymentId());
+            } catch (Exception e) {
+                log.error("Failed to record point refund history: memberId={}, refundAmount={}, paymentId={}",
+                        payment.getMemberId(), payment.getAmount(), payment.getPaymentId(), e);
+                // 포인트 히스토리 기록 실패해도 취소는 성공으로 처리
+            }
+        }
 
         // Create PaymentInterfaceRequestLog entry for cancellation (실제 객체만 저장)
         PaymentInterfaceRequestLog cancelLog = new PaymentInterfaceRequestLog(
@@ -545,8 +563,8 @@ public class PaymentService {
         );
         paymentInterfaceRequestLogMapper.insert(cancelLog);
 
-        // 환불 Payment 레코드 생성
-        createRefundPaymentRecord(payment);
+        // 환불 Payment 레코드 생성 (claim_id는 나중에 OrderService에서 설정)
+        createRefundPaymentRecord(payment, null);
 
         // In a real scenario, you might also update the associated Order status here
         // or handle it in OrderService.cancelOrder
@@ -752,6 +770,7 @@ public class PaymentService {
             );
 
             pointPayment.setPaymentId(pointPaymentId);
+            pointPayment.setOrderStatus("ORDER"); // 주문시 ORDER
             paymentMapper.insert(pointPayment);
 
             log.info("Point payment record created: paymentId={}, memberId={}, order={}, usedPoints={}",
@@ -768,7 +787,7 @@ public class PaymentService {
      * 환불 시 REFUND payment 레코드 생성
      */
     @Transactional
-    private void createRefundPaymentRecord(Payment originalPayment) {
+    private void createRefundPaymentRecord(Payment originalPayment, String claimId) {
         try {
             // 환불용 Payment ID 생성
             String refundPaymentId = generatePaymentId();
@@ -777,7 +796,7 @@ public class PaymentService {
             Payment refundPayment = new Payment(
                     originalPayment.getMemberId(),
                     originalPayment.getOrderId(),
-                    null, // claim_id
+                    claimId, // 주문 취소시 생성된 claim_id
                     originalPayment.getAmount(), // 환불 금액
                     originalPayment.getPaymentMethod(), // payment_method (원본과 동일)
                     "REFUND", // pay_type
@@ -787,6 +806,7 @@ public class PaymentService {
             );
 
             refundPayment.setPaymentId(refundPaymentId);
+            refundPayment.setOrderStatus("CANCELED"); // 주문 취소로 인한 환불
             paymentMapper.insert(refundPayment);
 
             log.info("Refund payment record created: paymentId={}, originalPaymentId={}, amount={}",

@@ -130,42 +130,53 @@ public class OrderService {
 
     @Transactional
     public Order cancelOrder(String orderId) {
-        // 1. 원본 주문 조회 (ord_proc_seq = 1인 원본만)
-        Order originalOrder = orderMapper.findByOrderIdAndOrdProcSeq(orderId, 1);
-        if (originalOrder == null) {
+        // 1. 원본 주문들 조회 (ord_proc_seq = 1인 모든 상품)
+        List<Order> originalOrders = orderMapper.findByOrderIdAndOrdProcSeqList(orderId, 1);
+        
+        if (originalOrders.isEmpty()) {
             throw new RuntimeException("Order not found with id " + orderId);
         }
 
-        // 2. 이미 취소된 주문인지 확인 (ord_proc_seq가 1보다 큰 경우 이미 취소됨)
-        if (originalOrder.getOrdProcSeq() > 1) {
+        // 2. 이미 취소된 주문인지 확인 (ord_proc_seq가 1보다 큰 경우가 있으면 이미 취소됨)
+        List<Order> allOrdersForId = orderMapper.findByOrderId(orderId);
+        boolean alreadyCancelled = allOrdersForId.stream()
+                .anyMatch(order -> order.getOrdProcSeq() > 1);
+        
+        if (alreadyCancelled) {
             throw new RuntimeException("Order is already cancelled");
         }
 
         // 3. 클레임 번호 생성
         String claimId = generateClaimNumber();
 
-        // 4. 취소건 주문 생성 (ord_proc_seq +1)
-        Order cancelOrder = new Order();
-        cancelOrder.setOrderId(originalOrder.getOrderId());
-        cancelOrder.setOrdSeq(originalOrder.getOrdSeq());
-        cancelOrder.setOrdProcSeq(originalOrder.getOrdProcSeq() + 1); // +1 증가
-        cancelOrder.setClaimId(claimId);
-        cancelOrder.setMemberId(originalOrder.getMemberId());
-        cancelOrder.setOrderDate(LocalDateTime.now()); // 취소 일시
-        cancelOrder.setTotalAmount(-originalOrder.getTotalAmount()); // 마이너스 금액
+        // 4. 모든 원본 주문에 대해 취소건 주문 생성
+        Order firstCancelOrder = null;
+        for (Order originalOrder : originalOrders) {
+            Order cancelOrder = new Order();
+            cancelOrder.setOrderId(originalOrder.getOrderId());
+            cancelOrder.setOrdSeq(originalOrder.getOrdSeq());
+            cancelOrder.setOrdProcSeq(originalOrder.getOrdProcSeq() + 1); // +1 증가
+            cancelOrder.setClaimId(claimId);
+            cancelOrder.setMemberId(originalOrder.getMemberId());
+            cancelOrder.setOrderDate(LocalDateTime.now()); // 취소 일시
+            cancelOrder.setTotalAmount(-originalOrder.getTotalAmount()); // 마이너스 금액
+            cancelOrder.setStatus("CANCELLED");
 
-        cancelOrder.setStatus("CANCELLED");
-
-        // 5. 취소건 주문 저장
-        orderMapper.insert(cancelOrder);
+            // 5. 취소건 주문 저장
+            orderMapper.insert(cancelOrder);
+            
+            if (firstCancelOrder == null) {
+                firstCancelOrder = cancelOrder;
+            }
+        }
 
         // 6. 취소건 주문 상품들 생성
-        List<OrderItem> originalOrderItems = orderItemMapper.findByOrderId(orderId);
+        List<OrderItem> originalOrderItems = orderItemMapper.findByOrderIdAndOrdProcSeq(orderId, 1);
         for (OrderItem originalItem : originalOrderItems) {
             OrderItem cancelItem = new OrderItem();
-            cancelItem.setOrderId(cancelOrder.getOrderId());
+            cancelItem.setOrderId(originalItem.getOrderId());
             cancelItem.setOrdSeq(originalItem.getOrdSeq());
-            cancelItem.setOrdProcSeq(cancelOrder.getOrdProcSeq()); // 취소건의 ord_proc_seq 사용
+            cancelItem.setOrdProcSeq(2); // 취소건의 ord_proc_seq는 2
             cancelItem.setProductId(originalItem.getProductId());
             cancelItem.setQuantity(-originalItem.getQuantity()); // 마이너스 수량
             cancelItem.setPriceAtOrder(originalItem.getPriceAtOrder());
@@ -191,7 +202,7 @@ public class OrderService {
 
         // 8. 포인트 환불 처리는 Payment 취소에서 자동으로 처리됨
 
-        return cancelOrder; // 취소건 주문 반환
+        return firstCancelOrder; // 첫 번째 취소건 주문 반환
     }
 
     // 1. 주문 번호 채번 (날짜 + O + 시퀀스)
@@ -245,53 +256,62 @@ public class OrderService {
             throw new RuntimeException("Payment approval failed: " + e.getMessage(), e);
         }
 
-        // 4-2. 결제 승인 성공 시 주문 생성
-        Order order = new Order();
-        order.setOrderId(orderRequest.getOrderNumber()); // 주문번호를 orderId로 설정
-        order.setOrdSeq(1); // 첫 번째 주문은 항상 1
-        order.setOrdProcSeq(1); // 주문 시에는 항상 1
-        // claim_id는 주문 취소/클레임 시에만 사용 (현재는 NULL)
-        order.setMemberId(orderRequest.getMemberId());
-
-        order.setOrderDate(LocalDateTime.now());
-        order.setStatus("PAID"); // 결제 완료 상태
-
-        // 주문 상품 정보 처리 및 총액 계산
+        // 4-2. 결제 승인 성공 시 주문 생성 (상품별로 각각 생성)
         log.info("Processing {} order items", orderRequest.getItems() != null ? orderRequest.getItems().size() : 0);
-        double calculatedTotalAmount = 0.0;
+        
+        List<Order> orders = new ArrayList<>();
         List<OrderItem> orderItems = new ArrayList<>();
+        int ordSeq = 1;
+        
         for (OrderItemRequest itemRequest : orderRequest.getItems()) {
             log.info("Processing item: productId={}, quantity={}", itemRequest.getProductId(), itemRequest.getQuantity());
             Product product = productService.getProductById(itemRequest.getProductId())
                     .orElseThrow(() -> new RuntimeException("Product not found with id " + itemRequest.getProductId()));
 
+            // 상품별로 별도의 Order 생성
+            Order order = new Order();
+            order.setOrderId(orderRequest.getOrderNumber()); // 주문번호를 orderId로 설정
+            order.setOrdSeq(ordSeq); // 상품별로 1, 2, 3...
+            order.setOrdProcSeq(1); // 주문 시에는 항상 1
+            // claim_id는 주문 취소/클레임 시에만 사용 (현재는 NULL)
+            order.setMemberId(orderRequest.getMemberId());
+            order.setOrderDate(LocalDateTime.now());
+            order.setTotalAmount(product.getPrice() * itemRequest.getQuantity()); // 상품별 총액
+            order.setStatus("ORDERED"); // 주문 완료 상태
+            
+            orders.add(order);
+
+            // OrderItem 생성
             OrderItem orderItem = new OrderItem();
+            orderItem.setOrderId(orderRequest.getOrderNumber());
+            orderItem.setOrdSeq(ordSeq);
+            orderItem.setOrdProcSeq(1);
             orderItem.setProductId(itemRequest.getProductId());
             orderItem.setQuantity(itemRequest.getQuantity());
             orderItem.setPriceAtOrder(product.getPrice());
-
+            
             orderItems.add(orderItem);
-            calculatedTotalAmount += product.getPrice() * orderItem.getQuantity();
+            ordSeq++;
         }
-        order.setTotalAmount(calculatedTotalAmount);
 
         // 적립금 사용 처리는 Payment 테이블에서 별도로 관리
 
-        // 주문 저장
-        orderMapper.insert(order);
+        // 주문 저장 (상품별로 각각 저장)
+        log.info("Saving {} orders to database", orders.size());
+        for (Order order : orders) {
+            log.info("Inserting order: orderId={}, ordSeq={}, totalAmount={}", 
+                    order.getOrderId(), order.getOrdSeq(), order.getTotalAmount());
+            orderMapper.insert(order);
+        }
 
         // 주문 상품 저장
         log.info("Saving {} order items to database", orderItems.size());
-        int seqCounter = 1;
         for (OrderItem item : orderItems) {
-            item.setOrderId(order.getOrderId());
-            item.setOrdSeq(seqCounter++); // 1, 2, 3...
-            item.setOrdProcSeq(1);
             log.info("Inserting order item: orderId={}, ordSeq={}, productId={}, quantity={}", 
                     item.getOrderId(), item.getOrdSeq(), item.getProductId(), item.getQuantity());
             orderItemMapper.insert(item);
         }
 
-        return order;
+        return orders.get(0); // 첫 번째 주문 반환
     }
 }

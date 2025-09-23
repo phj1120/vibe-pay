@@ -25,6 +25,10 @@
         SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, status FROM orders WHERE order_id = #{orderId} AND ord_proc_seq = #{ordProcSeq}
     </select>
 
+    <select id="findByOrderIdAndOrdProcSeqList" resultMap="orderResultMap">
+        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, status FROM orders WHERE order_id = #{orderId} AND ord_proc_seq = #{ordProcSeq} ORDER BY ord_seq
+    </select>
+
     <select id="findByOrderIdAndClaimId" resultMap="orderResultMap">
         SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, status FROM orders WHERE order_id = #{orderId} AND claim_id = #{claimId}
     </select>

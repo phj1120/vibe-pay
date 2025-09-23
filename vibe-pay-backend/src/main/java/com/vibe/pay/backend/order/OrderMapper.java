@@ -10,6 +10,7 @@ public interface OrderMapper {
     List<Order> findAll();
     List<Order> findByOrderId(String orderId);
     Order findByOrderIdAndOrdProcSeq(@Param("orderId") String orderId, @Param("ordProcSeq") Integer ordProcSeq);
+    List<Order> findByOrderIdAndOrdProcSeqList(@Param("orderId") String orderId, @Param("ordProcSeq") Integer ordProcSeq);
     Order findByOrderIdAndClaimId(@Param("orderId") String orderId, @Param("claimId") String claimId);
     List<Order> findByMemberId(Long memberId);
     List<Order> findByMemberIdAndOrdProcSeq(@Param("memberId") Long memberId, @Param("ordProcSeq") Integer ordProcSeq);

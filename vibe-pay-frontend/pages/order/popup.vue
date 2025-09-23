@@ -95,6 +95,7 @@ const paymentParams = ref(null);
 const uiState = ref('preparing'); // 'preparing', 'success', 'failed', 'error'
 const paymentResult = ref(null);
 const errorMessage = ref('');
+const paymentExecuted = ref(false); // 중복 실행 방지 플래그
 
 // 가격 포맷팅 함수
 const formatPrice = (price) => {
@@ -122,9 +123,21 @@ onMounted(async () => {
       paymentParams.value = event.data.data;
       console.log('Payment params received via postMessage:', paymentParams.value);
 
+      // 중복 실행 방지
+      if (paymentExecuted.value) {
+        console.log('Payment already executed, ignoring duplicate call');
+        return;
+      }
+
       // 이니시스 SDK 로드 및 결제 실행
-      await loadInicisSDK();
-      executePayment();
+      try {
+        await loadInicisSDK();
+        executePayment();
+      } catch (error) {
+        console.error('Failed to load Inicis SDK or execute payment:', error);
+        uiState.value = 'error';
+        errorMessage.value = 'SDK 로딩 실패: ' + error.message;
+      }
     }
     else if (event.data.type === 'PAYMENT_RESULT') {
       // 결제 결과 처리
@@ -186,13 +199,29 @@ const loadInicisSDK = async () => {
 };
 
 const executePayment = () => {
+  // 중복 실행 방지
+  if (paymentExecuted.value) {
+    console.log('Payment already executed, skipping');
+    return;
+  }
+
   const form = document.getElementById('inicisForm');
   if (!form) {
     console.error('결제 폼을 찾을 수 없습니다.');
+    uiState.value = 'error';
+    errorMessage.value = '결제 폼을 찾을 수 없습니다.';
+    return;
+  }
+
+  if (!window.INIStdPay) {
+    console.error('INIStdPay SDK가 로드되지 않았습니다.');
+    uiState.value = 'error';
+    errorMessage.value = 'INIStdPay SDK가 로드되지 않았습니다.';
     return;
   }
 
   console.log('Executing payment with INIStdPay...');
+  paymentExecuted.value = true; // 실행 상태 플래그 설정
   window.INIStdPay.pay('inicisForm');
 };
 

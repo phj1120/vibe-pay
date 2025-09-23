@@ -188,14 +188,30 @@
             <span>₩{{ total.toLocaleString() }}</span>
           </div>
         </div>
-        <v-btn 
-          color="primary" 
+
+        <!-- 약관 동의 -->
+        <div class="terms-section">
+          <v-checkbox
+            v-model="agreedToTerms"
+            color="primary"
+            class="terms-checkbox"
+          >
+            <template v-slot:label>
+              <span class="terms-text">
+                <span>[필수]</span> 구매조건 확인 및 결제서비스 약관에 동의합니다.
+              </span>
+            </template>
+          </v-checkbox>
+        </div>
+
+        <v-btn
+          color="primary"
           size="x-large"
           block
           rounded="xl"
           class="pay-btn"
-          @click="proceedToPayment" 
-          :disabled="!selectedMember || orderItems.length === 0 || isProcessing" 
+          @click="proceedToPayment"
+          :disabled="!selectedMember || orderItems.length === 0 || isProcessing || !agreedToTerms"
           :loading="isProcessing"
         >
           <v-icon left>mdi-credit-card</v-icon>
@@ -211,6 +227,29 @@
       <p>상품을 선택해서 주문을 시작해보세요</p>
     </div>
 
+    <!-- 최소 결제 금액 모달 -->
+    <v-dialog v-model="showMinPaymentDialog" max-width="400" persistent>
+      <v-card class="min-payment-dialog">
+        <v-card-title class="dialog-title">
+          <v-icon color="warning" class="mr-2">mdi-alert-circle</v-icon>
+          결제 불가
+        </v-card-title>
+        <v-card-text class="dialog-content">
+          <p>카드로 결제할 금액이 100원 이하입니다.</p>
+          <p class="error-detail">100원 이하는 결제가 불가능합니다.</p>
+          <p class="suggestion">포인트 사용량을 조정하거나 상품을 추가해주세요.</p>
+        </v-card-text>
+        <v-card-actions class="dialog-actions">
+          <v-btn
+            color="primary"
+            block
+            @click="showMinPaymentDialog = false"
+          >
+            확인
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
   </div>
 </template>
@@ -230,6 +269,8 @@ const selectedProduct = ref(null)
 const orderItems = ref([])
 const usedPoints = ref(0)
 const isProcessing = ref(false)
+const agreedToTerms = ref(false)
+const showMinPaymentDialog = ref(false)
 
 
 
@@ -334,6 +375,17 @@ const proceedToPayment = async () => {
   }
   if (orderItems.value.length === 0) {
     alert("주문할 상품을 선택해주세요.");
+    return;
+  }
+  if (!agreedToTerms.value) {
+    alert("구매조건 확인 및 결제서비스 약관에 동의해주세요.");
+    return;
+  }
+
+  // 카드 결제 금액 100원 이하 체크
+  const cardPaymentAmount = total.value; // 카드로 결제할 금액 (포인트 차감 후)
+  if (cardPaymentAmount > 0 && cardPaymentAmount <= 100) {
+    showMinPaymentDialog.value = true;
     return;
   }
 
@@ -841,10 +893,68 @@ onMounted(() => {
   color: #00C896;
 }
 
+/* 약관 동의 */
+.terms-section {
+  margin-bottom: 16px;
+}
+
+.terms-checkbox {
+  margin: 0;
+}
+
+.terms-text {
+  font-size: 0.875rem;
+  color: #333;
+  line-height: 1.4;
+}
+
+.terms-text span:first-child {
+  color: #ff5252;
+  font-weight: 600;
+}
+
 .pay-btn {
   font-weight: 600;
   font-size: 1.1rem !important;
   height: 56px !important;
+}
+
+/* 최소 결제 금액 모달 */
+.min-payment-dialog {
+  border-radius: 16px;
+}
+
+.dialog-title {
+  background: #fff3e0;
+  color: #e65100;
+  font-weight: 600;
+  padding: 20px 24px 16px;
+  display: flex;
+  align-items: center;
+}
+
+.dialog-content {
+  padding: 20px 24px;
+  text-align: center;
+}
+
+.dialog-content p {
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.error-detail {
+  color: #d32f2f;
+  font-weight: 600;
+}
+
+.suggestion {
+  color: #666;
+  font-size: 0.875rem;
+}
+
+.dialog-actions {
+  padding: 16px 24px 24px;
 }
 
 /* 빈 상태 */
