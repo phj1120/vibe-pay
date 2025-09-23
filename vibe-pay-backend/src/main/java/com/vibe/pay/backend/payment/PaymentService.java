@@ -449,7 +449,7 @@ public class PaymentService {
                     
                     if (requestPrice != null && requestPrice.equals(responsePrice)) {
                         success = true;
-                        log.info("Payment approval successful: tid={}, amount={}", 
+                        log.info("Payment approval successful: tid={}, amount={}",
                                 inicisResponse.getTid(), responsePrice);
                     } else {
                         log.error("Payment amount mismatch: requested={}, response={}", 
@@ -602,6 +602,111 @@ public class PaymentService {
                 
             } catch (Exception e) {
                 log.error("Error during net cancel", e);
+            }
+        }
+
+        /**
+         * 외부에서 호출 가능한 망취소 메서드 (주문 생성 실패 시 사용)
+         * @param netCancelUrl 이니시스 망취소 URL
+         * @param authToken 결제 승인 토큰
+         * @param orderNumber 주문번호 (로그용)
+         */
+        public void performNetCancel(String netCancelUrl, String authToken, String orderNumber) {
+            log.info("Performing net cancel for order: {}, netCancelUrl: {}", orderNumber, netCancelUrl);
+            
+            try {
+                if (netCancelUrl == null || netCancelUrl.isBlank()) {
+                    log.warn("Cannot perform net cancel - netCancelUrl is null or blank");
+                    return;
+                }
+                
+                if (authToken == null || authToken.isBlank()) {
+                    log.warn("Cannot perform net cancel - authToken is null or blank");
+                    return;
+                }
+                
+                String timestamp = String.valueOf(System.currentTimeMillis());
+                // 망취소 서명 생성 (SHA-256 - 결제 요청과 동일한 방식)
+                String signingText = "authToken=" + authToken + "&timestamp=" + timestamp;
+                String signature = sha256Hex(signingText);
+
+                MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+                params.add("mid", inicisMid);
+                params.add("authToken", authToken);
+                params.add("signature", signature);
+                params.add("timestamp", timestamp);
+                params.add("charset", "UTF-8");
+                params.add("format", "JSON");
+
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+                RestTemplate rt = new RestTemplate();
+                ResponseEntity<String> resp = rt.postForEntity(netCancelUrl, new HttpEntity<>(params, headers), String.class);
+                
+                // 망취소 로그 저장 (PaymentInterfaceRequestLog에 정식 기록)
+                String requestJson = convertToJson(params);
+                String responseJson = convertToJson(resp);
+                
+                // 해당 주문의 원본 결제 ID 찾기
+                String originalPaymentId = null;
+                try {
+                    List<Payment> payments = findByOrderId(orderNumber);
+                    if (!payments.isEmpty()) {
+                        // 첫 번째 결제건의 ID 사용 (카드 결제 우선)
+                        originalPaymentId = payments.stream()
+                                .filter(p -> !"POINT".equals(p.getPaymentMethod()))
+                                .findFirst()
+                                .orElse(payments.get(0))
+                                .getPaymentId();
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to find original payment ID for order: {}", orderNumber);
+                }
+                
+                PaymentInterfaceRequestLog netCancelLog = new PaymentInterfaceRequestLog(
+                        originalPaymentId, // 원본 결제 ID 사용
+                        "NET_CANCEL_REQUEST",
+                        requestJson,
+                        responseJson
+                );
+                paymentInterfaceRequestLogMapper.insert(netCancelLog);
+                
+                log.info("Net cancel completed for order: {}, response status: {}", 
+                        orderNumber, resp.getStatusCode());
+                
+            } catch (Exception e) {
+                log.error("Error during net cancel for order: {}", orderNumber, e);
+                
+                // 에러 로그도 기록
+                try {
+                    // 해당 주문의 원본 결제 ID 찾기
+                    String originalPaymentId = null;
+                    try {
+                        List<Payment> payments = findByOrderId(orderNumber);
+                        if (!payments.isEmpty()) {
+                            originalPaymentId = payments.stream()
+                                    .filter(p -> !"POINT".equals(p.getPaymentMethod()))
+                                    .findFirst()
+                                    .orElse(payments.get(0))
+                                    .getPaymentId();
+                        }
+                    } catch (Exception findException) {
+                        log.warn("Failed to find original payment ID for error log: {}", orderNumber);
+                    }
+                    
+                    PaymentInterfaceRequestLog errorLog = new PaymentInterfaceRequestLog(
+                            originalPaymentId, // 원본 결제 ID 사용
+                            "NET_CANCEL_ERROR",
+                            "Order: " + orderNumber + ", Error: " + e.getMessage(),
+                            null
+                    );
+                    paymentInterfaceRequestLogMapper.insert(errorLog);
+                } catch (Exception logException) {
+                    log.error("Failed to log net cancel error", logException);
+                }
+                
+                // 예외를 다시 던짐
+                throw new RuntimeException("Net cancel failed for order: " + orderNumber, e);
             }
         }
 

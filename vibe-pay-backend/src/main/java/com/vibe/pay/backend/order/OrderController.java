@@ -35,7 +35,19 @@ public class OrderController {
             return ResponseEntity.ok(createdOrder);
         } catch (RuntimeException e) {
             log.error("createOrder failed for orderNumber={}", orderRequest.getOrderNumber(), e);
-            return ResponseEntity.badRequest().body(null); // Or a more specific error response
+            
+            // 에러 메시지에 따른 상세한 응답 처리
+            String errorMessage = e.getMessage();
+            if (errorMessage != null && errorMessage.contains("Payment approval failed")) {
+                // 결제 승인 실패는 클라이언트 에러로 처리
+                return ResponseEntity.badRequest().body(null);
+            } else if (errorMessage != null && errorMessage.contains("Order creation failed after payment approval")) {
+                // 결제 승인 후 주문 생성 실패는 서버 에러로 처리 (망취소 시도됨)
+                return ResponseEntity.internalServerError().body(null);
+            } else {
+                // 기타 에러는 일반적인 클라이언트 에러로 처리
+                return ResponseEntity.badRequest().body(null);
+            }
         }
     }
 

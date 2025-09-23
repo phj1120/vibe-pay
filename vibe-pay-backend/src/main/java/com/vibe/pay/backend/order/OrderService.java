@@ -257,61 +257,84 @@ public class OrderService {
         }
 
         // 4-2. 결제 승인 성공 시 주문 생성 (상품별로 각각 생성)
-        log.info("Processing {} order items", orderRequest.getItems() != null ? orderRequest.getItems().size() : 0);
+        // 주문 생성 실패 시 망취소를 위한 정보 보관
+        String netCancelUrl = orderRequest.getNetCancelUrl();
+        String authToken = orderRequest.getAuthToken();
         
-        List<Order> orders = new ArrayList<>();
-        List<OrderItem> orderItems = new ArrayList<>();
-        int ordSeq = 1;
-        
-        for (OrderItemRequest itemRequest : orderRequest.getItems()) {
-            log.info("Processing item: productId={}, quantity={}", itemRequest.getProductId(), itemRequest.getQuantity());
-            Product product = productService.getProductById(itemRequest.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Product not found with id " + itemRequest.getProductId()));
-
-            // 상품별로 별도의 Order 생성
-            Order order = new Order();
-            order.setOrderId(orderRequest.getOrderNumber()); // 주문번호를 orderId로 설정
-            order.setOrdSeq(ordSeq); // 상품별로 1, 2, 3...
-            order.setOrdProcSeq(1); // 주문 시에는 항상 1
-            // claim_id는 주문 취소/클레임 시에만 사용 (현재는 NULL)
-            order.setMemberId(orderRequest.getMemberId());
-            order.setOrderDate(LocalDateTime.now());
-            order.setTotalAmount(product.getPrice() * itemRequest.getQuantity()); // 상품별 총액
-            order.setStatus("ORDERED"); // 주문 완료 상태
+        try {
+            log.info("Processing {} order items", orderRequest.getItems() != null ? orderRequest.getItems().size() : 0);
             
-            orders.add(order);
-
-            // OrderItem 생성
-            OrderItem orderItem = new OrderItem();
-            orderItem.setOrderId(orderRequest.getOrderNumber());
-            orderItem.setOrdSeq(ordSeq);
-            orderItem.setOrdProcSeq(1);
-            orderItem.setProductId(itemRequest.getProductId());
-            orderItem.setQuantity(itemRequest.getQuantity());
-            orderItem.setPriceAtOrder(product.getPrice());
+            List<Order> orders = new ArrayList<>();
+            List<OrderItem> orderItems = new ArrayList<>();
+            int ordSeq = 1;
             
-            orderItems.add(orderItem);
-            ordSeq++;
+            for (OrderItemRequest itemRequest : orderRequest.getItems()) {
+                log.info("Processing item: productId={}, quantity={}", itemRequest.getProductId(), itemRequest.getQuantity());
+                Product product = productService.getProductById(itemRequest.getProductId())
+                        .orElseThrow(() -> new RuntimeException("Product not found with id " + itemRequest.getProductId()));
+
+                // 상품별로 별도의 Order 생성
+                Order order = new Order();
+                order.setOrderId(orderRequest.getOrderNumber()); // 주문번호를 orderId로 설정
+                order.setOrdSeq(ordSeq); // 상품별로 1, 2, 3...
+                order.setOrdProcSeq(1); // 주문 시에는 항상 1
+                // claim_id는 주문 취소/클레임 시에만 사용 (현재는 NULL)
+                order.setMemberId(orderRequest.getMemberId());
+                order.setOrderDate(LocalDateTime.now());
+                order.setTotalAmount(product.getPrice() * itemRequest.getQuantity()); // 상품별 총액
+                order.setStatus("ORDERED"); // 주문 완료 상태
+                
+                orders.add(order);
+
+                // OrderItem 생성
+                OrderItem orderItem = new OrderItem();
+                orderItem.setOrderId(orderRequest.getOrderNumber());
+                orderItem.setOrdSeq(ordSeq);
+                orderItem.setOrdProcSeq(1);
+                orderItem.setProductId(itemRequest.getProductId());
+                orderItem.setQuantity(itemRequest.getQuantity());
+                orderItem.setPriceAtOrder(product.getPrice());
+                
+                orderItems.add(orderItem);
+                ordSeq++;
+            }
+
+            // 적립금 사용 처리는 Payment 테이블에서 별도로 관리
+
+            // 주문 저장 (상품별로 각각 저장)
+            log.info("Saving {} orders to database", orders.size());
+            for (Order order : orders) {
+                log.info("Inserting order: orderId={}, ordSeq={}, totalAmount={}", 
+                        order.getOrderId(), order.getOrdSeq(), order.getTotalAmount());
+                orderMapper.insert(order);
+            }
+
+            // 주문 상품 저장
+            log.info("Saving {} order items to database", orderItems.size());
+            for (OrderItem item : orderItems) {
+                log.info("Inserting order item: orderId={}, ordSeq={}, productId={}, quantity={}", 
+                        item.getOrderId(), item.getOrdSeq(), item.getProductId(), item.getQuantity());
+                orderItemMapper.insert(item);
+            }
+
+            return orders.get(0); // 첫 번째 주문 반환
+        } catch (Exception e) {
+            log.error("Order creation failed after payment approval: {}", e.getMessage(), e);
+            
+            // 주문 생성 실패 시 망취소 처리
+            if (netCancelUrl != null && authToken != null) {
+                log.info("Attempting net cancel due to order creation failure - orderNumber: {}", orderRequest.getOrderNumber());
+                try {
+                    paymentService.performNetCancel(netCancelUrl, authToken, orderRequest.getOrderNumber());
+                } catch (Exception netCancelException) {
+                    log.error("Net cancel also failed after order creation failure: {}", netCancelException.getMessage(), netCancelException);
+                }
+            } else {
+                log.warn("Cannot perform net cancel - missing netCancelUrl or authToken");
+            }
+            
+            // 원래 예외를 다시 던짐 (트랜잭션 롤백)
+            throw new RuntimeException("Order creation failed after payment approval: " + e.getMessage(), e);
         }
-
-        // 적립금 사용 처리는 Payment 테이블에서 별도로 관리
-
-        // 주문 저장 (상품별로 각각 저장)
-        log.info("Saving {} orders to database", orders.size());
-        for (Order order : orders) {
-            log.info("Inserting order: orderId={}, ordSeq={}, totalAmount={}", 
-                    order.getOrderId(), order.getOrdSeq(), order.getTotalAmount());
-            orderMapper.insert(order);
-        }
-
-        // 주문 상품 저장
-        log.info("Saving {} order items to database", orderItems.size());
-        for (OrderItem item : orderItems) {
-            log.info("Inserting order item: orderId={}, ordSeq={}, productId={}, quantity={}", 
-                    item.getOrderId(), item.getOrdSeq(), item.getProductId(), item.getQuantity());
-            orderItemMapper.insert(item);
-        }
-
-        return orders.get(0); // 첫 번째 주문 반환
     }
 }
