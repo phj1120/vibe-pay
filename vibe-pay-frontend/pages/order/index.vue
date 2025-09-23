@@ -633,8 +633,9 @@ const handleOrderCreation = async (paymentData) => {
       const orderResult = await orderResponse.json();
       console.log('Order created successfully:', orderResult);
 
-      // 주문 생성 성공 시 완료 페이지로 이동
-      router.push(`/order/complete?orderId=${orderResult.orderId || paymentData.orderNumber}`);
+      // 주문 생성 성공 시 완료 페이지로 이동 (첫 번째 주문의 orderId 사용)
+      const firstOrder = Array.isArray(orderResult) ? orderResult[0] : orderResult;
+      router.push(`/order/complete?orderId=${firstOrder.orderId || paymentData.orderNumber}`);
     } else {
       const errorText = await orderResponse.text();
       console.error('Order creation failed:', errorText);

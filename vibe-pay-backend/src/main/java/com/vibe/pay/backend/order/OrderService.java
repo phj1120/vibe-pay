@@ -235,7 +235,7 @@ public class OrderService {
 
     // 주문 생성 + 결제 승인
     @Transactional
-    public Order createOrder(OrderRequest orderRequest) {
+    public List<Order> createOrder(OrderRequest orderRequest) {
         // 4-1. 먼저 결제 승인 처리
         PaymentConfirmRequest paymentConfirmRequest = new PaymentConfirmRequest();
         paymentConfirmRequest.setAuthToken(orderRequest.getAuthToken());
@@ -317,7 +317,7 @@ public class OrderService {
                 orderItemMapper.insert(item);
             }
 
-            return orders.get(0); // 첫 번째 주문 반환
+            return orders; // 전체 주문 목록 반환
         } catch (Exception e) {
             log.error("Order creation failed after payment approval: {}", e.getMessage(), e);
             

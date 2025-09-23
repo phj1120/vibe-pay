@@ -29,10 +29,10 @@ public class OrderController {
 
     // 주문 생성 API (결제 승인 로직 포함)
     @PostMapping
-    public ResponseEntity<Order> createOrder(@RequestBody OrderRequest orderRequest) {
+    public ResponseEntity<List<Order>> createOrder(@RequestBody OrderRequest orderRequest) {
         try {
-            Order createdOrder = orderService.createOrder(orderRequest);
-            return ResponseEntity.ok(createdOrder);
+            List<Order> createdOrders = orderService.createOrder(orderRequest);
+            return ResponseEntity.ok(createdOrders);
         } catch (RuntimeException e) {
             log.error("createOrder failed for orderNumber={}", orderRequest.getOrderNumber(), e);
             
