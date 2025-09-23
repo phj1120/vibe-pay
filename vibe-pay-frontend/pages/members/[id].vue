@@ -136,105 +136,112 @@
           <!-- 주문번호별 그룹 -->
           <div v-for="orderGroup in getGroupedOrders()" :key="orderGroup.orderId" class="order-group">
             <!-- 주문번호 헤더 -->
-            <div class="group-header">
+            <div class="group-header cursor-pointer" @click="toggleOrderExpansion(orderGroup.orderId)">
               <div class="group-info">
                 <h3 class="group-title">{{ orderGroup.orderId }}</h3>
                 <div class="group-status" :class="orderGroup.finalStatus === 'CANCELLED' ? 'cancelled-status' : 'ordered-status'">
                   {{ orderGroup.finalStatus === 'CANCELLED' ? '취소' : '주문' }}
                 </div>
               </div>
+              <v-icon>{{ expandedOrders.has(orderGroup.orderId) ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
             </div>
 
-            <!-- 주문 기록 -->
-            <div class="order-record-card">
-              <div class="record-header order-header">
-                <div class="record-title">
-                  <h4>주문번호: {{ orderGroup.orderId }}</h4>
-                  <div class="record-amount positive">
-                    {{ formatCurrency(orderGroup.orderAmount) }}
+            <!-- 주문/취소 상세 영역 -->
+            <v-expand-transition>
+              <div v-show="expandedOrders.has(orderGroup.orderId)" class="order-details">
+
+                <!-- 주문 영역 -->
+                <div class="order-record-card">
+                  <div class="record-header order-header">
+                    <div class="record-title">
+                      <h4>주문번호: {{ orderGroup.orderId }}</h4>
+                      <div class="record-amount positive">
+                        {{ formatCurrency(orderGroup.orderAmount) }}
+                      </div>
+                    </div>
+                    <div class="record-date">{{ formatDateTime(orderGroup.orderDate) }}</div>
+                    <div class="record-status order-status">주문</div>
+                  </div>
+
+                  <!-- 상품 정보 -->
+                  <div class="record-section">
+                    <h5 class="section-title">상품 정보</h5>
+                    <div class="item-list">
+                      <div v-for="item in orderGroup.orderItems" :key="item.orderItemId" class="item-row">
+                        <div class="item-name">{{ item.productName }}</div>
+                        <div class="item-details">₩{{ formatNumber(item.priceAtOrder) }} x {{ item.quantity }}개</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 결제 정보 -->
+                  <div class="record-section">
+                    <h5 class="section-title">결제 정보</h5>
+                    <div class="payment-summary">
+                      <div class="summary-row">
+                        <span>총 주문금액</span>
+                        <span>{{ formatCurrency(orderGroup.orderAmount) }}</span>
+                      </div>
+                      <div v-for="payment in orderGroup.orderPayments" :key="payment.paymentId" class="summary-row">
+                        <span>{{ getPaymentMethodText(payment.paymentMethod) }} 결제</span>
+                        <span>{{ formatCurrency(payment.amount) }}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div class="record-date">{{ formatDateTime(orderGroup.orderDate) }}</div>
-                <div class="record-status order-status">주문</div>
-              </div>
 
-              <!-- 상품 정보 -->
-              <div class="record-section">
-                <h5 class="section-title">상품 정보</h5>
-                <div class="item-list">
-                  <div v-for="item in orderGroup.orderItems" :key="item.orderItemId" class="item-row">
-                    <div class="item-name">{{ item.productName }}</div>
-                    <div class="item-details">₩{{ formatNumber(item.priceAtOrder) }} x {{ item.quantity }}개</div>
+                <!-- 취소 영역 (있는 경우에만) -->
+                <div v-if="orderGroup.cancelPayments.length > 0" class="order-record-card cancel-record">
+                  <div class="record-header cancel-header">
+                    <div class="record-title">
+                      <h4>클레임번호: {{ orderGroup.claimId }}</h4>
+                      <div class="record-amount negative">
+                        {{ formatCurrency(orderGroup.cancelAmount, true) }}
+                      </div>
+                    </div>
+                    <div class="record-date">{{ formatDateTime(orderGroup.cancelDate) }}</div>
+                    <div class="record-status cancel-status">취소</div>
+                  </div>
+
+                  <!-- 상품 정보 -->
+                  <div class="record-section">
+                    <h5 class="section-title">상품 정보</h5>
+                    <div class="item-list">
+                      <div v-for="item in orderGroup.orderItems" :key="'cancel-' + item.orderItemId" class="item-row">
+                        <div class="item-name">{{ item.productName }}</div>
+                        <div class="item-details">₩{{ formatNumber(item.priceAtOrder) }} x {{ item.quantity }}개</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 결제 정보 -->
+                  <div class="record-section">
+                    <h5 class="section-title">결제 정보</h5>
+                    <div class="payment-summary">
+                      <div class="summary-row">
+                        <span>총 주문금액</span>
+                        <span class="negative">{{ formatCurrency(orderGroup.cancelAmount, true) }}</span>
+                      </div>
+                      <div v-for="payment in orderGroup.cancelPayments" :key="payment.paymentId" class="summary-row">
+                        <span>{{ getPaymentMethodText(payment.paymentMethod) }} 결제</span>
+                        <span class="negative">{{ formatCurrency(payment.amount, true) }}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <!-- 결제 정보 -->
-              <div class="record-section">
-                <h5 class="section-title">결제 정보</h5>
-                <div class="payment-summary">
-                  <div class="summary-row">
-                    <span>총 주문금액</span>
-                    <span>{{ formatCurrency(orderGroup.orderAmount) }}</span>
-                  </div>
-                  <div v-for="payment in orderGroup.orderPayments" :key="payment.paymentId" class="summary-row">
-                    <span>{{ getPaymentMethodText(payment.paymentMethod) }} 결제</span>
-                    <span>{{ formatCurrency(payment.amount) }}</span>
-                  </div>
+                <!-- 주문 취소 버튼 -->
+                <div v-if="orderGroup.finalStatus === 'ORDERED'" class="group-actions">
+                  <v-btn
+                    color="error"
+                    variant="outlined"
+                    @click="openCancelDialog(orderGroup.originalOrder)"
+                  >
+                    주문 취소
+                  </v-btn>
                 </div>
               </div>
-            </div>
-
-            <!-- 취소 기록 (있는 경우에만) -->
-            <div v-if="orderGroup.cancelPayments.length > 0" class="order-record-card cancel-record">
-              <div class="record-header cancel-header">
-                <div class="record-title">
-                  <h4>클레임번호: {{ orderGroup.claimId }}</h4>
-                  <div class="record-amount negative">
-                    {{ formatCurrency(orderGroup.cancelAmount, true) }}
-                  </div>
-                </div>
-                <div class="record-date">{{ formatDateTime(orderGroup.cancelDate) }}</div>
-                <div class="record-status cancel-status">취소</div>
-              </div>
-
-              <!-- 상품 정보 -->
-              <div class="record-section">
-                <h5 class="section-title">상품 정보</h5>
-                <div class="item-list">
-                  <div v-for="item in orderGroup.orderItems" :key="'cancel-' + item.orderItemId" class="item-row">
-                    <div class="item-name">{{ item.productName }}</div>
-                    <div class="item-details">₩{{ formatNumber(item.priceAtOrder) }} x {{ item.quantity }}개</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 결제 정보 -->
-              <div class="record-section">
-                <h5 class="section-title">결제 정보</h5>
-                <div class="payment-summary">
-                  <div class="summary-row">
-                    <span>총 주문금액</span>
-                    <span class="negative">{{ formatCurrency(orderGroup.cancelAmount, true) }}</span>
-                  </div>
-                  <div v-for="payment in orderGroup.cancelPayments" :key="payment.paymentId" class="summary-row">
-                    <span>{{ getPaymentMethodText(payment.paymentMethod) }} 결제</span>
-                    <span class="negative">{{ formatCurrency(payment.amount, true) }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 주문 취소 버튼 -->
-            <div v-if="orderGroup.canCancel" class="group-actions">
-              <v-btn
-                color="error"
-                variant="outlined"
-                @click="openCancelDialog(orderGroup.originalOrder)"
-              >
-                주문 취소
-              </v-btn>
-            </div>
+            </v-expand-transition>
           </div>
         </div>
         <v-alert v-else type="info" variant="tonal">
@@ -321,6 +328,58 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- 주문 취소 확인 다이얼로그 -->
+    <v-dialog v-model="showCancelDialog" max-width="400" persistent>
+      <v-card>
+        <v-card-title class="text-h6">주문 취소 확인</v-card-title>
+        <v-card-text>
+          정말로 이 주문을 취소하시겠습니까?
+          <br><br>
+          <strong>주문번호:</strong> {{ orderToCancel?.orderId }}
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn
+            variant="outlined"
+            @click="showCancelDialog = false"
+            :disabled="cancelProcessing"
+          >
+            취소
+          </v-btn>
+          <v-btn
+            color="error"
+            @click="confirmCancelOrder"
+            :loading="cancelProcessing"
+          >
+            확인
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- 주문 취소 성공 다이얼로그 -->
+    <v-dialog v-model="showCancelSuccessDialog" max-width="400" persistent>
+      <v-card>
+        <v-card-title class="text-h6 text-center">알림</v-card-title>
+        <v-card-text class="text-center">
+          <v-icon color="success" size="48" class="mb-4">mdi-check-circle</v-icon>
+          <br>
+          주문 취소가 완료되었습니다.
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn
+            color="primary"
+            variant="elevated"
+            @click="confirmCancelSuccess"
+          >
+            확인
+          </v-btn>
+          <v-spacer></v-spacer>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -349,6 +408,11 @@ const orderHistoryPage = ref(0)
 const pointHistoryLoading = ref(false)
 const pointHistoryHasMore = ref(true)
 const orderHistoryHasMore = ref(true)
+const orderToCancel = ref(null)
+const showCancelDialog = ref(false)
+const showCancelSuccessDialog = ref(false)
+const cancelProcessing = ref(false)
+const expandedOrders = ref(new Set())
 
 // 빠른 충전 금액들
 const quickAmounts = [1000, 5000, 10000, 30000, 50000, 100000]
@@ -519,39 +583,51 @@ const getCancelPayments = (order) => {
 
 // 주문을 주문번호별로 그루핑
 const getGroupedOrders = () => {
-  const groupedOrders = []
+  const orderMap = new Map()
 
+  // 주문ID별로 그룹핑
   orders.value.forEach(order => {
-    const orderPayments = getOrderPayments(order)
-    const cancelPayments = getCancelPayments(order)
+    const orderId = order.orderId
 
-    if (orderPayments.length > 0) {
-      const finalStatus = cancelPayments.length > 0 ? 'CANCELLED' : 'ORDERED'
-      const orderAmount = orderPayments.reduce((sum, payment) => sum + payment.amount, 0)
-      const cancelAmount = cancelPayments.reduce((sum, payment) => sum + payment.amount, 0)
+    if (!orderMap.has(orderId)) {
+      // 새로운 주문 그룹 생성
+      const orderPayments = getOrderPayments(order)
+      const cancelPayments = getCancelPayments(order)
 
-      // 클레임 ID 찾기
-      const claimId = cancelPayments.find(payment => payment.claimId)?.claimId || 'N/A'
-      const cancelDate = cancelPayments[0]?.paymentDate || order.orderDate
+      if (orderPayments.length > 0) {
+        const finalStatus = cancelPayments.length > 0 ? 'CANCELLED' : 'ORDERED'
+        const orderAmount = orderPayments.reduce((sum, payment) => sum + payment.amount, 0)
+        const cancelAmount = cancelPayments.reduce((sum, payment) => sum + payment.amount, 0)
 
-      groupedOrders.push({
-        orderId: order.orderId,
-        finalStatus: finalStatus,
-        orderPayments: orderPayments,
-        cancelPayments: cancelPayments,
-        orderAmount: orderAmount,
-        cancelAmount: cancelAmount,
-        orderDate: order.orderDate,
-        cancelDate: cancelDate,
-        claimId: claimId,
-        orderItems: order.orderItems || [],
-        canCancel: order.status === 'ORDERED' && cancelPayments.length === 0,
-        originalOrder: order
-      })
+        // 클레임 ID 찾기 - Order 테이블에서 claim_id 조회
+        const claimId = order.orderProcesses?.find(process => process.claimId)?.claimId || 'N/A'
+        const cancelDate = cancelPayments[0]?.paymentDate || order.orderDate
+
+        // 같은 주문ID를 가진 모든 주문의 상품들을 수집
+        const allOrderItems = orders.value
+          .filter(o => o.orderId === orderId)
+          .flatMap(o => o.orderItems || [])
+
+        orderMap.set(orderId, {
+          orderId: orderId,
+          finalStatus: finalStatus,
+          orderPayments: orderPayments,
+          cancelPayments: cancelPayments,
+          orderAmount: orderAmount,
+          cancelAmount: cancelAmount,
+          orderDate: order.orderDate,
+          cancelDate: cancelDate,
+          claimId: claimId,
+          orderItems: allOrderItems,
+          canCancel: order.status === 'ORDERED' && cancelPayments.length === 0,
+          originalOrder: order
+        })
+      }
     }
   })
 
-  return groupedOrders.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))
+  // Map을 배열로 변환하고 날짜순 정렬
+  return Array.from(orderMap.values()).sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))
 }
 
 // 주문을 주문 기록과 취소 기록으로 확장
@@ -684,6 +760,15 @@ const toggleMileageExpansion = () => {
 // 포인트 내역 펼침/접힘 토글
 const togglePointHistoryExpansion = () => {
   pointHistoryExpanded.value = !pointHistoryExpanded.value
+}
+
+// 주문 그룹 펼침/접힘 토글
+const toggleOrderExpansion = (orderId) => {
+  if (expandedOrders.value.has(orderId)) {
+    expandedOrders.value.delete(orderId)
+  } else {
+    expandedOrders.value.add(orderId)
+  }
 }
 
 // 포인트 내역 조회 (페이징)
@@ -840,12 +925,12 @@ const confirmCancelOrder = async () => {
       throw new Error('Failed to cancel order')
     }
 
-    // 모달 닫기
+    // 취소 확인 모달 닫기
     showCancelDialog.value = false
     orderToCancel.value = null
 
-    // 페이지 새로고침 (전체 데이터 다시 로드)
-    window.location.reload()
+    // 성공 모달 표시
+    showCancelSuccessDialog.value = true
 
   } catch (error) {
     console.error('주문 취소 실패:', error)
@@ -853,6 +938,13 @@ const confirmCancelOrder = async () => {
   } finally {
     cancelProcessing.value = false
   }
+}
+
+// 주문 취소 성공 모달 확인
+const confirmCancelSuccess = () => {
+  showCancelSuccessDialog.value = false
+  // 페이지 새로고침 (전체 데이터 다시 로드)
+  window.location.reload()
 }
 
 onMounted(() => {

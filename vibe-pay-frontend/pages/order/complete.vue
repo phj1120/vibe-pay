@@ -21,94 +21,118 @@
         <p>주문해주셔서 감사합니다.</p>
       </div>
 
-      <!-- 주문 정보 -->
-      <div class="order-info-card" v-if="orderDetail">
-        <div class="info-row">
-          <span class="label">주문번호</span>
-          <span class="value">{{ orderId }}</span>
-        </div>
-        <div class="info-row">
-          <span class="label">주문일시</span>
-          <span class="value">{{ formatDate(orderDetail.orderDate) }}</span>
-        </div>
-        <div class="info-row">
-          <span class="label">주문상태</span>
-          <span class="value" :class="getStatusClass(orderDetail)">{{ getStatusText(orderDetail) }}</span>
-        </div>
-      </div>
-
-      <!-- 주문 상품 목록 -->
-      <div class="order-items-card" v-if="orderDetail && orderDetail.orderItems">
-        <h3 class="card-title">
-          <v-icon color="primary" class="mr-2">mdi-shopping</v-icon>
-          주문 상품
-        </h3>
-        <div class="item-list">
-          <div v-for="item in orderDetail.orderItems" :key="item.productId" class="order-item">
-            <div class="item-info">
-              <div class="item-name">{{ item.productName }}</div>
-              <div class="item-details">
-                <span class="item-price">₩{{ item.priceAtOrder.toLocaleString() }}</span>
-                <span class="item-quantity">x {{ item.quantity }}</span>
+      <!-- 주문 정보 카드 -->
+      <v-card class="content-card" v-if="orderDetail">
+        <v-card-title class="text-h6 d-flex align-center">
+          <v-icon class="mr-2" color="primary">mdi-receipt</v-icon>
+          주문 정보
+        </v-card-title>
+        <v-card-text>
+          <div class="order-record-card">
+            <div class="record-header order-header">
+              <div class="record-title">
+                <h4>주문번호: {{ orderId }}</h4>
+                <div class="record-amount positive">
+                  {{ formatCurrency(calculateTotalAmount()) }}
+                </div>
+              </div>
+              <div class="record-meta">
+                <div class="record-date">{{ formatDate(orderDetail.orderDate) }}</div>
+                <div class="record-status" :class="getStatusClass(orderDetail)">{{ getStatusText(orderDetail) }}</div>
               </div>
             </div>
-            <div class="item-total">
-              ₩{{ (item.priceAtOrder * item.quantity).toLocaleString() }}
+          </div>
+        </v-card-text>
+      </v-card>
+
+      <!-- 주문 상품 카드 -->
+      <v-card class="content-card" v-if="orderDetail && orderDetail.orderItems">
+        <v-card-title class="text-h6 d-flex align-center">
+          <v-icon class="mr-2" color="primary">mdi-shopping</v-icon>
+          상품 정보
+        </v-card-title>
+        <v-card-text>
+          <div class="record-section">
+            <div class="item-list">
+              <div v-for="item in orderDetail.orderItems" :key="item.productId" class="item-row">
+                <div class="item-name">{{ item.productName }}</div>
+                <div class="item-details">₩{{ formatNumber(item.priceAtOrder) }} x {{ item.quantity }}개</div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </v-card-text>
+      </v-card>
 
-      <!-- 결제 정보 -->
-      <div class="payment-info-card" v-if="orderDetail && orderDetail.payments">
-        <h3 class="card-title">
-          <v-icon color="success" class="mr-2">mdi-credit-card</v-icon>
+      <!-- 결제 정보 카드 -->
+      <v-card class="content-card" v-if="orderDetail && orderDetail.payments">
+        <v-card-title class="text-h6 d-flex align-center">
+          <v-icon class="mr-2" color="success">mdi-credit-card</v-icon>
           결제 정보
-        </h3>
-
-        <!-- 주문 결제 정보 -->
-        <div v-if="getOrderPayments().length > 0" class="payment-section">
-          <h4 class="section-subtitle">주문 결제</h4>
-          <div class="payment-list">
-            <div v-for="payment in getOrderPayments()" :key="payment.paymentId" class="payment-item">
-              <div class="payment-info">
-                <div class="payment-method">{{ getPaymentMethodText(payment.paymentMethod) }}</div>
-                <div class="payment-status order-payment">결제</div>
+        </v-card-title>
+        <v-card-text>
+          <!-- 주문 결제 영역 -->
+          <div v-if="getOrderPayments().length > 0" class="order-record-card">
+            <div class="record-header order-header">
+              <div class="record-title">
+                <h4>주문 결제</h4>
+                <div class="record-amount positive">
+                  {{ formatCurrency(getOrderPayments().reduce((sum, p) => sum + p.amount, 0)) }}
+                </div>
               </div>
-              <div class="payment-amount order-amount">
-                ₩{{ payment.amount.toLocaleString() }}
+              <div class="record-meta">
+                <div class="record-date"></div>
+                <div class="record-status order-status">결제</div>
+              </div>
+            </div>
+
+            <div class="record-section">
+              <div class="payment-summary">
+                <div class="summary-row">
+                  <span>총 주문금액</span>
+                  <span>{{ formatCurrency(calculateTotalAmount()) }}</span>
+                </div>
+                <div v-for="payment in getOrderPayments()" :key="payment.paymentId" class="summary-row">
+                  <span>{{ getPaymentMethodText(payment.paymentMethod) }} 결제</span>
+                  <span>{{ formatCurrency(payment.amount) }}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- 취소 환불 정보 -->
-        <div v-if="getCancelPayments().length > 0" class="payment-section">
-          <h4 class="section-subtitle">취소 환불</h4>
-          <div class="payment-list">
-            <div v-for="payment in getCancelPayments()" :key="payment.paymentId" class="payment-item">
-              <div class="payment-info">
-                <div class="payment-method">{{ getPaymentMethodText(payment.paymentMethod) }}</div>
-                <div class="payment-status cancel-payment">환불</div>
+          <!-- 취소 환불 영역 (있는 경우에만) -->
+          <div v-if="getCancelPayments().length > 0" class="order-record-card cancel-record">
+            <div class="record-header cancel-header">
+              <div class="record-title">
+                <h4>취소 환불</h4>
+                <div class="record-amount negative">
+                  {{ formatCurrency(getCancelPayments().reduce((sum, p) => sum + p.amount, 0), true) }}
+                </div>
               </div>
-              <div class="payment-amount cancel-amount">
-                -₩{{ payment.amount.toLocaleString() }}
+              <div class="record-meta">
+                <div class="record-date"></div>
+                <div class="record-status cancel-status">환불</div>
+              </div>
+            </div>
+
+            <div class="record-section">
+              <div class="payment-summary">
+                <div v-for="payment in getCancelPayments()" :key="payment.paymentId" class="summary-row">
+                  <span>{{ getPaymentMethodText(payment.paymentMethod) }} 환불</span>
+                  <span class="negative">{{ formatCurrency(payment.amount, true) }}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div class="payment-summary">
-          <div class="summary-row">
-            <span>총 주문금액</span>
-            <span>₩{{ calculateTotalAmount().toLocaleString() }}</span>
+          <!-- 최종 결제 요약 -->
+          <div class="payment-final-summary">
+            <div class="summary-row final-row">
+              <span>최종 결제금액</span>
+              <span class="final-amount">{{ formatCurrency(calculateFinalAmount()) }}</span>
+            </div>
           </div>
-          <div class="summary-row">
-            <span>최종 결제금액</span>
-            <span class="final-amount">₩{{ calculateFinalAmount().toLocaleString() }}</span>
-          </div>
-        </div>
-      </div>
+        </v-card-text>
+      </v-card>
 
       <!-- 액션 버튼들 -->
       <div class="action-buttons">
@@ -172,6 +196,29 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- 주문 취소 성공 다이얼로그 -->
+    <v-dialog v-model="showCancelSuccessDialog" max-width="400" persistent>
+      <v-card>
+        <v-card-title class="text-h6 text-center">알림</v-card-title>
+        <v-card-text class="text-center">
+          <v-icon color="success" size="48" class="mb-4">mdi-check-circle</v-icon>
+          <br>
+          주문 취소가 완료되었습니다.
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn
+            color="primary"
+            variant="elevated"
+            @click="confirmCancelSuccess"
+          >
+            확인
+          </v-btn>
+          <v-spacer></v-spacer>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     </div>
   </div>
 </template>
@@ -185,6 +232,7 @@ const orderDetail = ref(null);
 const loading = ref(false);
 const cancelling = ref(false);
 const showCancelDialog = ref(false);
+const showCancelSuccessDialog = ref(false);
 
 // 주문 상세 정보 조회
 const fetchOrderDetail = async () => {
@@ -300,6 +348,11 @@ const formatCurrency = (amount, isNegative = false) => {
   return isNegative ? '-' + formatted : formatted;
 };
 
+// 숫자 포맷팅
+const formatNumber = (value) => {
+  return new Intl.NumberFormat('ko-KR').format(value);
+};
+
 // 금액 계산 함수들
 const calculateTotalAmount = () => {
   if (!orderDetail.value?.orderItems) return 0;
@@ -335,9 +388,8 @@ const confirmCancelOrder = async () => {
 
     if (response.ok) {
       showCancelDialog.value = false;
-      alert('주문이 성공적으로 취소되었습니다.');
-      // 주문 정보 새로고침
-      await fetchOrderDetail();
+      // 성공 모달 표시
+      showCancelSuccessDialog.value = true;
     } else {
       const errorText = await response.text();
       alert(`주문 취소 중 오류가 발생했습니다: ${errorText}`);
@@ -348,6 +400,13 @@ const confirmCancelOrder = async () => {
   } finally {
     cancelling.value = false;
   }
+};
+
+// 주문 취소 성공 모달 확인
+const confirmCancelSuccess = async () => {
+  showCancelSuccessDialog.value = false;
+  // 주문 정보 새로고침
+  await fetchOrderDetail();
 };
 
 // 회원 페이지로 이동
@@ -391,30 +450,30 @@ onMounted(() => {
 }
 
 .complete-content {
-  padding: 40px 20px;
+  padding: 24px 16px;
   max-width: 600px;
   margin: 0 auto;
   text-align: center;
 }
 
 .success-icon {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .success-message {
-  margin-bottom: 40px;
+  margin-bottom: 24px;
 }
 
 .success-message h2 {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: 600;
   color: #333;
-  margin: 0 0 8px 0;
+  margin: 0 0 6px 0;
 }
 
 .success-message p {
   color: #666;
-  font-size: 1rem;
+  font-size: 0.9rem;
   margin: 0;
 }
 
@@ -465,12 +524,12 @@ onMounted(() => {
 /* 주문/취소 기록 카드 */
 .order-record-card {
   background: white;
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
   text-align: left;
-  border-left: 4px solid #4caf50;
+  border-left: 3px solid #4caf50;
 }
 
 .order-record-card.cancel-record {
@@ -479,30 +538,28 @@ onMounted(() => {
 
 /* 기록 헤더 */
 .record-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid #f0f0f0;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .record-title {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 16px;
+  margin-bottom: 4px;
 }
 
-.record-title h3 {
-  font-size: 1.1rem;
+.record-title h4 {
+  font-size: 0.9rem;
   font-weight: 600;
   color: #333;
   margin: 0;
 }
 
 .record-amount {
-  font-size: 1.3rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .record-amount.positive {
@@ -513,16 +570,22 @@ onMounted(() => {
   color: #f44336;
 }
 
+.record-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .record-date {
   color: #666;
-  font-size: 0.9rem;
+  font-size: 0.75rem;
 }
 
 .record-status {
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 500;
 }
 
 .record-status.order-status {
@@ -537,7 +600,7 @@ onMounted(() => {
 
 /* 기록 섹션 */
 .record-section {
-  margin-bottom: 24px;
+  margin-bottom: 10px;
 }
 
 .record-section:last-child {
@@ -545,11 +608,11 @@ onMounted(() => {
 }
 
 .section-title {
-  font-size: 1rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: #333;
-  margin: 0 0 12px 0;
-  padding-bottom: 8px;
+  margin: 0 0 6px 0;
+  padding-bottom: 3px;
   border-bottom: 1px solid #eee;
 }
 
@@ -557,39 +620,41 @@ onMounted(() => {
 .item-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .item-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
+  padding: 6px 0;
 }
 
 .item-name {
-  font-weight: 600;
+  font-weight: 500;
   color: #333;
+  font-size: 0.9rem;
 }
 
 .item-details {
   color: #666;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
 /* 결제 요약 */
 .payment-summary {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .summary-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 4px 0;
+  padding: 3px 0;
   color: #666;
+  font-size: 0.85rem;
 }
 
 .summary-row:first-child {
@@ -602,6 +667,45 @@ onMounted(() => {
 
 .negative {
   color: #f44336;
+}
+
+/* 추가 스타일 */
+.content-card {
+  margin-bottom: 16px;
+}
+
+.content-card .v-card-title {
+  font-size: 1rem;
+  padding: 12px 16px 8px 16px;
+}
+
+.content-card .v-card-text {
+  padding: 8px 16px 16px 16px;
+}
+
+.record-title h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.payment-final-summary {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #ddd;
+}
+
+.final-row {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.final-amount {
+  color: #1976d2;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .action-buttons {
