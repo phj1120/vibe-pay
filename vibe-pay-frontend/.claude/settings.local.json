@@ -6,7 +6,8 @@
       "Bash(npm run dev:*)",
       "Read(//c/Users/ppp/Downloads/**)",
       "Bash(unzip:*)",
-      "Bash(./mvnw:*)"
+      "Bash(./mvnw:*)",
+      "Bash(javac:*)"
     ],
     "deny": [],
     "ask": []

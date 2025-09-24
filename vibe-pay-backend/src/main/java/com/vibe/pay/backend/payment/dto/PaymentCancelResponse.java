@@ -1,7 +1,5 @@
 package com.vibe.pay.backend.payment.dto;
 
-import java.util.function.LongFunction;
-
 public class PaymentCancelResponse {
     private boolean success;
     private String transactionId;

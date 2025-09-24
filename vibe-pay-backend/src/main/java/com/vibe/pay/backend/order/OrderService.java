@@ -379,6 +379,7 @@ public class OrderService {
                     paymentNetCancelRequest.setPaymentMethod(paymentMethodRequest.getPaymentMethod());
                     paymentNetCancelRequest.setPgCompany(paymentMethodRequest.getPgCompany());
                     paymentNetCancelRequest.setTid(paymentMethodRequest.getTxTid());
+                    paymentNetCancelRequest.setAmount(paymentMethodRequest.getAmount()); // 망취소 금액 추가
 
                     processor.netCancel(paymentNetCancelRequest);
                 }

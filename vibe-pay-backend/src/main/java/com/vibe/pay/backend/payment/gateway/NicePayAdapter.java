@@ -5,6 +5,8 @@ import com.vibe.pay.backend.payment.PaymentInitiateRequest;
 import com.vibe.pay.backend.payment.PaymentConfirmRequest;
 import com.vibe.pay.backend.payment.dto.*;
 import com.vibe.pay.backend.util.WebClientUtil;
+import com.vibe.pay.backend.paymentlog.PaymentInterfaceRequestLog;
+import com.vibe.pay.backend.paymentlog.PaymentInterfaceRequestLogMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,9 @@ public class NicePayAdapter implements PaymentGatewayAdapter {
 
     @Autowired
     private WebClientUtil webClientUtil;
+
+    @Autowired
+    private PaymentInterfaceRequestLogMapper paymentInterfaceRequestLogMapper;
 
     @Value("${nicepay.mid:}")
     private String mid;
@@ -152,16 +157,31 @@ public class NicePayAdapter implements PaymentGatewayAdapter {
 
     @Override
     public void cancel(PaymentCancelRequest request) {
-        // TODO
+        PaymentInterfaceRequestLog requestLog = null;
         try {
             log.info("Cancelling NicePay payment for transaction: {}", request.getTransactionId());
+
+            // 나이스페이 취소 API 파라미터 구성
+            String ediDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
 
             Map<String, Object> cancelParams = new HashMap<>();
             cancelParams.put("MID", mid);
             cancelParams.put("TID", request.getTransactionId());
-            cancelParams.put("CancelAmt", request.getAmount());
+            cancelParams.put("CancelAmt", request.getAmount().toString());
             cancelParams.put("PartialCancelCode", "0"); // 전체 취소
-            cancelParams.put("CancelMsg", request.getReason());
+            cancelParams.put("CancelMsg", request.getReason() != null ? request.getReason() : "결제 취소");
+            cancelParams.put("EdiDate", ediDate);
+
+            // SignData 생성: hex(sha256(MID + CancelAmt + EdiDate + MerchantKey))
+            String signData = generateCancelSignData(mid, request.getAmount().toString(), ediDate, merchantKey);
+            cancelParams.put("SignData", signData);
+
+            // 요청 로그 기록
+            requestLog = new PaymentInterfaceRequestLog();
+            requestLog.setPaymentId(request.getOrderId());
+            requestLog.setRequestType("NICEPAY_CANCEL");
+            requestLog.setRequestPayload(cancelParams.toString());
+            requestLog.setTimestamp(LocalDateTime.now());
 
             // 취소 API 호출
             Map<String, Object> response = webClientUtil.postJson(
@@ -170,19 +190,85 @@ public class NicePayAdapter implements PaymentGatewayAdapter {
                 Map.class
             );
 
+            // 응답 로그 기록
+            requestLog.setResponsePayload(response.toString());
+
             boolean isSuccess = "2001".equals(response.get("ResultCode")); // 나이스페이 취소 성공 코드
+
+            paymentInterfaceRequestLogMapper.insert(requestLog);
+
+            if (!isSuccess) {
+                String errorMessage = "나이스페이 결제 취소 실패: " + response.get("ResultMsg");
+                log.error("NicePay cancel failed: {}", errorMessage);
+                throw new RuntimeException(errorMessage);
+            }
+
+            log.info("NicePay payment cancelled successfully: {}", request.getTransactionId());
 
         } catch (Exception e) {
             log.error("Failed to cancel NicePay payment: {}", e.getMessage(), e);
-            PaymentCancelResponse errorResponse = new PaymentCancelResponse();
-            errorResponse.setSuccess(false);
-            errorResponse.setErrorMessage("나이스페이 결제 취소 실패: " + e.getMessage());
+
+            // 에러 로그 기록
+            if (requestLog != null) {
+                requestLog.setResponsePayload("ERROR: " + e.getMessage());
+                paymentInterfaceRequestLogMapper.insert(requestLog);
+            } else {
+                // requestLog가 null인 경우 에러 로그 생성
+                PaymentInterfaceRequestLog errorLog = new PaymentInterfaceRequestLog();
+                errorLog.setPaymentId(request.getOrderId());
+                errorLog.setRequestType("NICEPAY_CANCEL");
+                errorLog.setRequestPayload("Request failed before API call: " + e.getMessage());
+                errorLog.setResponsePayload("ERROR: " + e.getMessage());
+                errorLog.setTimestamp(LocalDateTime.now());
+                paymentInterfaceRequestLogMapper.insert(errorLog);
+            }
+
+            throw new RuntimeException("나이스페이 결제 취소 실패: " + e.getMessage(), e);
         }
     }
 
     @Override
     public void netCancel(PaymentNetCancelRequest request) {
-        // TODO
+        try {
+            log.info("NicePay net cancelling payment for transaction: {}", request.getTid());
+
+            // 나이스페이 망취소 API 파라미터 구성
+            String tid = request.getTid();
+            String authToken = request.getAuthToken();
+            String amt = request.getAmount().toString();
+            String ediDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+
+            // SignData 생성: hex(sha256(AuthToken + MID + Amt + EdiDate + MerchantKey))
+            String signData = generateConfirmSignData(authToken, mid, amt, ediDate, merchantKey);
+
+            // NicePayNetCancelRequest DTO 생성
+            NicePayNetCancelRequest netCancelRequest = new NicePayNetCancelRequest();
+            netCancelRequest.setTID(tid);              // 30 byte 필수 거래 ID
+            netCancelRequest.setAuthToken(authToken);  // 40 byte 필수 인증 TOKEN
+            netCancelRequest.setMID(mid);              // 10 byte 필수 가맹점 ID
+            netCancelRequest.setAmt(amt);              // 12 byte 금액
+            netCancelRequest.setEdiDate(ediDate);      // 14 byte 필수 전문생성일시
+            netCancelRequest.setNetCancel("1");        // 1 byte 필수 1 고정 (망취소 여부)
+            netCancelRequest.setSignData(signData);    // 256 byte 필수 서명데이터
+
+            log.info("NicePay net cancel request: {}", netCancelRequest);
+
+            // NetCancelURL 사용
+            String netCancelUrl = request.getNetCancelUrl();
+            log.info("NicePay net cancel URL: {}", netCancelUrl);
+
+            // 나이스페이 망취소 API 호출
+            String response = webClientUtil.postDtoForText(
+                netCancelUrl,
+                netCancelRequest
+            );
+
+            log.info("NicePay net cancel response: {}", response);
+
+        } catch (Exception e) {
+            log.error("Failed to net cancel NicePay payment: {}", e.getMessage(), e);
+            throw new RuntimeException("나이스페이 망취소 실패: " + e.getMessage(), e);
+        }
     }
 
     @Override
@@ -286,6 +372,37 @@ public class NicePayAdapter implements PaymentGatewayAdapter {
         } catch (Exception e) {
             log.error("Failed to generate Response Signature", e);
             throw new RuntimeException("Response Signature 생성 실패", e);
+        }
+    }
+
+    /**
+     * NicePay Cancel SignData 생성 (SHA256) - 취소용
+     * 파라미터 순서: MID + CancelAmt + EdiDate + MerchantKey
+     */
+    private String generateCancelSignData(String mid, String cancelAmt, String ediDate, String merchantKey) {
+        try {
+            String signString = mid + cancelAmt + ediDate + merchantKey;
+            log.info("NicePay Cancel SignString: {}", signString);
+
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(signString.getBytes(StandardCharsets.UTF_8));
+
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+
+            String result = hexString.toString();
+            log.info("NicePay Cancel SignData: {}", result);
+            return result;
+
+        } catch (Exception e) {
+            log.error("Failed to generate Cancel SignData", e);
+            throw new RuntimeException("Cancel SignData 생성 실패", e);
         }
     }
 

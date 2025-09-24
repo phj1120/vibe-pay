@@ -16,4 +16,5 @@ public class PaymentNetCancelRequest {
     private String paymentMethod;
     private String pgCompany;
     private String tid;
+    private Long amount;  // 망취소 금액 추가
 }

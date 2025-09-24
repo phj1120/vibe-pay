@@ -64,6 +64,10 @@ public class CreateOrderCommand implements OrderCommand {
                         paymentNetCancelRequest.setOrderNumber(orderRequest.getOrderNumber());
                         paymentNetCancelRequest.setAuthToken(paymentMethodRequest.getAuthToken());
                         paymentNetCancelRequest.setNetCancelUrl(paymentMethodRequest.getNetCancelUrl());
+                        paymentNetCancelRequest.setPaymentMethod(paymentMethodRequest.getPaymentMethod());
+                        paymentNetCancelRequest.setPgCompany(paymentMethodRequest.getPgCompany());
+                        paymentNetCancelRequest.setTid(paymentMethodRequest.getTxTid());
+                        paymentNetCancelRequest.setAmount(paymentMethodRequest.getAmount()); // 망취소 금액 추가
 
                         adapter.netCancel(paymentNetCancelRequest);
                     }
