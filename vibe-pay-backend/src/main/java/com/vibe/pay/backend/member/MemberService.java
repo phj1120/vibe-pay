@@ -2,7 +2,7 @@ package com.vibe.pay.backend.member;
 
 import com.vibe.pay.backend.rewardpoints.RewardPoints;
 import com.vibe.pay.backend.rewardpoints.RewardPointsService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,13 +11,11 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class MemberService {
 
-    @Autowired
-    private MemberMapper memberMapper;
-
-    @Autowired
-    private RewardPointsService rewardPointsService; // Inject RewardPointsService
+    private final MemberMapper memberMapper;
+    private final RewardPointsService rewardPointsService;
 
     @Transactional // Ensure both operations are atomic
     public Member createMember(Member member) {
@@ -46,7 +44,7 @@ public class MemberService {
     public Member updateMember(Long memberId, Member memberDetails) {
         Member existingMember = memberMapper.findByMemberId(memberId);
         if (existingMember == null) {
-            throw new RuntimeException("Member not found with id " + memberId);
+            throw new IllegalArgumentException("Member not found with id " + memberId);
         }
         memberDetails.setMemberId(memberId); // Ensure the ID is set for update
         memberMapper.update(memberDetails);

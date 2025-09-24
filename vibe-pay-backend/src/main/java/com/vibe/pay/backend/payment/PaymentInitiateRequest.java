@@ -2,7 +2,7 @@ package com.vibe.pay.backend.payment;
 
 public class PaymentInitiateRequest {
     private Long memberId;
-    private Double amount;        // 금액(원), 정수 변환하여 사용
+    private Long amount;        // 금액(원), 정수 변환하여 사용
     private String paymentMethod;
     private Double usedMileage;   // 사용한 적립금
 
@@ -21,11 +21,11 @@ public class PaymentInitiateRequest {
         this.memberId = memberId;
     }
 
-    public Double getAmount() {
+    public Long getAmount() {
         return amount;
     }
 
-    public void setAmount(Double amount) {
+    public void setAmount(Long amount) {
         this.amount = amount;
     }
 

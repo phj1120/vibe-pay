@@ -410,9 +410,9 @@ const proceedToPayment = async () => {
         productId: item.productId,
         quantity: item.quantity
       })),
-      usedPoints: usedPoints.value,
-      totalAmount: subtotal.value,
-      finalPaymentAmount: total.value
+      usedPoints: Math.round(usedPoints.value),
+      totalAmount: Math.round(subtotal.value),
+      finalPaymentAmount: Math.round(total.value)
     };
 
     // 쿠키에 주문 정보 저장 (SSR에서 읽을 수 있도록)
@@ -438,9 +438,9 @@ const proceedToPayment = async () => {
 
     const initiatePayload = {
       memberId: selectedMember.value.memberId,
-      amount: total.value,
+      amount: Math.round(total.value), // 정수로 변환
       paymentMethod: 'CREDIT_CARD',
-      usedMileage: usedPoints.value, // 적립금 사용량 추가
+      usedMileage: Math.round(usedPoints.value), // 적립금도 정수로 변환
       goodName: goodName,
       buyerName: selectedMember.value.name,
       buyerTel: selectedMember.value.phoneNumber,
@@ -472,8 +472,8 @@ const proceedToPayment = async () => {
       throw new Error(`Payment initiation failed (${initiateResponse.status}): ${errorText}`);
     }
 
-    const inicisResponse = await initiateResponse.json();
-    console.log('Payment initiated:', inicisResponse);
+    const paymentInitResponse = await initiateResponse.json();
+    console.log('Payment initiated:', paymentInitResponse);
 
     // 주문 데이터 저장
     currentOrderData.value = orderData;
@@ -492,10 +492,10 @@ const proceedToPayment = async () => {
 
     // 팝업이 로드될 때까지 기다린 후 데이터 전송
     const sendPaymentParams = () => {
-      console.log('Sending payment params to popup:', inicisResponse);
+      console.log('Sending payment params to popup:', paymentInitResponse);
       popup.postMessage({
         type: 'PAYMENT_PARAMS',
-        data: inicisResponse
+        data: paymentInitResponse
       }, '*');
     };
 

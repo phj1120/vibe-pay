@@ -7,8 +7,10 @@ import com.vibe.pay.backend.payment.PaymentConfirmRequest;
 import com.vibe.pay.backend.product.Product;
 import com.vibe.pay.backend.product.ProductService;
 import com.vibe.pay.backend.rewardpoints.RewardPointsService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.vibe.pay.backend.exception.OrderException;
+import com.vibe.pay.backend.common.Constants;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,27 +22,16 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class OrderService {
 
-    private static final Logger log = LoggerFactory.getLogger(OrderService.class);
-
-    @Autowired
-    private OrderMapper orderMapper;
-
-    @Autowired
-    private OrderItemMapper orderItemMapper;
-
-    @Autowired
-    private ProductService productService;
-
-    @Autowired
-    private RewardPointsService rewardPointsService;
-
-    @Autowired
-    private PaymentMapper paymentMapper;
-
-    @Autowired
-    private PaymentService paymentService;
+    private final OrderMapper orderMapper;
+    private final OrderItemMapper orderItemMapper;
+    private final ProductService productService;
+    private final RewardPointsService rewardPointsService;
+    private final PaymentMapper paymentMapper;
+    private final PaymentService paymentService;
 
 
     public List<Order> getOrderById(String orderId) {
@@ -134,7 +125,7 @@ public class OrderService {
         List<Order> originalOrders = orderMapper.findByOrderIdAndOrdProcSeqList(orderId, 1);
         
         if (originalOrders.isEmpty()) {
-            throw new RuntimeException("Order not found with id " + orderId);
+            throw OrderException.orderNotFound(orderId);
         }
 
         // 2. 이미 취소된 주문인지 확인 (ord_proc_seq가 1보다 큰 경우가 있으면 이미 취소됨)
@@ -143,7 +134,7 @@ public class OrderService {
                 .anyMatch(order -> order.getOrdProcSeq() > 1);
         
         if (alreadyCancelled) {
-            throw new RuntimeException("Order is already cancelled");
+            throw OrderException.alreadyCancelled(orderId);
         }
 
         // 3. 클레임 번호 생성
@@ -208,7 +199,7 @@ public class OrderService {
     // 1. 주문 번호 채번 (날짜 + O + 시퀀스)
     public String generateOrderNumber() {
         // 현재 날짜를 YYYYMMDD 형식으로 포맷
-        String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String dateStr = LocalDateTime.now().format(Constants.DATE_FORMATTER_YYYYMMDD);
         
         // DB 시퀀스에서 다음 번호 조회
         Long sequence = orderMapper.getNextOrderSequence();
@@ -222,7 +213,7 @@ public class OrderService {
     // 2. 클레임 번호 채번 (날짜 + C + 시퀀스)
     public String generateClaimNumber() {
         // 현재 날짜를 YYYYMMDD 형식으로 포맷
-        String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String dateStr = LocalDateTime.now().format(Constants.DATE_FORMATTER_YYYYMMDD);
         
         // DB 시퀀스에서 다음 번호 조회
         Long sequence = orderMapper.getNextClaimSequence();
@@ -233,7 +224,64 @@ public class OrderService {
         return dateStr + "C" + sequenceStr;
     }
 
-    // 주문 생성 + 결제 승인
+    // 결제 처리 없이 주문만 생성 (Command 패턴용)
+    @Transactional
+    public List<Order> createOrderWithoutPayment(OrderRequest orderRequest) {
+        try {
+            log.info("Creating order without payment processing: {}", orderRequest.getOrderNumber());
+
+            List<Order> orders = new ArrayList<>();
+            List<OrderItem> orderItems = new ArrayList<>();
+            int ordSeq = 1;
+
+            for (OrderItemRequest itemRequest : orderRequest.getItems()) {
+                Product product = productService.getProductById(itemRequest.getProductId())
+                        .orElseThrow(() -> new RuntimeException("Product not found with id " + itemRequest.getProductId()));
+
+                // 상품별로 별도의 Order 생성
+                Order order = new Order();
+                order.setOrderId(orderRequest.getOrderNumber());
+                order.setOrdSeq(ordSeq);
+                order.setOrdProcSeq(1);
+                order.setMemberId(orderRequest.getMemberId());
+                order.setOrderDate(LocalDateTime.now());
+                order.setTotalAmount(product.getPrice() * itemRequest.getQuantity());
+                order.setStatus("ORDERED");
+
+                orders.add(order);
+
+                // OrderItem 생성
+                OrderItem orderItem = new OrderItem();
+                orderItem.setOrderId(orderRequest.getOrderNumber());
+                orderItem.setOrdSeq(ordSeq);
+                orderItem.setOrdProcSeq(1);
+                orderItem.setProductId(itemRequest.getProductId());
+                orderItem.setQuantity(itemRequest.getQuantity());
+                orderItem.setPriceAtOrder(product.getPrice());
+
+                orderItems.add(orderItem);
+                ordSeq++;
+            }
+
+            // 주문 저장
+            for (Order order : orders) {
+                orderMapper.insert(order);
+            }
+
+            // 주문 상품 저장
+            for (OrderItem item : orderItems) {
+                orderItemMapper.insert(item);
+            }
+
+            return orders;
+
+        } catch (Exception e) {
+            log.error("Order creation failed: {}", e.getMessage(), e);
+            throw OrderException.creationFailed(e.getMessage());
+        }
+    }
+
+    // 주문 생성 + 결제 승인 (기존 메서드)
     @Transactional
     public List<Order> createOrder(OrderRequest orderRequest) {
         // 4-1. 먼저 결제 승인 처리
@@ -253,7 +301,7 @@ public class OrderService {
         try {
             payment = paymentService.confirmPayment(paymentConfirmRequest);
         } catch (Exception e) {
-            throw new RuntimeException("Payment approval failed: " + e.getMessage(), e);
+            throw OrderException.paymentFailed(e.getMessage());
         }
 
         // 4-2. 결제 승인 성공 시 주문 생성 (상품별로 각각 생성)

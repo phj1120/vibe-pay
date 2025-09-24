@@ -1,16 +1,16 @@
 package com.vibe.pay.backend.product;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class ProductService {
 
-    @Autowired
-    private ProductMapper productMapper;
+    private final ProductMapper productMapper;
 
     public Product createProduct(Product product) {
         productMapper.insert(product);
@@ -28,7 +28,7 @@ public class ProductService {
     public Product updateProduct(Long productId, Product productDetails) {
         Product existingProduct = productMapper.findByProductId(productId);
         if (existingProduct == null) {
-            throw new RuntimeException("Product not found with id " + productId);
+            throw new IllegalArgumentException("Product not found with id " + productId);
         }
         productDetails.setProductId(productId); // Ensure the ID is set for update
         productMapper.update(productDetails);

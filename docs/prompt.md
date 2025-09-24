@@ -387,4 +387,112 @@ createOrder 를 지금 보니까 get(0) 해서 첫번쨰 주문만 반환하는�
 7. PG 사가 추가 되어도 유연하게 붙일 수 있도록 리팩토링해.
 
 궁금한게 있으면 물어보고 진행하자.
+
++ 주문 처리에 커맨드 패턴.
 ```
+
+20250924 08:02
+```
+리팩토링 완료 보고서
+
+## 📋 완료된 리팩토링 작업
+
+### 1. ✅ Enum으로 코드성 데이터 관리
+- `PaymentMethod` (CREDIT_CARD, POINT)
+- `PayType` (PAYMENT, REFUND)
+- `PaymentStatus` (SUCCESS, FAILED, CANCELLED, PENDING)
+- `PgCompany` (INICIS, NICEPAY, TOSS)
+- `OrderStatus` (ORDERED, CANCELLED, PAID)
+- `TransactionType` (CHARGE, USE, REFUND)
+
+### 2. ✅ WebClient 기반 API 호출 유틸 구현
+- `WebClientUtil` - JSON/Form/Headers 지원하는 통합 API 호출 유틸
+- `WebClientConfig` - 타임아웃, 연결 설정 최적화
+- RestTemplate → WebClient 전환으로 최신 기술 적용
+
+### 3. ✅ 결제수단별 Factory 패턴 적용
+```java
+PaymentProcessor processor = PaymentProcessorFactory.create(method);
+processor.process(request); // 카드/포인트 구분 없이 동일 인터페이스
+```
+- `PaymentProcessor` 인터페이스
+- `CreditCardPaymentProcessor`, `PointPaymentProcessor` 구현체
+- 새 결제수단 추가 시 기존 코드 수정 없음
+
+### 4. ✅ PG사별 Adapter 패턴 적용
+```java
+PaymentGatewayAdapter adapter = PgAdapterFactory.create(pgCompany);
+PaymentResult result = adapter.requestPayment(standardRequest);
+```
+- `PaymentGatewayAdapter` 인터페이스로 PG사별 API 차이 흡수
+- `InicisAdapter`, `NicePayAdapter`, `TossAdapter` 구현체
+- 각 PG사의 복잡한 API를 표준 인터페이스로 통일
+
+### 5. ✅ 예외처리 및 로깅 개선
+- `BusinessException`, `PaymentException`, `OrderException` 계층화
+- `GlobalExceptionHandler`에서 예외 타입별 구체적 처리
+- 로그에 traceId 포함으로 디버깅 편의성 향상
+
+### 6. ✅ 나이스페이/토스 PG 연동 인터페이스 설계
+- 3개 PG사 (이니시스/나이스페이/토스) 동시 지원 가능한 구조
+- 환경변수 기반 설정으로 배포 환경별 분리
+- PG사별 특성 반영한 개별 Adapter 구현
+
+## 🏗️ 새로운 아키텍처 구조
+
+```
+결제 요청 → PaymentProcessorFactory → 적절한 Processor 선택
+            ↓
+         PaymentGatewayFactory → 적절한 PG Adapter 선택
+            ↓
+         WebClientUtil → 실제 API 호출
+```
+
+## 🚀 확장성 개선 효과
+
+### 새 결제수단 추가 시:
+1. `PaymentProcessor` 구현체만 추가
+2. 기존 코드 수정 없음
+
+### 새 PG사 추가 시:
+1. `PaymentGatewayAdapter` 구현체만 추가
+2. 설정 파일에 환경변수만 추가
+3. 기존 코드 수정 없음
+
+### 코드 품질 개선:
+- OCP 원칙 준수 (확장에는 열림, 수정에는 닫힘)
+- 단일 책임 원칙 적용
+- 의존성 역전을 통한 테스트 용이성 확보
+
+## 📊 리팩토링 전후 비교
+
+### Before:
+```java
+if ("CREDIT_CARD".equals(method)) {
+    // 카드 결제 로직
+    if ("INICIS".equals(pgCompany)) {
+        // 이니시스 전용 로직
+    }
+} else if ("POINT".equals(method)) {
+    // 포인트 결제 로직
+}
+// 새 결제수단/PG사 추가시 모든 분기문 수정 필요
+```
+
+### After:
+```java
+PaymentProcessor processor = paymentProcessorFactory.create(method);
+PaymentGatewayAdapter adapter = pgAdapterFactory.create(pgCompany);
+return processor.process(request, adapter);
+// 새 결제수단/PG사는 구현체만 추가
+```
+
+이제 새로운 PG사 연동이나 결제수단 추가가 매우 쉬워졌습니다!
+
+20250924 09:31
+```
+1. 로그를 사용할 경우에는 로거를 직접 가져오지말고 어노테이션을 이용해서 가져와. @Slf4j
+
+2. 의존성 주입 시 @Autowired 말고 생성자 주입으로 가져오는데, 생성자도 어노테이션 통해서 생성해 @RequiredArgsConstructor
+```
+

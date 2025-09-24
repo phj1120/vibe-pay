@@ -1,5 +1,6 @@
 package com.vibe.pay.backend.payment;
 
+import com.vibe.pay.backend.payment.gateway.PaymentInitResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,17 +60,17 @@ public class PaymentController {
     }
 
     @PostMapping("/initiate")
-    public ResponseEntity<InicisPaymentParameters> initiatePayment(@RequestBody PaymentInitiateRequest request) { // Changed return type
+    public ResponseEntity<PaymentInitResponse> initiatePayment(@RequestBody PaymentInitiateRequest request) {
         log.info("Received payment initiate request: memberId={}, amount={}, method={}",
                 request.getMemberId(), request.getAmount(), request.getPaymentMethod());
         try {
-            InicisPaymentParameters inicisParams = paymentService.initiatePayment(request);
+            PaymentInitResponse response = paymentService.initiatePayment(request);
             log.info("Payment initiation successful for memberId={}", request.getMemberId());
-            return ResponseEntity.ok(inicisParams);
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("initiatePayment failed. request={}", request, e);
             log.error("Error details: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().body(null); // Return null or specific error DTO
+            return ResponseEntity.badRequest().body(null);
         }
     }
 
@@ -78,7 +79,8 @@ public class PaymentController {
         try {
             Payment payment = paymentService.getPaymentById(id)
                     .orElseThrow(() -> new RuntimeException("Payment not found with id " + id));
-            Payment processedPayment = paymentService.processPayment(payment);
+            // processPayment 메서드가 제거되어 updatePayment로 대체
+            Payment processedPayment = paymentService.updatePayment(id, payment);
             return ResponseEntity.ok(processedPayment);
         } catch (RuntimeException e) {
             log.error("processPayment failed for id={}", id, e);
@@ -107,7 +109,6 @@ public class PaymentController {
             request.getParameterMap().forEach((key, values) -> {
                 if (values.length > 0) {
                     params.put(key, values[0]);
-                    log.info("Received parameter: {} = {}", key, values[0]);
                 }
             });
 
@@ -120,7 +121,6 @@ public class PaymentController {
                 );
             }
 
-            log.info("Payment return resultCode: {}", resultCode);
 
             // 결제 성공인 경우 승인 처리
             if ("0000".equals(resultCode)) {
@@ -130,7 +130,24 @@ public class PaymentController {
                 confirmRequest.setNetCancelUrl(params.get("netCancelUrl"));
                 confirmRequest.setMid(params.get("mid"));
                 confirmRequest.setOrderId(params.get("oid"));
-                confirmRequest.setPrice(params.get("price"));
+                
+                // price 값 검증 및 로깅
+                String priceValue = params.get("price");
+                log.info("DEBUG - Price value from params: [{}], type: {}", priceValue, priceValue != null ? priceValue.getClass().getSimpleName() : "null");
+                
+                // String을 Long으로 변환
+                Long priceAsLong = null;
+                if (priceValue != null && !priceValue.trim().isEmpty()) {
+                    try {
+                        priceAsLong = Long.parseLong(priceValue.trim());
+                    } catch (NumberFormatException e) {
+                        log.error("Failed to parse price value: {}", priceValue, e);
+                        return ResponseEntity.badRequest().body(
+                                new PaymentReturnResponse(false, "잘못된 결제 금액입니다: " + priceValue)
+                        );
+                    }
+                }
+                confirmRequest.setPrice(priceAsLong);
 
                 log.info("Processing payment confirmation for OID: {}", confirmRequest.getOrderId());
 
@@ -217,44 +234,4 @@ class PaymentReturnResponse {
     public void setPayment(Payment payment) {
         this.payment = payment;
     }
-}
-
-// PaymentReturnRequest DTO 클래스 (이니시스에서 전달하는 파라미터들)
-class PaymentReturnRequest {
-    private String resultCode;
-    private String resultMsg;
-    private String authToken;
-    private String authUrl;
-    private String netCancelUrl;
-    private String mid;
-    private String oid;
-    private String price;
-
-    // 기본 생성자
-    public PaymentReturnRequest() {}
-
-    // Getter, Setter
-    public String getResultCode() { return resultCode; }
-    public void setResultCode(String resultCode) { this.resultCode = resultCode; }
-
-    public String getResultMsg() { return resultMsg; }
-    public void setResultMsg(String resultMsg) { this.resultMsg = resultMsg; }
-
-    public String getAuthToken() { return authToken; }
-    public void setAuthToken(String authToken) { this.authToken = authToken; }
-
-    public String getAuthUrl() { return authUrl; }
-    public void setAuthUrl(String authUrl) { this.authUrl = authUrl; }
-
-    public String getNetCancelUrl() { return netCancelUrl; }
-    public void setNetCancelUrl(String netCancelUrl) { this.netCancelUrl = netCancelUrl; }
-
-    public String getMid() { return mid; }
-    public void setMid(String mid) { this.mid = mid; }
-
-    public String getOid() { return oid; }
-    public void setOid(String oid) { this.oid = oid; }
-
-    public String getPrice() { return price; }
-    public void setPrice(String price) { this.price = price; }
 }

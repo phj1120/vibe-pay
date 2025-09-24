@@ -72,7 +72,7 @@
       <input type="hidden" name="timestamp" :value="paymentParams?.timestamp || ''" />
       <input type="hidden" name="signature" :value="paymentParams?.signature || ''" />
       <input type="hidden" name="verification" :value="paymentParams?.verification || ''" />
-      <input type="hidden" name="mKey" :value="paymentParams?.mKey || ''" />
+      <input type="hidden" name="mKey" :value="paymentParams?.mkey || ''" />
       <input type="hidden" name="version" :value="paymentParams?.version || ''" />
       <input type="hidden" name="currency" :value="paymentParams?.currency || 'WON'" />
       <input type="hidden" name="moId" :value="paymentParams?.moId || ''" />

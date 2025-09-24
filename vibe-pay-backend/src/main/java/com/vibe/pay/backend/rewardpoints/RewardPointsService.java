@@ -1,25 +1,20 @@
 package com.vibe.pay.backend.rewardpoints;
 
 import com.vibe.pay.backend.pointhistory.PointHistoryService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class RewardPointsService {
-
-    private static final Logger log = LoggerFactory.getLogger(RewardPointsService.class);
-
-    @Autowired
-    private RewardPointsMapper rewardPointsMapper;
-
-    @Autowired
-    private PointHistoryService pointHistoryService;
+    private final RewardPointsMapper rewardPointsMapper;
+    private final PointHistoryService pointHistoryService;
 
     public RewardPoints createRewardPoints(RewardPoints rewardPoints) {
         rewardPoints.setLastUpdated(LocalDateTime.now());
@@ -74,7 +69,7 @@ public class RewardPointsService {
     public RewardPoints usePoints(Long memberId, Double pointsToUse) {
         RewardPoints rewardPoints = rewardPointsMapper.findByMemberId(memberId);
         if (rewardPoints == null || rewardPoints.getPoints() < pointsToUse) {
-            throw new RuntimeException("Insufficient reward points for member " + memberId);
+            throw new IllegalStateException("Insufficient reward points for member " + memberId);
         }
         rewardPoints.setPoints(rewardPoints.getPoints() - pointsToUse);
         rewardPoints.setLastUpdated(LocalDateTime.now());

@@ -1,16 +1,16 @@
 package com.vibe.pay.backend.paymentlog;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class PaymentInterfaceRequestLogService {
 
-    @Autowired
-    private PaymentInterfaceRequestLogMapper paymentInterfaceRequestLogMapper;
+    private final PaymentInterfaceRequestLogMapper paymentInterfaceRequestLogMapper;
 
     public PaymentInterfaceRequestLog createLog(PaymentInterfaceRequestLog log) {
         paymentInterfaceRequestLogMapper.insert(log);

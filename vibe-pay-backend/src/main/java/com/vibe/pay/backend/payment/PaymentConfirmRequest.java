@@ -11,7 +11,7 @@ public class PaymentConfirmRequest {
     private String netCancelUrl;
     private String mid;
     private String orderId; // 이니시스에서 전달되는 실제 필드명 (oid와 동일)
-    private String price;
+    private Long price;
     
     // 결제 승인 시 필요한 추가 정보
     private Long memberId;
@@ -82,11 +82,11 @@ public class PaymentConfirmRequest {
         this.orderId = orderId;
     }
 
-    public String getPrice() {
+    public Long getPrice() {
         return price;
     }
 
-    public void setPrice(String price) {
+    public void setPrice(Long price) {
         this.price = price;
     }
 

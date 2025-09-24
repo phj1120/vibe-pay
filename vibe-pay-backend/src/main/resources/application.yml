@@ -1,23 +1,46 @@
+# Database Configuration
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/study
+    username: parkh
+    password: ""
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+# MyBatis Configuration
+mybatis:
+  mapper-locations: classpath*:/mapper/**/*.xml
+
+# Logging Configuration
 logging:
   level:
     root: INFO
+    com: debug
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
 
-# 공통 설정
+# PG 공통 설정 (기본값 - 로컬 개발용)
 inicis:
   mid: INIpayTest
   signKey: SU5JTElURV9UUklQTEVERVNfS0VZU1RS
   apiKey: ItEQKi3rY7uvDS8l
-  version: 1.0
-  currency: WON
-  gopaymethod: Card
-  acceptmethod: below1000
-  # 프론트엔드 팝업 페이지로 복귀 (POST body 처리)
   returnUrl: http://localhost:3000/order/progress-popup
-  closeUrl: http://localhost:3000/order/close
-  # 취소 API URL
+  closeUrl: http://localhost:3000/order/popup
   refundUrl: https://iniapi.inicis.com/v2/pg/refund
+
+nicepay:
+  mid: ${NICEPAY_MID:nicepaytest}
+  merchantKey: ${NICEPAY_MERCHANT_KEY:testkey}
+  returnUrl: ${NICEPAY_RETURN_URL:http://localhost:3000/order/progress-popup}
+  cancelUrl: ${NICEPAY_CANCEL_URL:http://localhost:3000/order/popup}
+
+toss:
+  clientKey: ${TOSS_CLIENT_KEY:test_clientkey}
+  secretKey: ${TOSS_SECRET_KEY:test_secretkey}
+  successUrl: ${TOSS_SUCCESS_URL:http://localhost:3000/order/complete}
+  failUrl: ${TOSS_FAIL_URL:http://localhost:3000/order/popup}
 
 # 개발 환경
 ---
@@ -25,29 +48,8 @@ spring:
   config:
     activate:
       on-profile: dev
-inicis:
-  mid: ${INICIS_MID}
-  signKey: ${INICIS_SIGN_KEY}
-  apiKey: ${INICIS_API_KEY}
-  returnUrl: ${INICIS_RETURN_URL}
-  closeUrl: ${INICIS_CLOSE_URL}
-  refundUrl: ${INICIS_REFUND_URL}
 
-# 검증(staging/test) 환경
----
-spring:
-  config:
-    activate:
-      on-profile: test
-inicis:
-  mid: ${INICIS_MID}
-  signKey: ${INICIS_SIGN_KEY}
-  apiKey: ${INICIS_API_KEY}
-  returnUrl: ${INICIS_RETURN_URL}
-  closeUrl: ${INICIS_CLOSE_URL}
-  refundUrl: ${INICIS_REFUND_URL}
-
-# 운영 환경
+# 운영 환경  
 ---
 spring:
   config:
@@ -60,3 +62,15 @@ inicis:
   returnUrl: ${INICIS_RETURN_URL}
   closeUrl: ${INICIS_CLOSE_URL}
   refundUrl: ${INICIS_REFUND_URL}
+
+nicepay:
+  mid: ${NICEPAY_MID}
+  merchantKey: ${NICEPAY_MERCHANT_KEY}
+  returnUrl: ${NICEPAY_RETURN_URL}
+  cancelUrl: ${NICEPAY_CANCEL_URL}
+
+toss:
+  clientKey: ${TOSS_CLIENT_KEY}
+  secretKey: ${TOSS_SECRET_KEY}
+  successUrl: ${TOSS_SUCCESS_URL}
+  failUrl: ${TOSS_FAIL_URL}

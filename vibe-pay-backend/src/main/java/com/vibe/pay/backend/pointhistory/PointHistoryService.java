@@ -2,24 +2,21 @@ package com.vibe.pay.backend.pointhistory;
 
 import com.vibe.pay.backend.rewardpoints.RewardPointsMapper;
 import com.vibe.pay.backend.rewardpoints.RewardPoints;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class PointHistoryService {
 
-    private static final Logger log = LoggerFactory.getLogger(PointHistoryService.class);
-
-    @Autowired
-    private PointHistoryMapper pointHistoryMapper;
-
-    @Autowired
-    private RewardPointsMapper rewardPointsMapper;
+    private final PointHistoryMapper pointHistoryMapper;
+    private final RewardPointsMapper rewardPointsMapper;
 
     /**
      * 포인트 사용 내역 기록 (결제 시)
@@ -35,7 +32,7 @@ public class PointHistoryService {
         RewardPoints currentRewardPoints = rewardPointsMapper.findByMemberId(memberId);
         if (currentRewardPoints == null) {
             log.error("RewardPoints not found for member: {}", memberId);
-            throw new RuntimeException("Member reward points not found");
+            throw new IllegalStateException("Member reward points not found");
         }
 
         // 사용 내역 기록 (음수로 기록)
@@ -68,7 +65,7 @@ public class PointHistoryService {
         RewardPoints currentRewardPoints = rewardPointsMapper.findByMemberId(memberId);
         if (currentRewardPoints == null) {
             log.error("RewardPoints not found for member: {}", memberId);
-            throw new RuntimeException("Member reward points not found");
+            throw new IllegalStateException("Member reward points not found");
         }
 
         // 복원 내역 기록 (양수로 기록)
@@ -101,7 +98,7 @@ public class PointHistoryService {
         RewardPoints currentRewardPoints = rewardPointsMapper.findByMemberId(memberId);
         if (currentRewardPoints == null) {
             log.error("RewardPoints not found for member: {}", memberId);
-            throw new RuntimeException("Member reward points not found");
+            throw new IllegalStateException("Member reward points not found");
         }
 
         // 적립 내역 기록 (양수로 기록)
