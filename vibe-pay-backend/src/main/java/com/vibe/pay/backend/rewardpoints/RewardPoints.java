@@ -6,14 +6,14 @@ public class RewardPoints {
 
     private Long rewardPointsId;
     private Long memberId; // Foreign key to Member
-    private Double points;
+    private Long points;
     private LocalDateTime lastUpdated;
 
     // Constructors
     public RewardPoints() {
     }
 
-    public RewardPoints(Long memberId, Double points) {
+    public RewardPoints(Long memberId, Long points) {
         this.memberId = memberId;
         this.points = points;
         this.lastUpdated = LocalDateTime.now();
@@ -36,11 +36,11 @@ public class RewardPoints {
         this.memberId = memberId;
     }
 
-    public Double getPoints() {
+    public Long getPoints() {
         return points;
     }
 
-    public void setPoints(Double points) {
+    public void setPoints(Long points) {
         this.points = points;
     }
 

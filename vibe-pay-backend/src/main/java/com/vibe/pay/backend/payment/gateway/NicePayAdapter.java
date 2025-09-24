@@ -114,7 +114,7 @@ public class NicePayAdapter implements PaymentGatewayAdapter {
             boolean isSuccess = "0000".equals(response.get("ResultCode"));
             String transactionId = (String) response.get("TID");
 
-            return new PaymentConfirmResponse(isSuccess, transactionId, request.getPrice().toString(), "SUCCESS");
+            return new PaymentConfirmResponse(isSuccess, transactionId, request.getPrice(), "SUCCESS");
 
         } catch (Exception e) {
             log.error("Failed to confirm NicePay payment: {}", e.getMessage(), e);
@@ -126,7 +126,7 @@ public class NicePayAdapter implements PaymentGatewayAdapter {
     }
 
     @Override
-    public PaymentCancelResponse cancel(PaymentCancelRequest request) {
+    public void cancel(PaymentCancelRequest request) {
         try {
             log.info("Cancelling NicePay payment for transaction: {}", request.getTransactionId());
 
@@ -145,15 +145,18 @@ public class NicePayAdapter implements PaymentGatewayAdapter {
             );
 
             boolean isSuccess = "2001".equals(response.get("ResultCode")); // 나이스페이 취소 성공 코드
-            return new PaymentCancelResponse(isSuccess, request.getTransactionId(), request.getAmount(), "CANCELLED");
 
         } catch (Exception e) {
             log.error("Failed to cancel NicePay payment: {}", e.getMessage(), e);
             PaymentCancelResponse errorResponse = new PaymentCancelResponse();
             errorResponse.setSuccess(false);
             errorResponse.setErrorMessage("나이스페이 결제 취소 실패: " + e.getMessage());
-            return errorResponse;
         }
+    }
+
+    @Override
+    public void netCancel(PaymentNetCancelRequest request) {
+
     }
 
     @Override

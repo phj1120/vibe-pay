@@ -22,14 +22,6 @@ public class PaymentController {
     @Autowired
     private PaymentService paymentService;
 
-    @PostMapping
-    public ResponseEntity<Payment> createPayment(@RequestBody Payment payment) {
-        Payment createdPayment = paymentService.createPayment(payment);
-        // Optionally, trigger processPayment here or in a separate endpoint
-        // paymentService.processPayment(createdPayment);
-        return ResponseEntity.ok(createdPayment);
-    }
-
     @GetMapping
     public List<Payment> getAllPayments() {
         return paymentService.getAllPayments();
@@ -88,17 +80,6 @@ public class PaymentController {
         }
     }
 
-    @PostMapping("/{id}/cancel")
-    public ResponseEntity<Payment> cancelPayment(@PathVariable String id) {
-        try {
-            Payment cancelledPayment = paymentService.cancelPayment(id);
-            return ResponseEntity.ok(cancelledPayment);
-        } catch (RuntimeException e) {
-            log.error("cancelPayment failed for id={}", id, e);
-            return ResponseEntity.badRequest().body(null);
-        }
-    }
-
     @PostMapping(value = "/return")
     public ResponseEntity<PaymentReturnResponse> handlePaymentReturn(HttpServletRequest request) {
         log.info("Received payment return from Inicis");
@@ -130,6 +111,8 @@ public class PaymentController {
                 confirmRequest.setNetCancelUrl(params.get("netCancelUrl"));
                 confirmRequest.setMid(params.get("mid"));
                 confirmRequest.setOrderId(params.get("oid"));
+                
+                // PaymentId는 CreditCardPaymentProcessor에서 생성하므로 여기서는 설정하지 않음
                 
                 // price 값 검증 및 로깅
                 String priceValue = params.get("price");
@@ -234,4 +217,5 @@ class PaymentReturnResponse {
     public void setPayment(Payment payment) {
         this.payment = payment;
     }
+    
 }

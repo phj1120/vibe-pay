@@ -28,7 +28,7 @@ public class MemberService {
 
         // Create initial reward points for the new member
         // Assuming 0 initial points, can be changed
-        rewardPointsService.createRewardPoints(new RewardPoints(member.getMemberId(), 0.0));
+        rewardPointsService.createRewardPoints(new RewardPoints(member.getMemberId(), 0L));
 
         return member;
     }

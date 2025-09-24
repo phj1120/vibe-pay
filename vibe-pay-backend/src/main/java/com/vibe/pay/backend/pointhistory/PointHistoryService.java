@@ -1,12 +1,23 @@
 package com.vibe.pay.backend.pointhistory;
 
+import com.vibe.pay.backend.payment.Payment;
+import com.vibe.pay.backend.paymentlog.PaymentInterfaceRequestLog;
 import com.vibe.pay.backend.rewardpoints.RewardPointsMapper;
 import com.vibe.pay.backend.rewardpoints.RewardPoints;
+import com.vibe.pay.backend.util.HashUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 
@@ -22,7 +33,7 @@ public class PointHistoryService {
      * 포인트 사용 내역 기록 (결제 시)
      */
     @Transactional
-    public void recordPointUsage(Long memberId, Double usedPoints, String referenceId, String description) {
+    public void recordPointUsage(Long memberId, Long usedPoints, String referenceId, String description) {
         if (usedPoints == null || usedPoints <= 0) {
             log.debug("No points used, skipping point history record for member: {}", memberId);
             return;
@@ -35,16 +46,16 @@ public class PointHistoryService {
             throw new IllegalStateException("Member reward points not found");
         }
 
-        // 사용 내역 기록 (음수로 기록)
-        PointHistory pointHistory = new PointHistory(
-                memberId,
-                -usedPoints, // 사용이므로 음수
-                currentRewardPoints.getPoints(), // 현재 잔액 (이미 차감된 상태)
-                "USE",
-                "PAYMENT",
-                referenceId,
-                description
-        );
+        // 사용 내역 기록
+        PointHistory pointHistory = new PointHistory();
+        pointHistory.setMemberId(memberId);
+        pointHistory.setPointAmount(-usedPoints);
+        pointHistory.setBalanceAfter(currentRewardPoints.getPoints());
+        pointHistory.setTransactionType("USE");
+        pointHistory.setReferenceType("PAYMENT");
+        pointHistory.setReferenceId(referenceId);
+        pointHistory.setDescription(description);
+        pointHistory.setCreatedAt(LocalDateTime.now());
 
         pointHistoryMapper.insert(pointHistory);
         log.info("Point usage recorded: memberId={}, usedPoints={}, balance={}, referenceId={}",
@@ -55,7 +66,7 @@ public class PointHistoryService {
      * 포인트 복원 내역 기록 (취소 시)
      */
     @Transactional
-    public void recordPointRefund(Long memberId, Double refundPoints, String referenceId, String description) {
+    public void recordPointRefund(Long memberId, Long refundPoints, String referenceId, String description) {
         if (refundPoints == null || refundPoints <= 0) {
             log.debug("No points to refund, skipping point history record for member: {}", memberId);
             return;
@@ -68,16 +79,16 @@ public class PointHistoryService {
             throw new IllegalStateException("Member reward points not found");
         }
 
-        // 복원 내역 기록 (양수로 기록)
-        PointHistory pointHistory = new PointHistory(
-                memberId,
-                refundPoints, // 복원이므로 양수
-                currentRewardPoints.getPoints(), // 현재 잔액 (이미 복원된 상태)
-                "REFUND",
-                "CANCEL",
-                referenceId,
-                description
-        );
+        // 복원 내역 기록
+        PointHistory pointHistory = new PointHistory();
+        pointHistory.setMemberId(memberId);
+        pointHistory.setPointAmount(refundPoints);
+        pointHistory.setBalanceAfter(currentRewardPoints.getPoints());
+        pointHistory.setTransactionType("REFUND");
+        pointHistory.setReferenceType("CANCEL");
+        pointHistory.setReferenceId(referenceId);
+        pointHistory.setDescription(description);
+        pointHistory.setCreatedAt(LocalDateTime.now());
 
         pointHistoryMapper.insert(pointHistory);
         log.info("Point refund recorded: memberId={}, refundPoints={}, balance={}, referenceId={}",
@@ -88,7 +99,7 @@ public class PointHistoryService {
      * 포인트 적립 내역 기록
      */
     @Transactional
-    public void recordPointEarn(Long memberId, Double earnedPoints, String referenceType, String referenceId, String description) {
+    public void recordPointEarn(Long memberId, Long earnedPoints, String referenceType, String referenceId, String description) {
         if (earnedPoints == null || earnedPoints <= 0) {
             log.debug("No points earned, skipping point history record for member: {}", memberId);
             return;
@@ -102,15 +113,15 @@ public class PointHistoryService {
         }
 
         // 적립 내역 기록 (양수로 기록)
-        PointHistory pointHistory = new PointHistory(
-                memberId,
-                earnedPoints, // 적립이므로 양수
-                currentRewardPoints.getPoints(), // 현재 잔액 (이미 적립된 상태)
-                "EARN",
-                referenceType,
-                referenceId,
-                description
-        );
+        PointHistory pointHistory = new PointHistory();
+        pointHistory.setMemberId(memberId);
+        pointHistory.setPointAmount(earnedPoints);
+        pointHistory.setBalanceAfter(currentRewardPoints.getPoints());
+        pointHistory.setTransactionType("REFUND");
+        pointHistory.setReferenceType("CANCEL");
+        pointHistory.setReferenceId(referenceId);
+        pointHistory.setDescription(description);
+        pointHistory.setCreatedAt(LocalDateTime.now());
 
         pointHistoryMapper.insert(pointHistory);
         log.info("Point earn recorded: memberId={}, earnedPoints={}, balance={}, referenceId={}",

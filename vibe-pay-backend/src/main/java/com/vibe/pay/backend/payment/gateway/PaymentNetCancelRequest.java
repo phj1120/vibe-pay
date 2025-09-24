@@ -9,10 +9,8 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaymentCancelRequest {
-    private String transactionId;
-    private String paymentId;
-    private String orderId;
-    private Long amount;
-    private String reason;
+public class PaymentNetCancelRequest {
+    private String netCancelUrl;
+    private String authToken;
+    private String orderNumber;
 }

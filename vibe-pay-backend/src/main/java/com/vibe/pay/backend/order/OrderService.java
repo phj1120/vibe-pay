@@ -4,6 +4,11 @@ import com.vibe.pay.backend.payment.Payment;
 import com.vibe.pay.backend.payment.PaymentService;
 import com.vibe.pay.backend.payment.PaymentMapper;
 import com.vibe.pay.backend.payment.PaymentConfirmRequest;
+import com.vibe.pay.backend.payment.factory.PaymentGatewayFactory;
+import com.vibe.pay.backend.payment.factory.PaymentProcessorFactory;
+import com.vibe.pay.backend.payment.gateway.PaymentGatewayAdapter;
+import com.vibe.pay.backend.payment.gateway.PaymentNetCancelRequest;
+import com.vibe.pay.backend.payment.processor.PaymentProcessor;
 import com.vibe.pay.backend.product.Product;
 import com.vibe.pay.backend.product.ProductService;
 import com.vibe.pay.backend.rewardpoints.RewardPointsService;
@@ -11,28 +16,26 @@ import com.vibe.pay.backend.exception.OrderException;
 import com.vibe.pay.backend.common.Constants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
+@RequiredArgsConstructor
 public class OrderService {
 
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
     private final ProductService productService;
-    private final RewardPointsService rewardPointsService;
     private final PaymentMapper paymentMapper;
     private final PaymentService paymentService;
-
+    private final PaymentProcessorFactory paymentProcessorFactory;
+    private final PaymentGatewayFactory paymentGatewayFactory;
 
     public List<Order> getOrderById(String orderId) {
         return orderMapper.findByOrderId(orderId);
@@ -175,24 +178,16 @@ public class OrderService {
             orderItemMapper.insert(cancelItem);
         }
 
-        // 7. 결제 취소 처리 (포인트 환불은 한 번만 처리)
+        // 7. 결제 취소 처리
         List<Payment> payments = paymentService.findByOrderId(orderId);
-        boolean pointRefundProcessed = false;
-        if (!payments.isEmpty()) {
-            for (Payment payment : payments) {
-                // 포인트 사용 결제인 경우 첫 번째 건에서만 포인트 환불 처리
-                if ("POINT".equals(payment.getPaymentMethod()) && !pointRefundProcessed) {
-                    paymentService.cancelPayment(payment.getPaymentId());
-                    pointRefundProcessed = true;
-                } else if (!"POINT".equals(payment.getPaymentMethod())) {
-                    // 카드 결제 등 PG 결제는 정상 취소 처리
-                    paymentService.cancelPayment(payment.getPaymentId());
-                }
-            }
+        for (Payment payment : payments) {
+            payment.setClaimId(claimId);
+            PaymentProcessor processor = paymentProcessorFactory.getProcessor(payment.getPaymentMethod());
+
+            processor.processRefund(payment);
         }
 
-        // 8. 포인트 환불 처리는 Payment 취소에서 자동으로 처리됨
-
+        // TODO List 로 반환.
         return firstCancelOrder; // 첫 번째 취소건 주문 반환
     }
 
@@ -297,9 +292,8 @@ public class OrderService {
         paymentConfirmRequest.setUsedPoints(orderRequest.getUsedMileage()); // usedMileage를 usedPoints로 전달
 
         // 결제 승인 처리
-        Payment payment;
         try {
-            payment = paymentService.confirmPayment(paymentConfirmRequest);
+            paymentService.confirmPayment(paymentConfirmRequest);
         } catch (Exception e) {
             throw OrderException.paymentFailed(e.getMessage());
         }
@@ -373,7 +367,14 @@ public class OrderService {
             if (netCancelUrl != null && authToken != null) {
                 log.info("Attempting net cancel due to order creation failure - orderNumber: {}", orderRequest.getOrderNumber());
                 try {
-                    paymentService.performNetCancel(netCancelUrl, authToken, orderRequest.getOrderNumber());
+                    PaymentGatewayAdapter adapter = paymentGatewayFactory.getAdapter(orderRequest.getPaymentMethod());
+
+                    PaymentNetCancelRequest paymentNetCancelRequest = new PaymentNetCancelRequest();
+                    paymentNetCancelRequest.setOrderNumber(orderRequest.getOrderNumber());
+                    paymentNetCancelRequest.setAuthToken(orderRequest.getAuthToken());
+                    paymentNetCancelRequest.setNetCancelUrl(orderRequest.getNetCancelUrl());
+
+                    adapter.netCancel(paymentNetCancelRequest);
                 } catch (Exception netCancelException) {
                     log.error("Net cancel also failed after order creation failure: {}", netCancelException.getMessage(), netCancelException);
                 }

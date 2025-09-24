@@ -11,7 +11,7 @@ public class InicisApprovalResponse {
     private String resultMsg;
     
     @JsonProperty("TotPrice")
-    private String totPrice;
+    private Long totPrice;
     
     @JsonProperty("tid")
     private String tid;
@@ -107,11 +107,11 @@ public class InicisApprovalResponse {
         this.resultMsg = resultMsg;
     }
 
-    public String getTotPrice() {
+    public Long getTotPrice() {
         return totPrice;
     }
 
-    public void setTotPrice(String totPrice) {
+    public void setTotPrice(Long totPrice) {
         this.totPrice = totPrice;
     }
 

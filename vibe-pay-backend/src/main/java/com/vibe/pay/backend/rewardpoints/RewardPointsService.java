@@ -31,9 +31,9 @@ public class RewardPointsService {
     }
 
     @Transactional
-    public RewardPoints addPoints(Long memberId, Double pointsToAdd) {
+    public RewardPoints addPoints(Long memberId, Long pointsToAdd) {
         RewardPoints rewardPoints = rewardPointsMapper.findByMemberId(memberId);
-        Double previousBalance = 0.0;
+        Long previousBalance = 0L;
 
         if (rewardPoints == null) {
             rewardPoints = new RewardPoints(memberId, pointsToAdd);
@@ -66,7 +66,7 @@ public class RewardPointsService {
     }
 
     @Transactional
-    public RewardPoints usePoints(Long memberId, Double pointsToUse) {
+    public RewardPoints usePoints(Long memberId, Long pointsToUse) {
         RewardPoints rewardPoints = rewardPointsMapper.findByMemberId(memberId);
         if (rewardPoints == null || rewardPoints.getPoints() < pointsToUse) {
             throw new IllegalStateException("Insufficient reward points for member " + memberId);

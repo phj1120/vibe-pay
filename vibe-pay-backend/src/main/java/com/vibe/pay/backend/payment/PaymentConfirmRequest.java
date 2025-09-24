@@ -1,7 +1,11 @@
 package com.vibe.pay.backend.payment;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
 public class PaymentConfirmRequest {
-    private Long paymentId;
     private String status; // e.g., "SUCCESS", "FAILURE"
     private String transactionId;
     
@@ -15,102 +19,7 @@ public class PaymentConfirmRequest {
     
     // 결제 승인 시 필요한 추가 정보
     private Long memberId;
+    private String paymentId;
     private String paymentMethod;
-    private Double usedPoints; // 사용한 포인트
-
-    public Long getPaymentId() {
-        return paymentId;
-    }
-
-    public void setPaymentId(Long paymentId) {
-        this.paymentId = paymentId;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getTransactionId() {
-        return transactionId;
-    }
-
-    public void setTransactionId(String transactionId) {
-        this.transactionId = transactionId;
-    }
-
-    public String getAuthToken() {
-        return authToken;
-    }
-
-    public void setAuthToken(String authToken) {
-        this.authToken = authToken;
-    }
-
-    public String getAuthUrl() {
-        return authUrl;
-    }
-
-    public void setAuthUrl(String authUrl) {
-        this.authUrl = authUrl;
-    }
-
-    public String getNetCancelUrl() {
-        return netCancelUrl;
-    }
-
-    public void setNetCancelUrl(String netCancelUrl) {
-        this.netCancelUrl = netCancelUrl;
-    }
-
-    public String getMid() {
-        return mid;
-    }
-
-    public void setMid(String mid) {
-        this.mid = mid;
-    }
-
-    public String getOrderId() {
-        return orderId;
-    }
-
-    public void setOrderId(String orderId) {
-        this.orderId = orderId;
-    }
-
-    public Long getPrice() {
-        return price;
-    }
-
-    public void setPrice(Long price) {
-        this.price = price;
-    }
-
-    public Long getMemberId() {
-        return memberId;
-    }
-
-    public void setMemberId(Long memberId) {
-        this.memberId = memberId;
-    }
-
-    public String getPaymentMethod() {
-        return paymentMethod;
-    }
-
-    public void setPaymentMethod(String paymentMethod) {
-        this.paymentMethod = paymentMethod;
-    }
-
-    public Double getUsedPoints() {
-        return usedPoints;
-    }
-
-    public void setUsedPoints(Double usedPoints) {
-        this.usedPoints = usedPoints;
-    }
+    private Long usedPoints; // 사용한 포인트
 }

@@ -2,7 +2,7 @@ package com.vibe.pay.backend.rewardpoints;
 
 public class RewardPointsRequest {
     private Long memberId;
-    private Double points;
+    private Long points;
 
     // Getters and Setters
     public Long getMemberId() {
@@ -13,11 +13,11 @@ public class RewardPointsRequest {
         this.memberId = memberId;
     }
 
-    public Double getPoints() {
+    public Long getPoints() {
         return points;
     }
 
-    public void setPoints(Double points) {
+    public void setPoints(Long points) {
         this.points = points;
     }
 }

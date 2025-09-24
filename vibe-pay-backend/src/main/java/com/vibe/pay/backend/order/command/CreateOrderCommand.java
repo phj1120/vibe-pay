@@ -6,6 +6,9 @@ import com.vibe.pay.backend.order.OrderService;
 import com.vibe.pay.backend.payment.PaymentService;
 import com.vibe.pay.backend.payment.PaymentConfirmRequest;
 import com.vibe.pay.backend.exception.OrderException;
+import com.vibe.pay.backend.payment.factory.PaymentGatewayFactory;
+import com.vibe.pay.backend.payment.gateway.PaymentGatewayAdapter;
+import com.vibe.pay.backend.payment.gateway.PaymentNetCancelRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,13 +21,15 @@ public class CreateOrderCommand implements OrderCommand {
     private final OrderRequest orderRequest;
     private final OrderService orderService;
     private final PaymentService paymentService;
+    private final PaymentGatewayFactory paymentGateFactory;
     private List<Order> createdOrders;
     private boolean executed = false;
 
-    public CreateOrderCommand(OrderRequest orderRequest, OrderService orderService, PaymentService paymentService) {
+    public CreateOrderCommand(OrderRequest orderRequest, OrderService orderService, PaymentService paymentService, PaymentGatewayFactory paymentGateFactory) {
         this.orderRequest = orderRequest;
         this.orderService = orderService;
         this.paymentService = paymentService;
+        this.paymentGateFactory = paymentGateFactory;
     }
 
     @Override
@@ -48,11 +53,14 @@ public class CreateOrderCommand implements OrderCommand {
             // 망취소 처리
             if (orderRequest.getNetCancelUrl() != null && orderRequest.getAuthToken() != null) {
                 try {
-                    paymentService.performNetCancel(
-                        orderRequest.getNetCancelUrl(),
-                        orderRequest.getAuthToken(),
-                        orderRequest.getOrderNumber()
-                    );
+                    PaymentGatewayAdapter adapter = paymentGateFactory.getAdapter(orderRequest.getPaymentMethod());
+
+                    PaymentNetCancelRequest paymentNetCancelRequest = new PaymentNetCancelRequest();
+                    paymentNetCancelRequest.setOrderNumber(orderRequest.getOrderNumber());
+                    paymentNetCancelRequest.setAuthToken(orderRequest.getAuthToken());
+                    paymentNetCancelRequest.setNetCancelUrl(orderRequest.getNetCancelUrl());
+
+                    adapter.netCancel(paymentNetCancelRequest);
                 } catch (Exception netCancelException) {
                     log.error("Net cancel failed: {}", netCancelException.getMessage(), netCancelException);
                 }

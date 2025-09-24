@@ -16,8 +16,7 @@ public class OrderRequest {
     private String netCancelUrl;
     
     // 결제 방법 정보
-    private String paymentMethod;
-    private Double usedMileage;
+    private List<PaymentMethodRequest> paymentMethods;
 
     public Long getMemberId() {
         return memberId;
@@ -85,19 +84,18 @@ public class OrderRequest {
         this.netCancelUrl = netCancelUrl;
     }
 
+    public List<PaymentMethodRequest> getPaymentMethods() {
+        return paymentMethods;
+    }
+
+    public void setPaymentMethods(List<PaymentMethodRequest> paymentMethods) {
+        this.paymentMethods = paymentMethods;
+    }
+
+    // 기존 호환성을 위한 메서드 (첫 번째 결제 수단 반환)
     public String getPaymentMethod() {
-        return paymentMethod;
-    }
-
-    public void setPaymentMethod(String paymentMethod) {
-        this.paymentMethod = paymentMethod;
-    }
-
-    public Double getUsedMileage() {
-        return usedMileage;
-    }
-
-    public void setUsedMileage(Double usedMileage) {
-        this.usedMileage = usedMileage;
+        return paymentMethods != null && !paymentMethods.isEmpty()
+            ? paymentMethods.get(0).getPaymentMethod()
+            : null;
     }
 }

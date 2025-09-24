@@ -2,9 +2,11 @@ package com.vibe.pay.backend.order;
 
 import com.vibe.pay.backend.order.command.*;
 import com.vibe.pay.backend.payment.PaymentService;
+import com.vibe.pay.backend.payment.factory.PaymentGatewayFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.support.SpringFactoriesLoader;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -14,6 +16,7 @@ public class OrderServiceWithCommand {
 
     private final OrderService orderService;
     private final PaymentService paymentService;
+    private final PaymentGatewayFactory paymentGatewayFactory;
     private final OrderCommandInvoker commandInvoker;
 
     /**
@@ -22,7 +25,7 @@ public class OrderServiceWithCommand {
     public Order createOrderWithCommand(OrderRequest orderRequest) {
         log.info("Creating order using Command pattern: {}", orderRequest.getOrderNumber());
 
-        CreateOrderCommand command = new CreateOrderCommand(orderRequest, orderService, paymentService);
+        CreateOrderCommand command = new CreateOrderCommand(orderRequest, orderService, paymentService, paymentGatewayFactory);
         return commandInvoker.execute(command);
     }
 

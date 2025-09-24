@@ -124,7 +124,7 @@ public class TossAdapter implements PaymentGatewayAdapter {
             boolean isSuccess = "DONE".equals(response.get("status"));
             String transactionId = (String) response.get("paymentKey");
 
-            return new PaymentConfirmResponse(isSuccess, transactionId, request.getPrice().toString(), "SUCCESS");
+            return new PaymentConfirmResponse(isSuccess, transactionId, request.getPrice(), "SUCCESS");
 
         } catch (Exception e) {
             log.error("Failed to confirm Toss payment: {}", e.getMessage(), e);
@@ -136,14 +136,14 @@ public class TossAdapter implements PaymentGatewayAdapter {
     }
 
     @Override
-    public PaymentCancelResponse cancel(PaymentCancelRequest request) {
+    public void cancel(PaymentCancelRequest request) {
         try {
             log.info("Cancelling Toss payment for transaction: {}", request.getTransactionId());
 
             Map<String, Object> cancelParams = new HashMap<>();
             cancelParams.put("cancelReason", request.getReason());
             if (request.getAmount() != null) {
-                cancelParams.put("cancelAmount", Integer.parseInt(request.getAmount()));
+                cancelParams.put("cancelAmount", request.getAmount());
             }
 
             // Basic Auth 헤더 생성
@@ -162,15 +162,18 @@ public class TossAdapter implements PaymentGatewayAdapter {
             );
 
             boolean isSuccess = "CANCELED".equals(response.get("status"));
-            return new PaymentCancelResponse(isSuccess, request.getTransactionId(), request.getAmount(), "CANCELLED");
 
         } catch (Exception e) {
             log.error("Failed to cancel Toss payment: {}", e.getMessage(), e);
             PaymentCancelResponse errorResponse = new PaymentCancelResponse();
             errorResponse.setSuccess(false);
             errorResponse.setErrorMessage("토스페이먼츠 결제 취소 실패: " + e.getMessage());
-            return errorResponse;
         }
+    }
+
+    @Override
+    public void netCancel(PaymentNetCancelRequest request) {
+
     }
 
     @Override

@@ -3,14 +3,14 @@ package com.vibe.pay.backend.payment.gateway;
 public class PaymentConfirmResponse {
     private boolean success;
     private String transactionId;
-    private String amount;
+    private Long amount;
     private String status;
     private String errorMessage;
 
     // 기본 생성자
     public PaymentConfirmResponse() {}
 
-    public PaymentConfirmResponse(boolean success, String transactionId, String amount, String status) {
+    public PaymentConfirmResponse(boolean success, String transactionId, Long amount, String status) {
         this.success = success;
         this.transactionId = transactionId;
         this.amount = amount;
@@ -34,11 +34,11 @@ public class PaymentConfirmResponse {
         this.transactionId = transactionId;
     }
 
-    public String getAmount() {
+    public Long getAmount() {
         return amount;
     }
 
-    public void setAmount(String amount) {
+    public void setAmount(Long amount) {
         this.amount = amount;
     }
 
