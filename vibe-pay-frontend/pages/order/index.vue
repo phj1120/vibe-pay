@@ -587,38 +587,50 @@ const handleOrderCreation = async (paymentData) => {
       throw new Error('주문 정보를 찾을 수 없습니다.');
     }
 
+    // 결제 방법 배열 구성
+    const paymentMethods = [];
+
+    // 포인트 사용이 있으면 포인트 결제 추가
+    if (currentOrderData.value.usedPoints > 0) {
+      paymentMethods.push({
+        paymentMethod: 'POINT',
+        amount: currentOrderData.value.usedPoints,
+        authToken: paymentData.authToken,
+        authUrl: paymentData.authUrl,
+        mid: paymentData.mid,
+        netCancelUrl: paymentData.netCancelUrl,
+        pgCompany: 'INICIS'
+      });
+    }
+
+    // 카드 결제 금액이 있으면 카드 결제 추가 (포인트 차감 후 잔여 금액)
+    const cardPaymentAmount = currentOrderData.value.finalPaymentAmount;
+    if (cardPaymentAmount > 0) {
+      paymentMethods.push({
+        paymentMethod: 'CREDIT_CARD',
+        amount: cardPaymentAmount,
+        authToken: paymentData.authToken,
+        authUrl: paymentData.authUrl,
+        mid: paymentData.mid,
+        netCancelUrl: paymentData.netCancelUrl,
+        pgCompany: 'INICIS'
+      });
+    }
+
     const orderRequestPayload = {
       // 주문 기본 정보 (OrderRequest 필드와 일치)
       orderNumber: currentOrderData.value.orderId,
       memberId: currentOrderData.value.memberId,
       items: currentOrderData.value.items, // { productId: Long, quantity: Integer }
-      usedPoints: currentOrderData.value.usedPoints,
 
-      // 결제 정보 (OrderRequest 필드와 일치)
-      authToken: paymentData.authToken,
-      authUrl: paymentData.authUrl,
-      netCancelUrl: paymentData.netCancelUrl,
-      price: paymentData.price ||
-             (currentOrderData.value.finalPaymentAmount > 0 ? currentOrderData.value.finalPaymentAmount.toString() : null) ||
-             (currentOrderData.value.totalAmount > 0 ? currentOrderData.value.totalAmount.toString() : null) ||
-             total.value.toString(),
-      mid: paymentData.mid,
-
-      // 결제 방법 정보 (OrderRequest 필드와 일치)
-      paymentMethod: paymentData.payMethod || 'CREDIT_CARD',
-      usedMileage: currentOrderData.value.usedPoints ? parseFloat(currentOrderData.value.usedPoints) : 0.0
+      // 결제 방법 정보 (새로운 구조 - 결제 정보 포함)
+      paymentMethods: paymentMethods
     };
 
     console.log('=== Order Request Debug ===');
     console.log('paymentData:', paymentData);
-    console.log('paymentData.price:', paymentData.price, typeof paymentData.price);
     console.log('currentOrderData.value:', currentOrderData.value);
-    console.log('currentOrderData.finalPaymentAmount:', currentOrderData.value.finalPaymentAmount, typeof currentOrderData.value.finalPaymentAmount);
-    console.log('currentOrderData.totalAmount:', currentOrderData.value.totalAmount, typeof currentOrderData.value.totalAmount);
-    console.log('Fallback values:');
-    console.log('- paymentData.price || "not found":', paymentData.price || "not found");
-    console.log('- finalPaymentAmount?.toString():', currentOrderData.value.finalPaymentAmount?.toString() || "not found");
-    console.log('- totalAmount?.toString():', currentOrderData.value.totalAmount?.toString() || "not found");
+    console.log('Generated paymentMethods:', paymentMethods);
     console.log('Final price used:', orderRequestPayload.price, typeof orderRequestPayload.price);
 
     console.log('Sending order creation request:', orderRequestPayload);

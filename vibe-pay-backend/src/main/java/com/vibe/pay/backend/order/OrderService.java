@@ -279,37 +279,36 @@ public class OrderService {
     // 주문 생성 + 결제 승인 (기존 메서드)
     @Transactional
     public List<Order> createOrder(OrderRequest orderRequest) {
-        // 4-1. 먼저 결제 승인 처리
-        PaymentConfirmRequest paymentConfirmRequest = new PaymentConfirmRequest();
-        paymentConfirmRequest.setAuthToken(orderRequest.getAuthToken());
-        paymentConfirmRequest.setAuthUrl(orderRequest.getAuthUrl());
-        paymentConfirmRequest.setOrderId(orderRequest.getOrderNumber());
-        paymentConfirmRequest.setPrice(orderRequest.getPrice());
-        paymentConfirmRequest.setMid(orderRequest.getMid());
-        paymentConfirmRequest.setNetCancelUrl(orderRequest.getNetCancelUrl());
-        paymentConfirmRequest.setMemberId(orderRequest.getMemberId());
-        paymentConfirmRequest.setPaymentMethod(orderRequest.getPaymentMethod());
-        paymentConfirmRequest.setUsedPoints(orderRequest.getUsedMileage()); // usedMileage를 usedPoints로 전달
-
-        // 결제 승인 처리
-        try {
-            paymentService.confirmPayment(paymentConfirmRequest);
-        } catch (Exception e) {
-            throw OrderException.paymentFailed(e.getMessage());
+        // 4-1. 각 결제수단별로 결제 승인 처리
+        List<PaymentMethodRequest> paymentMethods = orderRequest.getPaymentMethods();
+        if (paymentMethods == null || paymentMethods.isEmpty()) {
+            throw OrderException.paymentFailed("결제수단이 없습니다.");
         }
 
-        // 4-2. 결제 승인 성공 시 주문 생성 (상품별로 각각 생성)
-        // 주문 생성 실패 시 망취소를 위한 정보 보관
-        String netCancelUrl = orderRequest.getNetCancelUrl();
-        String authToken = orderRequest.getAuthToken();
-        
         try {
+            // 각 결제수단별로 결제 승인 처리
+            for (PaymentMethodRequest paymentMethodRequest : paymentMethods) {
+                PaymentConfirmRequest paymentConfirmRequest = new PaymentConfirmRequest();
+                paymentConfirmRequest.setAuthToken(paymentMethodRequest.getAuthToken());
+                paymentConfirmRequest.setAuthUrl(paymentMethodRequest.getAuthUrl());
+                paymentConfirmRequest.setOrderId(orderRequest.getOrderNumber());
+                paymentConfirmRequest.setPrice(paymentMethodRequest.getAmount()); // 각 결제수단별 금액
+                paymentConfirmRequest.setMid(paymentMethodRequest.getMid());
+                paymentConfirmRequest.setNetCancelUrl(paymentMethodRequest.getNetCancelUrl());
+                paymentConfirmRequest.setMemberId(orderRequest.getMemberId());
+                paymentConfirmRequest.setPaymentMethod(paymentMethodRequest.getPaymentMethod());
+
+                // 결제 승인 처리
+                paymentService.confirmPayment(paymentConfirmRequest);
+            }
+
+            // 4-2. 결제 승인 성공 시 주문 생성 (상품별로 각각 생성)
             log.info("Processing {} order items", orderRequest.getItems() != null ? orderRequest.getItems().size() : 0);
-            
+
             List<Order> orders = new ArrayList<>();
             List<OrderItem> orderItems = new ArrayList<>();
             int ordSeq = 1;
-            
+
             for (OrderItemRequest itemRequest : orderRequest.getItems()) {
                 log.info("Processing item: productId={}, quantity={}", itemRequest.getProductId(), itemRequest.getQuantity());
                 Product product = productService.getProductById(itemRequest.getProductId())
@@ -325,7 +324,7 @@ public class OrderService {
                 order.setOrderDate(LocalDateTime.now());
                 order.setTotalAmount(product.getPrice() * itemRequest.getQuantity()); // 상품별 총액
                 order.setStatus("ORDERED"); // 주문 완료 상태
-                
+
                 orders.add(order);
 
                 // OrderItem 생성
@@ -336,17 +335,15 @@ public class OrderService {
                 orderItem.setProductId(itemRequest.getProductId());
                 orderItem.setQuantity(itemRequest.getQuantity());
                 orderItem.setPriceAtOrder(product.getPrice());
-                
+
                 orderItems.add(orderItem);
                 ordSeq++;
             }
 
-            // 적립금 사용 처리는 Payment 테이블에서 별도로 관리
-
             // 주문 저장 (상품별로 각각 저장)
             log.info("Saving {} orders to database", orders.size());
             for (Order order : orders) {
-                log.info("Inserting order: orderId={}, ordSeq={}, totalAmount={}", 
+                log.info("Inserting order: orderId={}, ordSeq={}, totalAmount={}",
                         order.getOrderId(), order.getOrdSeq(), order.getTotalAmount());
                 orderMapper.insert(order);
             }
@@ -354,34 +351,37 @@ public class OrderService {
             // 주문 상품 저장
             log.info("Saving {} order items to database", orderItems.size());
             for (OrderItem item : orderItems) {
-                log.info("Inserting order item: orderId={}, ordSeq={}, productId={}, quantity={}", 
+                log.info("Inserting order item: orderId={}, ordSeq={}, productId={}, quantity={}",
                         item.getOrderId(), item.getOrdSeq(), item.getProductId(), item.getQuantity());
                 orderItemMapper.insert(item);
             }
-
+            if (orderRequest.isNetCancel()) {
+                throw new RuntimeException("NET CANCEL TEST");
+            }
             return orders; // 전체 주문 목록 반환
         } catch (Exception e) {
             log.error("Order creation failed after payment approval: {}", e.getMessage(), e);
-            
+
             // 주문 생성 실패 시 망취소 처리
-            if (netCancelUrl != null && authToken != null) {
-                log.info("Attempting net cancel due to order creation failure - orderNumber: {}", orderRequest.getOrderNumber());
-                try {
-                    PaymentGatewayAdapter adapter = paymentGatewayFactory.getAdapter(orderRequest.getPaymentMethod());
+            log.info("Attempting net cancel due to order creation failure - orderNumber: {}", orderRequest.getOrderNumber());
+            try {
+                // 각 결제수단별로 망취소 처리
+                for (PaymentMethodRequest paymentMethodRequest : paymentMethods) {
+                    PaymentProcessor processor = paymentProcessorFactory.getProcessor(paymentMethodRequest.getPaymentMethod());
 
                     PaymentNetCancelRequest paymentNetCancelRequest = new PaymentNetCancelRequest();
                     paymentNetCancelRequest.setOrderNumber(orderRequest.getOrderNumber());
-                    paymentNetCancelRequest.setAuthToken(orderRequest.getAuthToken());
-                    paymentNetCancelRequest.setNetCancelUrl(orderRequest.getNetCancelUrl());
+                    paymentNetCancelRequest.setAuthToken(paymentMethodRequest.getAuthToken());
+                    paymentNetCancelRequest.setNetCancelUrl(paymentMethodRequest.getNetCancelUrl());
+                    paymentNetCancelRequest.setPaymentMethod(paymentMethodRequest.getPaymentMethod());
+                    paymentNetCancelRequest.setPgCompany(paymentMethodRequest.getPgCompany());
 
-                    adapter.netCancel(paymentNetCancelRequest);
-                } catch (Exception netCancelException) {
-                    log.error("Net cancel also failed after order creation failure: {}", netCancelException.getMessage(), netCancelException);
+                    processor.netCancel(paymentNetCancelRequest);
                 }
-            } else {
-                log.warn("Cannot perform net cancel - missing netCancelUrl or authToken");
+            } catch (Exception netCancelException) {
+                log.error("Net cancel also failed after order creation failure: {}", netCancelException.getMessage(), netCancelException);
             }
-            
+
             // 원래 예외를 다시 던짐 (트랜잭션 롤백)
             throw new RuntimeException("Order creation failed after payment approval: " + e.getMessage(), e);
         }

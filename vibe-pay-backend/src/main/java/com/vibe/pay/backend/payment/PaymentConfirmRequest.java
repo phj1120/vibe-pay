@@ -21,5 +21,4 @@ public class PaymentConfirmRequest {
     private Long memberId;
     private String paymentId;
     private String paymentMethod;
-    private Long usedPoints; // 사용한 포인트
 }

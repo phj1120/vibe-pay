@@ -13,4 +13,6 @@ public class PaymentNetCancelRequest {
     private String netCancelUrl;
     private String authToken;
     private String orderNumber;
+    private String paymentMethod;
+    private String pgCompany;
 }

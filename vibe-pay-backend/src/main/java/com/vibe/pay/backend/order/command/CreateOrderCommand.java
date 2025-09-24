@@ -2,6 +2,7 @@ package com.vibe.pay.backend.order.command;
 
 import com.vibe.pay.backend.order.Order;
 import com.vibe.pay.backend.order.OrderRequest;
+import com.vibe.pay.backend.order.PaymentMethodRequest;
 import com.vibe.pay.backend.order.OrderService;
 import com.vibe.pay.backend.payment.PaymentService;
 import com.vibe.pay.backend.payment.PaymentConfirmRequest;
@@ -37,9 +38,11 @@ public class CreateOrderCommand implements OrderCommand {
         try {
             log.info("Executing create order command for orderId: {}", orderRequest.getOrderNumber());
 
-            // 1. 결제 승인 처리
-            PaymentConfirmRequest paymentConfirmRequest = buildPaymentConfirmRequest();
-            paymentService.confirmPayment(paymentConfirmRequest);
+            // 1. 각 결제수단별로 결제 승인 처리
+            for (PaymentMethodRequest paymentMethodRequest : orderRequest.getPaymentMethods()) {
+                PaymentConfirmRequest paymentConfirmRequest = buildPaymentConfirmRequest(paymentMethodRequest);
+                paymentService.confirmPayment(paymentConfirmRequest);
+            }
 
             // 2. 주문 생성
             createdOrders = orderService.createOrderWithoutPayment(orderRequest);
@@ -51,16 +54,19 @@ public class CreateOrderCommand implements OrderCommand {
         } catch (Exception e) {
             log.error("Failed to execute create order command: {}", e.getMessage(), e);
             // 망취소 처리
-            if (orderRequest.getNetCancelUrl() != null && orderRequest.getAuthToken() != null) {
+            if (orderRequest.getPaymentMethods() != null && !orderRequest.getPaymentMethods().isEmpty()) {
                 try {
-                    PaymentGatewayAdapter adapter = paymentGateFactory.getAdapter(orderRequest.getPaymentMethod());
+                    // 각 결제수단별로 망취소 처리
+                    for (PaymentMethodRequest paymentMethodRequest : orderRequest.getPaymentMethods()) {
+                        PaymentGatewayAdapter adapter = paymentGateFactory.getAdapter(paymentMethodRequest.getPaymentMethod());
 
-                    PaymentNetCancelRequest paymentNetCancelRequest = new PaymentNetCancelRequest();
-                    paymentNetCancelRequest.setOrderNumber(orderRequest.getOrderNumber());
-                    paymentNetCancelRequest.setAuthToken(orderRequest.getAuthToken());
-                    paymentNetCancelRequest.setNetCancelUrl(orderRequest.getNetCancelUrl());
+                        PaymentNetCancelRequest paymentNetCancelRequest = new PaymentNetCancelRequest();
+                        paymentNetCancelRequest.setOrderNumber(orderRequest.getOrderNumber());
+                        paymentNetCancelRequest.setAuthToken(paymentMethodRequest.getAuthToken());
+                        paymentNetCancelRequest.setNetCancelUrl(paymentMethodRequest.getNetCancelUrl());
 
-                    adapter.netCancel(paymentNetCancelRequest);
+                        adapter.netCancel(paymentNetCancelRequest);
+                    }
                 } catch (Exception netCancelException) {
                     log.error("Net cancel failed: {}", netCancelException.getMessage(), netCancelException);
                 }
@@ -101,17 +107,17 @@ public class CreateOrderCommand implements OrderCommand {
         return "CREATE_ORDER";
     }
 
-    private PaymentConfirmRequest buildPaymentConfirmRequest() {
+    private PaymentConfirmRequest buildPaymentConfirmRequest(PaymentMethodRequest paymentMethodRequest) {
         PaymentConfirmRequest request = new PaymentConfirmRequest();
-        request.setAuthToken(orderRequest.getAuthToken());
-        request.setAuthUrl(orderRequest.getAuthUrl());
+        request.setAuthToken(paymentMethodRequest.getAuthToken());
+        request.setAuthUrl(paymentMethodRequest.getAuthUrl());
         request.setOrderId(orderRequest.getOrderNumber());
-        request.setPrice(orderRequest.getPrice());
-        request.setMid(orderRequest.getMid());
-        request.setNetCancelUrl(orderRequest.getNetCancelUrl());
+        request.setPrice(paymentMethodRequest.getAmount()); // 각 결제수단별 금액
+        request.setMid(paymentMethodRequest.getMid());
+        request.setNetCancelUrl(paymentMethodRequest.getNetCancelUrl());
         request.setMemberId(orderRequest.getMemberId());
-        request.setPaymentMethod(orderRequest.getPaymentMethod());
-        request.setUsedPoints(orderRequest.getUsedMileage());
+        request.setPaymentMethod(paymentMethodRequest.getPaymentMethod());
+
         return request;
     }
 }

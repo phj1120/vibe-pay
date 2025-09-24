@@ -8,6 +8,7 @@ import com.vibe.pay.backend.enums.PaymentStatus;
 import com.vibe.pay.backend.payment.Payment;
 import com.vibe.pay.backend.payment.PaymentConfirmRequest;
 import com.vibe.pay.backend.payment.PaymentMapper;
+import com.vibe.pay.backend.payment.gateway.PaymentNetCancelRequest;
 import com.vibe.pay.backend.pointhistory.PointHistoryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,27 +32,32 @@ public class PointPaymentProcessor implements PaymentProcessor {
     public Payment processPayment(PaymentConfirmRequest request) {
         log.info("Processing point payment for order: {}", request.getOrderId());
 
-        if (request.getUsedPoints() == null || request.getUsedPoints() <= 0) {
-            throw new IllegalArgumentException("Invalid points amount");
-        }
-
-        // 포인트 사용 처리 (메서드 시그니처에 맞게 수정)
-        // pointHistoryService.usePoints(request.getMemberId(), request.getUsedPoints());
+        String paymentId = generatePaymentId();
 
         // 포인트 결제 기록 생성
         Payment payment = new Payment();
-        payment.setPaymentId(request.getPaymentId());
-        payment.setMemberId(request.getMemberId());
+        payment.setPaymentId(paymentId);
         payment.setOrderId(request.getOrderId());
-        payment.setAmount(request.getUsedPoints());
+        payment.setClaimId(null);
+        payment.setMemberId(request.getMemberId());
+        payment.setAmount(request.getPrice());
         payment.setPaymentMethod(PaymentMethod.POINT.getCode());
         payment.setPayType(PayType.PAYMENT.getCode());
-        payment.setPgCompany(null); // 포인트는 PG사 없음
+        payment.setPgCompany(null);
         payment.setStatus(PaymentStatus.SUCCESS.getCode());
-        payment.setTransactionId(request.getOrderId()); // 주문ID를 참조용으로 사용
+        payment.setTransactionId(request.getTransactionId());
         payment.setPaymentDate(LocalDateTime.now());
+        payment.setOrderStatus(OrderStatus.ORDERED.getCode());
 
         paymentMapper.insert(payment);
+
+        pointHistoryService.recordPointRefund(
+                payment.getMemberId(),
+                -payment.getAmount(),
+                payment.getPaymentId(),
+                "주문 취소로 인한 포인트 환불 - 주문번호: " + payment.getOrderId()
+        );
+
         return payment;
     }
 
@@ -86,8 +92,7 @@ public class PointPaymentProcessor implements PaymentProcessor {
     }
 
     @Override
-    public Payment netCancel(Payment originalPayment) {
-        return null;
+    public void netCancel(PaymentNetCancelRequest paymentNetCancelRequest) {
     }
 
     @Override

@@ -361,24 +361,8 @@ public class InicisAdapter implements PaymentGatewayAdapter {
             String requestJson = convertToJson(params);
             String responseJson = convertToJson(resp);
 
-            // 해당 주문의 원본 결제 ID 찾기
-            String originalPaymentId = null;
-            try {
-                List<Payment> payments = paymentMapper.findByOrderId(orderNumber);
-                if (!payments.isEmpty()) {
-                    // 첫 번째 결제건의 ID 사용 (카드 결제 우선)
-                    originalPaymentId = payments.stream()
-                            .filter(p -> !"POINT".equals(p.getPaymentMethod()))
-                            .findFirst()
-                            .orElse(payments.get(0))
-                            .getPaymentId();
-                }
-            } catch (Exception e) {
-                log.warn("Failed to find original payment ID for order: {}", orderNumber);
-            }
-
             PaymentInterfaceRequestLog netCancelLog = new PaymentInterfaceRequestLog(
-                    originalPaymentId, // 원본 결제 ID 사용
+                    orderNumber,
                     "NET_CANCEL_REQUEST",
                     requestJson,
                     responseJson
@@ -393,23 +377,8 @@ public class InicisAdapter implements PaymentGatewayAdapter {
 
             // 에러 로그도 기록
             try {
-                // 해당 주문의 원본 결제 ID 찾기
-                String originalPaymentId = null;
-                try {
-                    List<Payment> payments = paymentMapper.findByOrderId(orderNumber);
-                    if (!payments.isEmpty()) {
-                        originalPaymentId = payments.stream()
-                                .filter(p -> !"POINT".equals(p.getPaymentMethod()))
-                                .findFirst()
-                                .orElse(payments.get(0))
-                                .getPaymentId();
-                    }
-                } catch (Exception findException) {
-                    log.warn("Failed to find original payment ID for error log: {}", orderNumber);
-                }
-
                 PaymentInterfaceRequestLog errorLog = new PaymentInterfaceRequestLog(
-                        originalPaymentId, // 원본 결제 ID 사용
+                        orderNumber,
                         "NET_CANCEL_ERROR",
                         "Order: " + orderNumber + ", Error: " + e.getMessage(),
                         null

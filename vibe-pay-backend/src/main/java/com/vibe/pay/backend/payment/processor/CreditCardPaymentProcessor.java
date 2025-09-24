@@ -1,15 +1,16 @@
 package com.vibe.pay.backend.payment.processor;
 
+import com.vibe.pay.backend.common.Constants;
 import com.vibe.pay.backend.enums.*;
+import com.vibe.pay.backend.exception.PaymentException;
 import com.vibe.pay.backend.payment.Payment;
 import com.vibe.pay.backend.payment.PaymentConfirmRequest;
 import com.vibe.pay.backend.payment.PaymentMapper;
 import com.vibe.pay.backend.payment.factory.PaymentGatewayFactory;
 import com.vibe.pay.backend.payment.gateway.PaymentCancelRequest;
-import com.vibe.pay.backend.payment.gateway.PaymentGatewayAdapter;
 import com.vibe.pay.backend.payment.gateway.PaymentConfirmResponse;
-import com.vibe.pay.backend.exception.PaymentException;
-import com.vibe.pay.backend.common.Constants;
+import com.vibe.pay.backend.payment.gateway.PaymentGatewayAdapter;
+import com.vibe.pay.backend.payment.gateway.PaymentNetCancelRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +25,7 @@ public class CreditCardPaymentProcessor implements PaymentProcessor {
 
     @Autowired
     private PaymentMapper paymentMapper;
-    
+
     @Autowired
     private PaymentGatewayFactory paymentGatewayFactory;
 
@@ -40,7 +41,7 @@ public class CreditCardPaymentProcessor implements PaymentProcessor {
 
             // 2. PG 어댑터를 사용하여 승인 처리
             PaymentGatewayAdapter pgAdapter = paymentGatewayFactory.getAdapter(PgCompany.INICIS.getCode());
-            
+
             // PG 승인 처리
             PaymentConfirmResponse pgResponse = pgAdapter.confirm(request);
             if (!pgResponse.isSuccess()) {
@@ -62,10 +63,10 @@ public class CreditCardPaymentProcessor implements PaymentProcessor {
             payment.setPaymentDate(LocalDateTime.now());
 
             paymentMapper.insert(payment);
-            
-            log.info("Credit card payment processed successfully: paymentId={}, transactionId={}, amount={}", 
+
+            log.info("Credit card payment processed successfully: paymentId={}, transactionId={}, amount={}",
                     paymentId, pgResponse.getTransactionId(), request.getPrice());
-            
+
             return payment;
         } catch (PaymentException e) {
             log.error("Credit card payment failed: {}", e.getErrorMessage(), e);
@@ -111,8 +112,9 @@ public class CreditCardPaymentProcessor implements PaymentProcessor {
     }
 
     @Override
-    public Payment netCancel(Payment originalPayment) {
-        return null;
+    public void netCancel(PaymentNetCancelRequest paymentNetCancelRequest) {
+        PaymentGatewayAdapter adapter = paymentGatewayFactory.getAdapter(paymentNetCancelRequest.getPgCompany());
+        adapter.netCancel(paymentNetCancelRequest);
     }
 
     @Override
