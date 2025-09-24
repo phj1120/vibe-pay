@@ -17,5 +17,5 @@ public class OrderRequest {
     private List<OrderItemRequest> items;
     private List<PaymentMethodRequest> paymentMethods;
 
-    private boolean isNetCancel = true;
+    private boolean netCancel;
 }

@@ -202,6 +202,19 @@
               </span>
             </template>
           </v-checkbox>
+
+          <!-- 망취소 테스트 체크박스 -->
+          <v-checkbox
+            v-model="netCancel"
+            color="warning"
+            class="test-checkbox"
+          >
+            <template v-slot:label>
+              <span class="test-text">
+                <span>[테스트]</span> 망취소 테스트 (주문 생성 실패 시뮬레이션)
+              </span>
+            </template>
+          </v-checkbox>
         </div>
 
         <v-btn
@@ -271,6 +284,7 @@ const usedPoints = ref(0)
 const isProcessing = ref(false)
 const agreedToTerms = ref(false)
 const showMinPaymentDialog = ref(false)
+const netCancel = ref(false)
 
 
 
@@ -412,7 +426,8 @@ const proceedToPayment = async () => {
       })),
       usedPoints: Math.round(usedPoints.value),
       totalAmount: Math.round(subtotal.value),
-      finalPaymentAmount: Math.round(total.value)
+      finalPaymentAmount: Math.round(total.value),
+      netCancel: netCancel.value // 망취소 테스트 플래그 추가
     };
 
     // 쿠키에 주문 정보 저장 (SSR에서 읽을 수 있도록)
@@ -622,6 +637,7 @@ const handleOrderCreation = async (paymentData) => {
       orderNumber: currentOrderData.value.orderId,
       memberId: currentOrderData.value.memberId,
       items: currentOrderData.value.items, // { productId: Long, quantity: Integer }
+      netCancel: currentOrderData.value.netCancel, // 저장된 망취소 테스트 플래그 사용
 
       // 결제 방법 정보 (새로운 구조 - 결제 정보 포함)
       paymentMethods: paymentMethods
@@ -911,11 +927,13 @@ onMounted(() => {
   margin-bottom: 16px;
 }
 
-.terms-checkbox {
+.terms-checkbox,
+.test-checkbox {
   margin: 0;
 }
 
-.terms-text {
+.terms-text,
+.test-text {
   font-size: 0.875rem;
   color: #333;
   line-height: 1.4;
@@ -923,6 +941,11 @@ onMounted(() => {
 
 .terms-text span:first-child {
   color: #ff5252;
+  font-weight: 600;
+}
+
+.test-text span:first-child {
+  color: #ff9800;
   font-weight: 600;
 }
 
