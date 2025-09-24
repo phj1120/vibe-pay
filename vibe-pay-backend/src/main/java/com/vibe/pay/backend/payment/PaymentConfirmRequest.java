@@ -21,4 +21,7 @@ public class PaymentConfirmRequest {
     private Long memberId;
     private String paymentId;
     private String paymentMethod;
+    private String pgCompany;
+    private String txTid;
+    private String nextAppUrl;
 }

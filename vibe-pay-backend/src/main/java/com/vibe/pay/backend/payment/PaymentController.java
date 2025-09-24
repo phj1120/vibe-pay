@@ -53,8 +53,8 @@ public class PaymentController {
 
     @PostMapping("/initiate")
     public ResponseEntity<PaymentInitResponse> initiatePayment(@RequestBody PaymentInitiateRequest request) {
-        log.info("Received payment initiate request: memberId={}, amount={}, method={}",
-                request.getMemberId(), request.getAmount(), request.getPaymentMethod());
+        log.info("Received payment initiate request: memberId={}, amount={}, method={}, pgCompany={}",
+                request.getMemberId(), request.getAmount(), request.getPaymentMethod(), request.getPgCompany());
         try {
             PaymentInitResponse response = paymentService.initiatePayment(request);
             log.info("Payment initiation successful for memberId={}", request.getMemberId());

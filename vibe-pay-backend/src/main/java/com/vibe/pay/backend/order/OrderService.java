@@ -291,12 +291,15 @@ public class OrderService {
                 PaymentConfirmRequest paymentConfirmRequest = new PaymentConfirmRequest();
                 paymentConfirmRequest.setAuthToken(paymentMethodRequest.getAuthToken());
                 paymentConfirmRequest.setAuthUrl(paymentMethodRequest.getAuthUrl());
+                paymentConfirmRequest.setNextAppUrl(paymentMethodRequest.getNextAppUrl());
                 paymentConfirmRequest.setOrderId(orderRequest.getOrderNumber());
                 paymentConfirmRequest.setPrice(paymentMethodRequest.getAmount()); // 각 결제수단별 금액
                 paymentConfirmRequest.setMid(paymentMethodRequest.getMid());
                 paymentConfirmRequest.setNetCancelUrl(paymentMethodRequest.getNetCancelUrl());
                 paymentConfirmRequest.setMemberId(orderRequest.getMemberId());
                 paymentConfirmRequest.setPaymentMethod(paymentMethodRequest.getPaymentMethod());
+                paymentConfirmRequest.setPgCompany(paymentMethodRequest.getPgCompany());
+                paymentConfirmRequest.setTxTid(paymentMethodRequest.getTxTid());
 
                 // 결제 승인 처리
                 paymentService.confirmPayment(paymentConfirmRequest);
@@ -375,6 +378,7 @@ public class OrderService {
                     paymentNetCancelRequest.setNetCancelUrl(paymentMethodRequest.getNetCancelUrl());
                     paymentNetCancelRequest.setPaymentMethod(paymentMethodRequest.getPaymentMethod());
                     paymentNetCancelRequest.setPgCompany(paymentMethodRequest.getPgCompany());
+                    paymentNetCancelRequest.setTid(paymentMethodRequest.getTxTid());
 
                     processor.netCancel(paymentNetCancelRequest);
                 }

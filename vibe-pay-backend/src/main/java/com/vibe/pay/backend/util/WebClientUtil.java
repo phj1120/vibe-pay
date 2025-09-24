@@ -1,21 +1,27 @@
 package com.vibe.pay.backend.util;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.http.MediaType;
 import org.springframework.http.HttpHeaders;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.LinkedMultiValueMap;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.Map;
+import java.nio.charset.Charset;
 
 @Component
 public class WebClientUtil {
-
     private static final Logger log = LoggerFactory.getLogger(WebClientUtil.class);
     private final WebClient webClient;
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
@@ -165,6 +171,168 @@ public class WebClientUtil {
         } catch (Exception e) {
             log.error("GET request with params failed to {}: {}", url, e.getMessage(), e);
             throw new RuntimeException("API call failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * POST 요청 (Text 응답, Form Data, EUC-KR 인코딩)
+     * 나이스페이 API용 - Map 버전
+     */
+    public String postForText(String url, Map<String, Object> params) {
+        try {
+            log.info("POST Form request for text response to: {}", url);
+            log.debug("Form params: {}", params);
+
+            // Map을 MultiValueMap으로 변환
+            MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+            if (params != null) {
+                params.forEach((key, value) -> {
+                    if (value != null) {
+                        formData.add(key, value.toString());
+                    }
+                });
+            }
+
+            String response = webClient.post()
+                .uri(url)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .acceptCharset(Charset.forName("EUC-KR"))
+                .body(BodyInserters.fromFormData(formData))
+                .retrieve()
+                .bodyToMono(String.class)
+                .timeout(DEFAULT_TIMEOUT)
+                .block();
+
+            log.debug("Text response: {}", response);
+            return response;
+
+        } catch (Exception e) {
+            log.error("POST Form request for text failed to {}: {}", url, e.getMessage(), e);
+            throw new RuntimeException("API call failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * POST 요청 (Text 응답, DTO를 Form Data로 변환, EUC-KR 인코딩)
+     * 나이스페이 API용 - DTO 버전
+     */
+    public <T> String postDtoForText(String url, T dto) {
+        try {
+            log.info("POST DTO Form request for text response to: {}", url);
+            log.debug("DTO: {}", dto);
+
+            // DTO를 MultiValueMap으로 변환 (리플렉션 사용)
+            MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+
+            if (dto != null) {
+                java.lang.reflect.Field[] fields = dto.getClass().getDeclaredFields();
+                for (java.lang.reflect.Field field : fields) {
+                    field.setAccessible(true);
+                    try {
+                        Object value = field.get(dto);
+                        if (value != null) {
+                            formData.add(field.getName(), value.toString());
+                        }
+                    } catch (IllegalAccessException e) {
+                        log.warn("Failed to access field {}: {}", field.getName(), e.getMessage());
+                    }
+                }
+            }
+
+            String response = webClient.post()
+                .uri(url)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .acceptCharset(Charset.forName("EUC-KR"))
+                .body(BodyInserters.fromFormData(formData))
+                .retrieve()
+                .bodyToMono(String.class)
+                .timeout(DEFAULT_TIMEOUT)
+                .block();
+
+            log.debug("Text response: {}", response);
+            return response;
+
+        } catch (Exception e) {
+            log.error("POST DTO Form request for text failed to {}: {}", url, e.getMessage(), e);
+            throw new RuntimeException("API call failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * POST 요청 (DTO 응답, Form Data 전송, EUC-KR 인코딩)
+     * 나이스페이 API용 - DTO를 전송하고 text 응답을 DTO로 파싱
+     */
+    public <T, R> R postDtoForDto(String url, T requestDto, Class<R> responseClass) {
+        try {
+            log.info("POST DTO Form request for DTO response to: {}", url);
+            log.debug("Request DTO: {}", requestDto);
+
+            // 먼저 text로 응답 받기
+            String textResponse = postDtoForText(url, requestDto);
+
+            // text를 DTO로 파싱 (JSON 형식 우선 확인)
+            R responseDto;
+            if (textResponse.trim().startsWith("{") && textResponse.trim().endsWith("}")) {
+                // JSON 응답인 경우
+                responseDto = parseJsonToDto(textResponse, responseClass);
+            } else {
+                // key=value 응답인 경우
+                responseDto = parseTextToDto(textResponse, responseClass);
+            }
+
+            log.debug("Parsed response DTO: {}", responseDto);
+            return responseDto;
+
+        } catch (Exception e) {
+            log.error("POST DTO Form request for DTO failed to {}: {}", url, e.getMessage(), e);
+            throw new RuntimeException("API call failed: " + e.getMessage(), e);
+        }
+    }
+
+    private <R> R parseJsonToDto(String textResponse, Class<R> responseClass) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.UPPER_CAMEL_CASE);
+            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+            return objectMapper.readValue(textResponse, responseClass);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * key=value&key=value 형식의 text를 DTO로 파싱
+     */
+    private <R> R parseTextToDto(String text, Class<R> responseClass) {
+        try {
+            R instance = responseClass.getDeclaredConstructor().newInstance();
+
+            if (text != null && !text.trim().isEmpty()) {
+                String[] pairs = text.split("&");
+
+                for (String pair : pairs) {
+                    String[] keyValue = pair.split("=", 2);
+                    if (keyValue.length == 2) {
+                        String key = keyValue[0];
+                        String value = java.net.URLDecoder.decode(keyValue[1], "UTF-8");
+
+                        try {
+                            java.lang.reflect.Field field = responseClass.getDeclaredField(key);
+                            field.setAccessible(true);
+                            field.set(instance, value);
+                        } catch (NoSuchFieldException e) {
+                            log.debug("Field {} not found in {}, skipping", key, responseClass.getSimpleName());
+                        }
+                    }
+                }
+            }
+
+            return instance;
+
+        } catch (Exception e) {
+            log.error("Failed to parse text to DTO: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to parse response: " + e.getMessage(), e);
         }
     }
 }

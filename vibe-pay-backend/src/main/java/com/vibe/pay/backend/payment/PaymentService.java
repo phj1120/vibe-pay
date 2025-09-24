@@ -59,11 +59,12 @@ public class PaymentService {
     @Transactional
     public PaymentInitResponse initiatePayment(PaymentInitiateRequest request) {
         log.info("Initiating payment with Factory/Adapter pattern: orderId={}, method={}, pgCompany={}",
-                request.getOrderId(), request.getPaymentMethod(), "INICIS");
+                request.getOrderId(), request.getPaymentMethod(), request.getPgCompany());
 
         try {
-            // 1. PG 어댑터 선택 (현재는 INICIS만 지원, 추후 확장 가능)
-            PaymentGatewayAdapter pgAdapter = paymentGatewayFactory.getAdapter(PgCompany.INICIS.getCode());
+            // 1. PG 어댑터 선택 (요청에서 전달받은 pgCompany 사용)
+            String pgCompany = request.getPgCompany() != null ? request.getPgCompany() : "INICIS";
+            PaymentGatewayAdapter pgAdapter = paymentGatewayFactory.getAdapter(pgCompany);
 
             // 2. PG 결제 시작 처리
             PaymentInitResponse pgResponse = pgAdapter.initiate(request);

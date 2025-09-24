@@ -40,7 +40,7 @@ public class CreditCardPaymentProcessor implements PaymentProcessor {
             log.info("Generated new paymentId: {}", paymentId);
 
             // 2. PG 어댑터를 사용하여 승인 처리
-            PaymentGatewayAdapter pgAdapter = paymentGatewayFactory.getAdapter(PgCompany.INICIS.getCode());
+            PaymentGatewayAdapter pgAdapter = paymentGatewayFactory. getAdapter(request.getPgCompany());
 
             // PG 승인 처리
             PaymentConfirmResponse pgResponse = pgAdapter.confirm(request);
@@ -56,7 +56,7 @@ public class CreditCardPaymentProcessor implements PaymentProcessor {
             payment.setAmount(request.getPrice());
             payment.setPaymentMethod(PaymentMethod.CREDIT_CARD.getCode());
             payment.setPayType(PayType.PAYMENT.getCode());
-            payment.setPgCompany(PgCompany.INICIS.getCode());
+            payment.setPgCompany(request.getPgCompany());
             payment.setStatus(PaymentStatus.SUCCESS.getCode());
             payment.setOrderStatus(OrderStatus.ORDERED.getCode());
             payment.setTransactionId(pgResponse.getTransactionId());

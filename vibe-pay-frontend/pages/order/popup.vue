@@ -86,6 +86,29 @@
       <input type="hidden" name="acceptmethod" :value="paymentParams?.acceptmethod || ''" />
       <input type="hidden" name="charset" value="UTF-8" />
     </form>
+
+    {{paymentParams}}
+
+    <!-- 나이스페이 결제 폼 -->
+    <form name="nicePayForm" method="post" action="/order/progress-popup" accept-charset="euc-kr" style="display: none;">
+      <input type="hidden" name="PayMethod" value="CARD" />
+      <input type="hidden" name="GoodsName" :value="paymentParams?.goodName" />
+      <input type="hidden" name="Amt" :value="paymentParams?.amt" />
+      <input type="hidden" name="MID" :value="paymentParams?.mid" />
+      <input type="hidden" name="Moid" :value="paymentParams?.moId" />
+      <input type="hidden" name="BuyerName" :value="paymentParams?.buyerName" />
+      <input type="hidden" name="BuyerEmail" :value="paymentParams?.buyerEmail" />
+      <input type="hidden" name="BuyerTel" :value="paymentParams?.buyerTel" />
+      <input type="hidden" name="ReturnURL" :value="paymentParams?.returnUrl" />
+      <input type="hidden" name="VbankExpDate" value="" />
+      <input type="hidden" name="NpLang" value="KO" />
+      <input type="hidden" name="GoodsCl" value="1" />
+      <input type="hidden" name="TransType" value="0" />
+      <input type="hidden" name="CharSet" value="utf-8" />
+      <input type="hidden" name="ReqReserved" value="" />
+      <input type="hidden" name="EdiDate" :value="paymentParams?.ediDate" />
+      <input type="hidden" name="SignData" :value="paymentParams?.signData" />
+    </form>
   </div>
 </template>
 
@@ -96,6 +119,7 @@ const uiState = ref('preparing'); // 'preparing', 'success', 'failed', 'error'
 const paymentResult = ref(null);
 const errorMessage = ref('');
 const paymentExecuted = ref(false); // 중복 실행 방지 플래그
+const pgCompany = ref('NICEPAY'); // 선택된 PG사
 
 // 가격 포맷팅 함수
 const formatPrice = (price) => {
@@ -121,7 +145,9 @@ onMounted(async () => {
 
     if (event.data.type === 'PAYMENT_PARAMS') {
       paymentParams.value = event.data.data;
+      pgCompany.value = event.data.data.pgCompany || 'INICIS'; // PG사 정보 추출
       console.log('Payment params received via postMessage:', paymentParams.value);
+      console.log('Selected PG Company:', pgCompany.value);
 
       // 중복 실행 방지
       if (paymentExecuted.value) {
@@ -129,12 +155,17 @@ onMounted(async () => {
         return;
       }
 
-      // 이니시스 SDK 로드 및 결제 실행
+      // PG사별 결제 처리
       try {
-        await loadInicisSDK();
-        executePayment();
+        if (pgCompany.value === 'NICEPAY') {
+          await loadNicePaySDK();
+          executeNicePayPayment();
+        } else {
+          await loadInicisSDK();
+          executeInicisPayment();
+        }
       } catch (error) {
-        console.error('Failed to load Inicis SDK or execute payment:', error);
+        console.error('Failed to load SDK or execute payment:', error);
         uiState.value = 'error';
         errorMessage.value = 'SDK 로딩 실패: ' + error.message;
       }
@@ -198,7 +229,7 @@ const loadInicisSDK = async () => {
   }
 };
 
-const executePayment = () => {
+const executeInicisPayment = () => {
   // 중복 실행 방지
   if (paymentExecuted.value) {
     console.log('Payment already executed, skipping');
@@ -223,6 +254,125 @@ const executePayment = () => {
   console.log('Executing payment with INIStdPay...');
   paymentExecuted.value = true; // 실행 상태 플래그 설정
   window.INIStdPay.pay('inicisForm');
+};
+
+const loadNicePaySDK = async () => {
+  if (!window.goPay) {
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://pg-web.nicepay.co.kr/v3/common/js/nicepay-pgweb.js';
+      script.async = true;
+      script.onload = resolve;
+      script.onerror = () => reject(new Error('Failed to load nicepay-pgweb.js'));
+      document.head.appendChild(script);
+    });
+  }
+};
+
+const executeNicePayPayment = () => {
+  // 중복 실행 방지
+  if (paymentExecuted.value) {
+    console.log('Payment already executed, skipping');
+    return;
+  }
+
+  const form = document.nicePayForm;
+  console.log('[nicePayForm]', form)
+  if (!form) {
+    console.error('나이스페이 결제 폼을 찾을 수 없습니다.');
+    uiState.value = 'error';
+    errorMessage.value = '나이스페이 결제 폼을 찾을 수 없습니다.';
+    return;
+  }
+
+  if (!window.goPay) {
+    console.error('나이스페이 SDK가 로드되지 않았습니다.');
+    uiState.value = 'error';
+    errorMessage.value = '나이스페이 SDK가 로드되지 않았습니다.';
+    return;
+  }
+
+  console.log('Executing payment with NicePay...');
+  console.log('NicePay payment params:', paymentParams.value);
+
+  paymentExecuted.value = true; // 실행 상태 플래그 설정
+
+  // 나이스페이 전역 콜백 함수 정의 (문서 참조)
+  window.nicepaySubmit = function() {
+    console.log('NicePay payment completed, checking result');
+
+    // 잠시 대기 후 결과 확인 (DOM 업데이트 대기)
+    setTimeout(() => {
+      try {
+        // 나이스페이 결제 결과를 HTML에서 읽어오기
+        const getResultValue = (name) => {
+          const element = document.getElementsByName(name)[0] ||
+                          document.getElementById(name) ||
+                          document.querySelector(`input[name="${name}"]`);
+          return element ? element.value : null;
+        };
+
+        const authResultCode = getResultValue('AuthResultCode');
+        const authResultMsg = getResultValue('AuthResultMsg');
+        const txTid = getResultValue('TxTid');
+        const authToken = getResultValue('AuthToken');
+        const nextAppURL = getResultValue('NextAppURL');
+        const netCancelUrl = getResultValue('NetCancelURL');
+
+        console.log('NicePay result data:', {
+          authResultCode, authResultMsg, txTid, authToken, nextAppURL
+        });
+
+        if (authResultCode === '0000') {
+          console.log('NicePay payment successful');
+          const resultData = {
+            success: true,
+            resultCode: authResultCode,
+            resultMsg: authResultMsg,
+            authToken: authToken,
+            txTid: txTid,
+            nextAppURL: nextAppURL,
+            netCancelUrl: netCancelUrl,
+            paymentMethod: 'CARD',
+            pgCompany: 'NICEPAY'
+          };
+
+          // 부모창에 결제 결과 전달
+          window.opener?.postMessage({
+            type: 'PAYMENT_RESULT',
+            data: resultData
+          }, '*');
+
+          setTimeout(() => window.close(), 1000);
+        } else {
+          console.log('NicePay payment failed');
+          const errorMsg = authResultMsg || '결제가 실패했습니다.';
+          uiState.value = 'error';
+          errorMessage.value = errorMsg;
+
+          // 실패 시에도 부모창에 알림
+          window.opener?.postMessage({
+            type: 'PAYMENT_ERROR',
+            error: errorMsg
+          }, '*');
+        }
+      } catch (error) {
+        console.error('Error processing NicePay result:', error);
+        uiState.value = 'error';
+        errorMessage.value = '결제 결과 처리 중 오류가 발생했습니다.';
+      }
+    }, 500); // 500ms 대기
+  };
+
+  window.nicepayClose = function() {
+    console.log('NicePay payment cancelled');
+    uiState.value = 'error';
+    errorMessage.value = '결제가 취소되었습니다.';
+    setTimeout(() => window.close(), 1000);
+  };
+
+  // 나이스페이 결제창 호출
+  window.goPay(form);
 };
 
 function handleClose() {

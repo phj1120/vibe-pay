@@ -3,7 +3,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/study
     username: parkh
-    password: ""
+    password: ghkdlxld
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -31,8 +31,8 @@ inicis:
   refundUrl: https://iniapi.inicis.com/v2/pg/refund
 
 nicepay:
-  mid: ${NICEPAY_MID:nicepaytest}
-  merchantKey: ${NICEPAY_MERCHANT_KEY:testkey}
+  mid: ${NICEPAY_MID:nicepay00m}
+  merchantKey: ${NICEPAY_MERCHANT_KEY:EYzu8jGGMfqaDEp76gSckuvnaHHu+bC4opsSN6lHv3b2lurNYkVXrZ7Z1AoqQnXI3eLuaUFyoRNC6FkrzVjceg==}
   returnUrl: ${NICEPAY_RETURN_URL:http://localhost:3000/order/progress-popup}
   cancelUrl: ${NICEPAY_CANCEL_URL:http://localhost:3000/order/popup}
 

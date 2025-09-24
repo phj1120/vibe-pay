@@ -156,8 +156,8 @@
               class="points-field"
             >
               <template v-slot:append-inner>
-                <v-btn 
-                  size="small" 
+                <v-btn
+                  size="small"
                   color="primary"
                   @click="useAllPoints"
                   :disabled="!selectedMember.points"
@@ -169,11 +169,82 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 주문 요약 (하단 고정) -->
-    <div class="order-summary-fixed" v-if="orderItems.length > 0">
-      <div class="summary-content">
+      <!-- PG사 선택 -->
+      <div class="section-card" v-if="orderItems.length > 0">
+        <div class="section-header">
+          <v-icon color="info" class="mr-3">mdi-credit-card-outline</v-icon>
+          <h3>결제 방식</h3>
+        </div>
+        <div class="pg-selection">
+          <v-radio-group
+            v-model="selectedPgCompany"
+            color="primary"
+            class="pg-radio-group"
+          >
+            <v-radio
+              value="INICIS"
+              class="pg-radio"
+            >
+              <template v-slot:label>
+                <div class="pg-option">
+                  <div class="pg-logo">
+                    <v-icon size="24" color="primary">mdi-bank</v-icon>
+                  </div>
+                  <div class="pg-info">
+                    <div class="pg-name">이니시스</div>
+                    <div class="pg-desc">KG 이니시스 결제</div>
+                  </div>
+                </div>
+              </template>
+            </v-radio>
+            <v-radio
+              value="NICEPAY"
+              class="pg-radio"
+            >
+              <template v-slot:label>
+                <div class="pg-option">
+                  <div class="pg-logo">
+                    <v-icon size="24" color="success">mdi-credit-card</v-icon>
+                  </div>
+                  <div class="pg-info">
+                    <div class="pg-name">나이스페이</div>
+                    <div class="pg-desc">NICE Payment 결제</div>
+                  </div>
+                </div>
+              </template>
+            </v-radio>
+          </v-radio-group>
+        </div>
+      </div>
+
+      <!-- 망취소 테스트 -->
+      <div class="section-card" v-if="orderItems.length > 0">
+        <div class="section-header">
+          <v-icon color="warning" class="mr-3">mdi-test-tube</v-icon>
+          <h3>테스트 옵션</h3>
+        </div>
+        <div class="test-section">
+          <v-checkbox
+            v-model="netCancel"
+            color="warning"
+            class="test-checkbox"
+          >
+            <template v-slot:label>
+              <span class="test-text">
+                <span>[테스트]</span> 망취소 테스트 (주문 생성 실패 시뮬레이션)
+              </span>
+            </template>
+          </v-checkbox>
+        </div>
+      </div>
+
+      <!-- 주문 요약 정보 (일반 영역) -->
+      <div class="section-card" v-if="orderItems.length > 0">
+        <div class="section-header">
+          <v-icon color="accent" class="mr-3">mdi-calculator</v-icon>
+          <h3>주문 요약</h3>
+        </div>
         <div class="price-breakdown">
           <div class="price-row">
             <span>상품 금액</span>
@@ -188,7 +259,12 @@
             <span>₩{{ total.toLocaleString() }}</span>
           </div>
         </div>
+      </div>
+    </div>
 
+    <!-- 결제 실행 (하단 고정) -->
+    <div class="order-summary-fixed" v-if="orderItems.length > 0 && !isProcessing">
+      <div class="summary-content">
         <!-- 약관 동의 -->
         <div class="terms-section">
           <v-checkbox
@@ -202,19 +278,6 @@
               </span>
             </template>
           </v-checkbox>
-
-          <!-- 망취소 테스트 체크박스 -->
-          <v-checkbox
-            v-model="netCancel"
-            color="warning"
-            class="test-checkbox"
-          >
-            <template v-slot:label>
-              <span class="test-text">
-                <span>[테스트]</span> 망취소 테스트 (주문 생성 실패 시뮬레이션)
-              </span>
-            </template>
-          </v-checkbox>
         </div>
 
         <v-btn
@@ -224,7 +287,7 @@
           rounded="xl"
           class="pay-btn"
           @click="proceedToPayment"
-          :disabled="!selectedMember || orderItems.length === 0 || isProcessing || !agreedToTerms"
+          :disabled="!selectedMember || orderItems.length === 0 || isProcessing || !agreedToTerms || !selectedPgCompany"
           :loading="isProcessing"
         >
           <v-icon left>mdi-credit-card</v-icon>
@@ -285,6 +348,7 @@ const isProcessing = ref(false)
 const agreedToTerms = ref(false)
 const showMinPaymentDialog = ref(false)
 const netCancel = ref(false)
+const selectedPgCompany = ref('INICIS')
 
 
 
@@ -395,6 +459,10 @@ const proceedToPayment = async () => {
     alert("구매조건 확인 및 결제서비스 약관에 동의해주세요.");
     return;
   }
+  if (!selectedPgCompany.value) {
+    alert("결제 방식을 선택해주세요.");
+    return;
+  }
 
   // 카드 결제 금액 100원 이하 체크
   const cardPaymentAmount = total.value; // 카드로 결제할 금액 (포인트 차감 후)
@@ -455,6 +523,7 @@ const proceedToPayment = async () => {
       memberId: selectedMember.value.memberId,
       amount: Math.round(total.value), // 정수로 변환
       paymentMethod: 'CREDIT_CARD',
+      pgCompany: selectedPgCompany.value, // 선택된 PG사 추가
       usedMileage: Math.round(usedPoints.value), // 적립금도 정수로 변환
       goodName: goodName,
       buyerName: selectedMember.value.name,
@@ -493,12 +562,16 @@ const proceedToPayment = async () => {
     // 주문 데이터 저장
     currentOrderData.value = orderData;
 
-    // 팝업 열기
+    // 팝업 열기 (PG사별 다른 크기)
     console.log('Opening payment popup...');
+    const popupSize = selectedPgCompany.value === 'NICEPAY'
+      ? 'width=570,height=830,scrollbars=yes,resizable=yes'
+      : 'width=840,height=600,scrollbars=yes,resizable=yes';
+
     const popup = window.open(
       '/order/popup',
       'payment',
-      'width=840,height=600,scrollbars=yes,resizable=yes'
+      popupSize
     );
 
     if (!popup) {
@@ -510,7 +583,10 @@ const proceedToPayment = async () => {
       console.log('Sending payment params to popup:', paymentInitResponse);
       popup.postMessage({
         type: 'PAYMENT_PARAMS',
-        data: paymentInitResponse
+        data: {
+          ...paymentInitResponse,
+          pgCompany: selectedPgCompany.value // PG사 정보 추가
+        }
       }, '*');
     };
 
@@ -614,7 +690,6 @@ const handleOrderCreation = async (paymentData) => {
         authUrl: paymentData.authUrl,
         mid: paymentData.mid,
         netCancelUrl: paymentData.netCancelUrl,
-        pgCompany: 'INICIS'
       });
     }
 
@@ -623,12 +698,13 @@ const handleOrderCreation = async (paymentData) => {
     if (cardPaymentAmount > 0) {
       paymentMethods.push({
         paymentMethod: 'CREDIT_CARD',
+        pgCompany: paymentData.pgCompany, // PG사 정보 추가
         amount: cardPaymentAmount,
         authToken: paymentData.authToken,
-        authUrl: paymentData.authUrl,
+        nextAppUrl: paymentData.nextAppURL,
         mid: paymentData.mid,
         netCancelUrl: paymentData.netCancelUrl,
-        pgCompany: 'INICIS'
+        txTid: paymentData.txTid // txTid 추가
       });
     }
 
@@ -877,6 +953,81 @@ onMounted(() => {
 
 .points-field {
   max-width: 200px;
+}
+
+/* PG 선택 섹션 */
+.pg-selection {
+  margin-top: 4px;
+}
+
+.pg-radio-group {
+  margin: 0 !important;
+}
+
+.pg-radio {
+  margin-bottom: 16px !important;
+}
+
+.pg-radio:last-child {
+  margin-bottom: 0 !important;
+}
+
+.pg-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  background: #fafafa;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  width: calc(100% - 40px);
+  margin-left: 40px;
+  min-height: 70px;
+}
+
+.pg-option:hover {
+  border-color: #0064FF;
+  background: #f0f7ff;
+}
+
+.pg-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.pg-info {
+  flex: 1;
+}
+
+.pg-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.pg-desc {
+  font-size: 0.9rem;
+  color: #666;
+  line-height: 1.3;
+}
+
+/* 테스트 섹션 */
+.test-section {
+  margin-top: 4px;
+}
+
+.test-checkbox {
+  margin: 0;
 }
 
 /* 주문 요약 (하단 고정) */

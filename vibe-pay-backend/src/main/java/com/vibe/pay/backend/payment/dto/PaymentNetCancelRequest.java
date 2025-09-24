@@ -15,4 +15,5 @@ public class PaymentNetCancelRequest {
     private String orderNumber;
     private String paymentMethod;
     private String pgCompany;
+    private String tid;
 }

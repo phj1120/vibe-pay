@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Read(//c/Users/ppp/Dev/vibe-pay/**)",
+      "Bash(npm run dev:*)",
+      "Read(//c/Users/ppp/Downloads/**)",
+      "Bash(unzip:*)",
+      "Bash(./mvnw:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

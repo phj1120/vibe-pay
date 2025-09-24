@@ -4,7 +4,7 @@ public class PaymentInitiateRequest {
     private Long memberId;
     private Long amount;        // 금액(원), 정수 변환하여 사용
     private String paymentMethod;
-    private Double usedMileage;   // 사용한 적립금
+    private String pgCompany;   // PG사 (INICIS, NICEPAY, TOSS)
 
     // 화면에서 넘어오는 정보
     private String goodName;
@@ -69,19 +69,19 @@ public class PaymentInitiateRequest {
         this.buyerEmail = buyerEmail;
     }
 
-    public Double getUsedMileage() {
-        return usedMileage;
-    }
-
-    public void setUsedMileage(Double usedMileage) {
-        this.usedMileage = usedMileage;
-    }
-
     public String getOrderId() {
         return orderId;
     }
 
     public void setOrderId(String orderId) {
         this.orderId = orderId;
+    }
+
+    public String getPgCompany() {
+        return pgCompany;
+    }
+
+    public void setPgCompany(String pgCompany) {
+        this.pgCompany = pgCompany;
     }
 }

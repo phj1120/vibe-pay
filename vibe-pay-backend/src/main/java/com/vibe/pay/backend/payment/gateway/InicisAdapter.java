@@ -20,10 +20,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.security.MessageDigest;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
 
 import com.vibe.pay.backend.common.Constants;
 import org.springframework.web.client.RestTemplate;
@@ -89,9 +86,8 @@ public class InicisAdapter implements PaymentGatewayAdapter {
             response.setMoId(inicisMid);
             
             // Standard fields (for internal use)
-            response.setMerchantId(inicisMid);
             response.setOrderId(request.getOrderId());
-            response.setAmount(request.getAmount().toString());
+            response.setAmt(request.getAmount());
             response.setProductName(goodName);
             response.setBuyerName(buyerName);
             response.setBuyerTel(buyerTel);

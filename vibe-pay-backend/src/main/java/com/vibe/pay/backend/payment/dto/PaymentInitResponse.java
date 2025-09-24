@@ -2,7 +2,6 @@ package com.vibe.pay.backend.payment.dto;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 @Data
 @NoArgsConstructor
@@ -21,9 +20,8 @@ public class PaymentInitResponse {
     private String moId;          // merchantId (same as mid)
     
     // Standard fields
-    private String merchantId;
     private String orderId;
-    private String amount;
+    private Long amt;
     private String productName;
     private String buyerName;
     private String buyerTel;
@@ -38,6 +36,8 @@ public class PaymentInitResponse {
     private String currency;
     private String gopaymethod;
     private String acceptmethod;
-
-
+    
+    // 나이스
+    private String ediDate;
+    private String SignData;
 }

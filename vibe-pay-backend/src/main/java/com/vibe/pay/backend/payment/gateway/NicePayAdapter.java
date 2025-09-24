@@ -13,9 +13,10 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import com.vibe.pay.backend.common.Constants;
 import java.util.HashMap;
 import java.util.Map;
+import java.security.MessageDigest;
+import java.nio.charset.StandardCharsets;
 
 @Component
 public class NicePayAdapter implements PaymentGatewayAdapter {
@@ -43,46 +44,41 @@ public class NicePayAdapter implements PaymentGatewayAdapter {
             log.info("Initiating NicePay payment for order: {}", request.getOrderId());
 
             // 나이스페이 결제 파라미터 생성
-            String ediDate = LocalDateTime.now().format(Constants.DATETIME_FORMATTER_YYYYMMDDHHMMSS);
+            String ediDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
 
-            Map<String, Object> params = new HashMap<>();
-            params.put("PayMethod", "CARD");
-            params.put("MID", mid);
-            params.put("Moid", request.getOrderId());
-            params.put("Amt", request.getAmount());
-            params.put("BuyerName", request.getBuyerName() != null ? request.getBuyerName() : "구매자");
-            params.put("BuyerEmail", request.getBuyerEmail() != null ? request.getBuyerEmail() : "");
-            params.put("BuyerTel", request.getBuyerTel() != null ? request.getBuyerTel() : "");
-            params.put("ReturnURL", returnUrl);
-            params.put("VbankExpDate", "");
-            params.put("EdiDate", ediDate);
+            // SignData 생성을 위한 파라미터
+            String payMethod = "CARD";
+            String moid = request.getOrderId();
+            String amt = request.getAmount().toString();
+            String buyerName = request.getBuyerName() != null ? request.getBuyerName() : "구매자";
+            String buyerEmail = request.getBuyerEmail() != null ? request.getBuyerEmail() : "";
+            String buyerTel = request.getBuyerTel() != null ? request.getBuyerTel() : "";
 
-            // 나이스페이는 클라이언트 사이드에서 직접 호출하는 구조
-            // PaymentInitResponse를 모든 필드와 함께 구성
+            // SignData 생성 (SHA256)
+            String signData = generateSignData(mid, amt, ediDate, merchantKey);
+
+            // PaymentInitResponse 구성 (이니시스와 공통 구조 사용)
             PaymentInitResponse response = new PaymentInitResponse();
             response.setSuccess(true);
             response.setPaymentUrl("https://web.nicepay.co.kr/v3/v3Payment.jsp");
-            response.setPaymentParams(params.toString());
-            
-            // NicePay 특화 필드들 설정
+
+            // 공통 필드들 설정
             response.setPaymentId(generatePaymentId());
-            response.setMerchantId("nicepay_merchant_id");
-            response.setOrderId(request.getOrderId());
-            response.setAmount(request.getAmount().toString());
-            response.setProductName(request.getGoodName() != null ? request.getGoodName() : "VibePay 주문");
-            response.setBuyerName(request.getBuyerName() != null ? request.getBuyerName() : "구매자");
-            response.setBuyerTel(request.getBuyerTel() != null ? request.getBuyerTel() : "010-0000-0000");
-            response.setBuyerEmail(request.getBuyerEmail() != null ? request.getBuyerEmail() : "buyer@example.com");
-            response.setTimestamp(ediDate);
-            response.setMKey("nicepay_mkey");
-            response.setSignature("nicepay_signature");
-            response.setVerification("nicepay_verification");
-            response.setReturnUrl("http://localhost:3000/payment/return");
-            response.setCloseUrl("http://localhost:3000/payment/close");
+            response.setMid(mid);
+            response.setMoId(moid);
+            response.setAmt(request.getAmount()); // NicePay는 Long 타입 그대로 사용
+            response.setGoodName(request.getGoodName() != null ? request.getGoodName() : "VibePay 주문");
+            response.setBuyerName(buyerName);
+            response.setBuyerTel(buyerTel);
+            response.setBuyerEmail(buyerEmail);
+            response.setReturnUrl(returnUrl);
+            response.setCloseUrl(cancelUrl);
+
+            // NicePay 특화 필드들
+            response.setEdiDate(ediDate);
+            response.setSignData(signData);
             response.setVersion("1.0");
             response.setCurrency("KRW");
-            response.setGopaymethod("Card");
-            response.setAcceptmethod("Card");
             
             return response;
 
@@ -100,23 +96,51 @@ public class NicePayAdapter implements PaymentGatewayAdapter {
         try {
             log.info("Confirming NicePay payment for order: {}", request.getOrderId());
 
-            Map<String, Object> confirmParams = new HashMap<>();
-            confirmParams.put("MID", mid);
-            confirmParams.put("TID", request.getAuthToken()); // 나이스페이의 경우 TID
-            confirmParams.put("Amt", request.getPrice());
+            // 나이스페이 승인 API 파라미터 구성
+            String tid = request.getTxTid(); // TID는 인증 응답의 TxTid 사용
+            String authToken = request.getAuthToken(); // AuthToken
+            String amt = request.getPrice().toString();
+            String ediDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
 
-            // 나이스페이 승인 API 호출
-            Map<String, Object> response = webClientUtil.postJson(
-                "https://webapi.nicepay.co.kr/webapi/pay_process.jsp",
-                confirmParams,
-                Map.class
+            // SignData 생성: hex(sha256(AuthToken + MID + Amt + EdiDate + MerchantKey))
+            String signData = generateConfirmSignData(authToken, mid, amt, ediDate, merchantKey);
+
+            // NicePayConfirmRequest DTO 생성
+            NicePayConfirmRequest confirmRequest = new NicePayConfirmRequest();
+            confirmRequest.setTID(tid);                    // 30 byte 필수 거래번호
+            confirmRequest.setAuthToken(authToken);        // 40 byte 필수 인증 TOKEN
+            confirmRequest.setMID(mid);                    // 10 byte 필수 가맹점아이디
+            confirmRequest.setAmt(amt);                    // 12 byte 필수 금액
+            confirmRequest.setEdiDate(ediDate);            // 14 byte 필수 전문생성일시
+            confirmRequest.setSignData(signData);          // 256 byte 필수 서명데이터
+
+            log.info("NicePay confirm request: {}", confirmRequest);
+
+            // 나이스페이 승인 API 호출 (NextAppURL 사용)
+            String approvalUrl = request.getNextAppUrl();
+            log.info("NicePay approval URL: {}", approvalUrl);
+
+            NicePayConfirmResponse response = webClientUtil.postDtoForDto(
+                approvalUrl,
+                confirmRequest,
+                NicePayConfirmResponse.class
             );
 
-            boolean isSuccess = "0000".equals(response.get("ResultCode"));
-            String transactionId = (String) response.get("TID");
+            log.info("NicePay confirm response: {}", response);
 
-            return new PaymentConfirmResponse(isSuccess, transactionId, request.getPrice(), "SUCCESS");
+            // Signature 검증 (TID + MID + Amt + MerchantKey)
+            String expectedSignature = generateResponseSignature(response.getTID(), response.getMID(), response.getAmt(), merchantKey);
+            if (!expectedSignature.equals(response.getSignature())) {
+                log.error("NicePay signature verification failed. Expected: {}, Actual: {}", expectedSignature, response.getSignature());
+                throw new RuntimeException("나이스페이 응답 서명 검증 실패");
+            }
 
+            // 응답 결과 확인 (3001: 신용카드 성공)
+            boolean isSuccess = "3001".equals(response.getResultCode());
+            String transactionId = response.getTID();
+            String resultCode = response.getResultCode();
+
+            return new PaymentConfirmResponse(isSuccess, transactionId, request.getPrice(), resultCode);
         } catch (Exception e) {
             log.error("Failed to confirm NicePay payment: {}", e.getMessage(), e);
             PaymentConfirmResponse errorResponse = new PaymentConfirmResponse();
@@ -128,6 +152,7 @@ public class NicePayAdapter implements PaymentGatewayAdapter {
 
     @Override
     public void cancel(PaymentCancelRequest request) {
+        // TODO
         try {
             log.info("Cancelling NicePay payment for transaction: {}", request.getTransactionId());
 
@@ -157,7 +182,7 @@ public class NicePayAdapter implements PaymentGatewayAdapter {
 
     @Override
     public void netCancel(PaymentNetCancelRequest request) {
-
+        // TODO
     }
 
     @Override
@@ -166,8 +191,124 @@ public class NicePayAdapter implements PaymentGatewayAdapter {
     }
 
     private String generatePaymentId() {
-        String dateStr = LocalDateTime.now().format(Constants.DATE_FORMATTER_YYYYMMDD);
+        String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         long sequence = System.currentTimeMillis() % 100000000L;
         return dateStr + "P" + String.format("%08d", sequence);
+    }
+
+    /**
+     * NicePay SignData 생성 (SHA256) - 결제 초기화용
+     * 파라미터 순서: EdiDate + MID + Amt + MerchantKey
+     */
+    private String generateSignData(String mid, String amt, String ediDate, String merchantKey) {
+        try {
+            String signString = ediDate + mid + amt + merchantKey;
+            log.info("NicePay Init SignString: {}", signString);
+
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(signString.getBytes(StandardCharsets.UTF_8));
+
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+
+            String result = hexString.toString();
+            log.info("NicePay Init SignData: {}", result);
+            return result;
+
+        } catch (Exception e) {
+            log.error("Failed to generate SignData", e);
+            throw new RuntimeException("SignData 생성 실패", e);
+        }
+    }
+
+    /**
+     * NicePay Confirm SignData 생성 (SHA256) - 승인용
+     * 파라미터 순서: AuthToken + MID + Amt + EdiDate + MerchantKey
+     */
+    private String generateConfirmSignData(String authToken, String mid, String amt, String ediDate, String merchantKey) {
+        try {
+            String signString = authToken + mid + amt + ediDate + merchantKey;
+            log.info("NicePay Confirm SignString: {}", signString);
+
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(signString.getBytes(StandardCharsets.UTF_8));
+
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+
+            String result = hexString.toString();
+            log.info("NicePay Confirm SignData: {}", result);
+            return result;
+
+        } catch (Exception e) {
+            log.error("Failed to generate Confirm SignData", e);
+            throw new RuntimeException("Confirm SignData 생성 실패", e);
+        }
+    }
+
+    /**
+     * NicePay 응답 Signature 검증용 (SHA256)
+     * 파라미터 순서: TID + MID + Amt + MerchantKey
+     */
+    private String generateResponseSignature(String tid, String mid, String amt, String merchantKey) {
+        try {
+            String signString = tid + mid + amt + merchantKey;
+            log.info("NicePay Response SignString: {}", signString);
+
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(signString.getBytes(StandardCharsets.UTF_8));
+
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+
+            String result = hexString.toString();
+            log.info("NicePay Response Signature: {}", result);
+            return result;
+
+        } catch (Exception e) {
+            log.error("Failed to generate Response Signature", e);
+            throw new RuntimeException("Response Signature 생성 실패", e);
+        }
+    }
+
+    /**
+     * NicePay 응답에서 값 추출 (key=value 형식) - 호환성 유지용
+     */
+    private String extractValue(String response, String key) {
+        if (response == null || key == null) {
+            return null;
+        }
+
+        String searchKey = key + "=";
+        int startIndex = response.indexOf(searchKey);
+        if (startIndex == -1) {
+            return null;
+        }
+
+        startIndex += searchKey.length();
+        int endIndex = response.indexOf("&", startIndex);
+        if (endIndex == -1) {
+            endIndex = response.length();
+        }
+
+        return response.substring(startIndex, endIndex);
     }
 }

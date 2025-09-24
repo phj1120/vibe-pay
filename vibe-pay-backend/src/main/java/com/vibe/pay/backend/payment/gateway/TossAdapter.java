@@ -67,9 +67,9 @@ public class TossAdapter implements PaymentGatewayAdapter {
             
             // Toss 특화 필드들 설정
             response.setPaymentId(generatePaymentId());
-            response.setMerchantId("toss_merchant_id");
+            response.setMid("toss_merchant_id");
             response.setOrderId(request.getOrderId());
-            response.setAmount(request.getAmount().toString());
+            response.setAmt(request.getAmount());
             response.setProductName(request.getGoodName() != null ? request.getGoodName() : "VibePay 주문");
             response.setBuyerName(request.getBuyerName() != null ? request.getBuyerName() : "구매자");
             response.setBuyerTel(request.getBuyerTel() != null ? request.getBuyerTel() : "010-0000-0000");
