@@ -21,7 +21,10 @@
       "mcp__jetbrains__get_all_open_file_paths",
       "Bash(curl:*)",
       "Bash(pkill:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(rm:*)",
+      "Bash(rmdir:*)",
+      "Bash(mv:*)"
     ],
     "deny": [],
     "ask": []

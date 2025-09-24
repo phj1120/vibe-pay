@@ -5,7 +5,7 @@ import com.vibe.pay.backend.exception.PaymentException;
 import com.vibe.pay.backend.payment.factory.PaymentGatewayFactory;
 import com.vibe.pay.backend.payment.factory.PaymentProcessorFactory;
 import com.vibe.pay.backend.payment.gateway.PaymentGatewayAdapter;
-import com.vibe.pay.backend.payment.gateway.PaymentInitResponse;
+import com.vibe.pay.backend.payment.dto.PaymentInitResponse;
 import com.vibe.pay.backend.payment.processor.PaymentProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

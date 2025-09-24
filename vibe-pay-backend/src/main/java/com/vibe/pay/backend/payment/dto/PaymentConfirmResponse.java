@@ -1,21 +1,19 @@
-package com.vibe.pay.backend.payment.gateway;
+package com.vibe.pay.backend.payment.dto;
 
-import java.util.function.LongFunction;
-
-public class PaymentCancelResponse {
+public class PaymentConfirmResponse {
     private boolean success;
     private String transactionId;
-    private Long cancelAmount;
+    private Long amount;
     private String status;
     private String errorMessage;
 
     // 기본 생성자
-    public PaymentCancelResponse() {}
+    public PaymentConfirmResponse() {}
 
-    public PaymentCancelResponse(boolean success, String transactionId, Long cancelAmount, String status) {
+    public PaymentConfirmResponse(boolean success, String transactionId, Long amount, String status) {
         this.success = success;
         this.transactionId = transactionId;
-        this.cancelAmount = cancelAmount;
+        this.amount = amount;
         this.status = status;
     }
 
@@ -36,12 +34,12 @@ public class PaymentCancelResponse {
         this.transactionId = transactionId;
     }
 
-    public Long getCancelAmount() {
-        return cancelAmount;
+    public Long getAmount() {
+        return amount;
     }
 
-    public void setCancelAmount(Long cancelAmount) {
-        this.cancelAmount = cancelAmount;
+    public void setAmount(Long amount) {
+        this.amount = amount;
     }
 
     public String getStatus() {

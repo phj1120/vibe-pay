@@ -1,6 +1,6 @@
 package com.vibe.pay.backend.payment;
 
-import com.vibe.pay.backend.payment.gateway.PaymentInitResponse;
+import com.vibe.pay.backend.payment.dto.PaymentInitResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,4 +1,4 @@
-package com.vibe.pay.backend.payment.gateway;
+package com.vibe.pay.backend.payment.dto;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;

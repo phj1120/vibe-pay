@@ -3,7 +3,7 @@ package com.vibe.pay.backend.payment.processor;
 import com.vibe.pay.backend.common.Constants;
 import com.vibe.pay.backend.payment.Payment;
 import com.vibe.pay.backend.payment.PaymentConfirmRequest;
-import com.vibe.pay.backend.payment.gateway.PaymentNetCancelRequest;
+import com.vibe.pay.backend.payment.dto.PaymentNetCancelRequest;
 
 public interface PaymentProcessor {
     Payment processPayment(PaymentConfirmRequest request);

@@ -8,7 +8,7 @@ import com.vibe.pay.backend.enums.PaymentStatus;
 import com.vibe.pay.backend.payment.Payment;
 import com.vibe.pay.backend.payment.PaymentConfirmRequest;
 import com.vibe.pay.backend.payment.PaymentMapper;
-import com.vibe.pay.backend.payment.gateway.PaymentNetCancelRequest;
+import com.vibe.pay.backend.payment.dto.PaymentNetCancelRequest;
 import com.vibe.pay.backend.pointhistory.PointHistoryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

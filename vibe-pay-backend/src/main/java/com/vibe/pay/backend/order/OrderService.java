@@ -7,7 +7,7 @@ import com.vibe.pay.backend.payment.PaymentConfirmRequest;
 import com.vibe.pay.backend.payment.factory.PaymentGatewayFactory;
 import com.vibe.pay.backend.payment.factory.PaymentProcessorFactory;
 import com.vibe.pay.backend.payment.gateway.PaymentGatewayAdapter;
-import com.vibe.pay.backend.payment.gateway.PaymentNetCancelRequest;
+import com.vibe.pay.backend.payment.dto.PaymentNetCancelRequest;
 import com.vibe.pay.backend.payment.processor.PaymentProcessor;
 import com.vibe.pay.backend.product.Product;
 import com.vibe.pay.backend.product.ProductService;

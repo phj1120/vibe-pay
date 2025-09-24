@@ -9,7 +9,7 @@ import com.vibe.pay.backend.payment.PaymentConfirmRequest;
 import com.vibe.pay.backend.exception.OrderException;
 import com.vibe.pay.backend.payment.factory.PaymentGatewayFactory;
 import com.vibe.pay.backend.payment.gateway.PaymentGatewayAdapter;
-import com.vibe.pay.backend.payment.gateway.PaymentNetCancelRequest;
+import com.vibe.pay.backend.payment.dto.PaymentNetCancelRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
