@@ -121,6 +121,7 @@ public class CreateOrderCommand implements OrderCommand {
         request.setNetCancelUrl(paymentMethodRequest.getNetCancelUrl());
         request.setMemberId(orderRequest.getMemberId());
         request.setPaymentMethod(paymentMethodRequest.getPaymentMethod());
+        request.setPgCompany(paymentMethodRequest.getPgCompany()); // PG사 정보 설정
 
         return request;
     }

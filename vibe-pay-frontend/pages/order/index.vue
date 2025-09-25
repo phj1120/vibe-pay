@@ -573,6 +573,9 @@ const proceedToPayment = async () => {
     const paymentInitResponse = await initiateResponse.json();
     console.log('Payment initiated:', paymentInitResponse);
 
+    // 실제 선택된 PG사 정보를 주문 데이터에 추가
+    orderData.actualPgCompany = paymentInitResponse.selectedPgCompany || selectedPgCompany.value;
+
     // 주문 데이터 저장
     currentOrderData.value = orderData;
 
@@ -697,6 +700,9 @@ const handleOrderCreation = async (paymentData) => {
     // 결제 방법 배열 구성
     const paymentMethods = [];
 
+    // 실제 선택된 PG사 정보 (initiate 응답에서 받은 실제 PG사)
+    const actualSelectedPgCompany = currentOrderData.value.actualPgCompany;
+
     // 포인트 사용이 있으면 포인트 결제 추가
     if (currentOrderData.value.usedPoints > 0) {
       paymentMethods.push({
@@ -706,6 +712,7 @@ const handleOrderCreation = async (paymentData) => {
         authUrl: paymentData.authUrl,
         mid: paymentData.mid,
         netCancelUrl: paymentData.netCancelUrl,
+        pgCompany: actualSelectedPgCompany, // 실제 선택된 PG사 정보 사용
       });
     }
 
@@ -714,10 +721,11 @@ const handleOrderCreation = async (paymentData) => {
     if (cardPaymentAmount > 0) {
       paymentMethods.push({
         paymentMethod: 'CREDIT_CARD',
-        pgCompany: paymentData.pgCompany, // PG사 정보 추가
+        pgCompany: actualSelectedPgCompany, // 실제 선택된 PG사 정보 사용
         amount: cardPaymentAmount,
         authToken: paymentData.authToken,
         nextAppUrl: paymentData.nextAppURL,
+        authUrl: paymentData.authUrl,
         mid: paymentData.mid,
         netCancelUrl: paymentData.netCancelUrl,
         txTid: paymentData.txTid // txTid 추가
