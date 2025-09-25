@@ -1,4 +1,65 @@
-1. 주문, 결제 프로세스
+### 최초 프로젝트 생성
+```
+인증, 승인, 승인취소, 망취소 프로세스를 익히기 위한 프로젝트를 진행하려고해.
+
+backend: java, spring, mybatis, postgresql
+fronteend: typescript, nuxt
+
+결제수단: 신용카드, 적립금
+PG사: 나이스페이, 이니시스
+PG사는 나이스페이와 이니시스 별로 비율을 정해두고, 그 비율에 맞춰서 해당 PG사를 이용할거야.
+
+간략하게 주문서를 만들건데,
+회원, 결제, 상품, 결제인터페이스요청로그, 적립금 테이블 이렇게 필요해.
+
+0. 목차 페이지
+아래 나오는 메뉴로 이동 가능한 페이지
+
+1. 기본 정보
+1.1 회원 목록
+저장된 회원의 목록 조회 및 등록 가능, 존재하는 회원인 경우 수정 페이지 주문목록 페이지로 이동 가능.
+1.1.1 회원 정보(이름, 배송지, 전화번호.. ), 적립금 부여 등록, 수정 가능한 화면이 필요해.
+1.1.2 해당 회원의 주문 목록 페이지
+회원이 주문한 목록이 나오고 목록에서 단순하게 취소 가능하도록(PG 승인취소를 익히기 위함)
+
+1.2. 상품 목록
+저장된 상품의 목록 조회 및 등록 가능, 존재하는 상품인 경우 수정 페이지로 이동 가능.
+1.2.1. 정보(이름, 가격...) 
+
+2. 주문서
+저장된 회원의 정보를 단건만 선택 할 수 있고,
+저장된 상품의 정보를 다건 선택 할 수 있어. 수량도 조절 가능해
+주문에서 적립금도 보유한 만큼 사용 가능해.
+선택 된 가격의 정보와 사용한 적립금을 고려해서 계산한 금액이 표시된 결제하기 버튼을 만들고,
+그 버튼을 누르면 PG 프로세스를 태우게끔 하고 싶어.
+
+나이스: https://developers.nicepay.co.kr/manual-auth.php
+이니시스: https://manual.inicis.com/pay/stdpay_pc.html
+이 문서를  참해서 만들어 주면 돼
+```
+
+```
+1. 결제 요청 → 이니시스
+2. 이니시스 → POST /order/return (body에 인증 정보)
+3. 프론트엔드 서버 API → 이니시스 데이터 받기
+4. 프론트엔드 서버 API → 백엔드 API에 승인 요청
+5. 백엔드 API → 이니시스에 실제 승인 요청
+6. 완료 페이지로 이동
+```
+
+```
+1. 결제 요청 → 이니시스
+2. 이니시스 → POST /api/payments/return (POST body에 데이터)
+3. 프론트엔드 API → 백엔드 승인 요청
+4. 백엔드 → 이니시스 실제 승인
+5. 프론트엔드 API → 결과 페이지로 리다이렉트
+6. 결과 페이지에서 UI 표시
+```
+
+
+
+주문, 결제 프로세스
+```
    1. 주문 번호 채번 FO -> API orderService 의 generateOrderNumber 사용.
    2. /api/payments/initiate 호출 해 결제 요청 파라미터 생성 (FO -> API)
    3. 생성된 파라미터로 결제 요청 window.INIStdPay.pay('inicisForm') (FO)
@@ -9,8 +70,10 @@
       5번에 저장된 주문의 정보들을 기반으로 주문을 진행하는 /api/orders/order 를 호출하고,
       이 API 내에서 주문 정보를 insert 하고 paymentService.confirmPayment 를 호출 하도록 바꿀거야.
    7. 주문이 완료 되면 주문 완료 페이지로, 실패 했을 경우 실패 페이지로 이동.
+```
 
-2. 브라우저, 서버 간 데이터 공유 제한으로 인한 팝업 창으로 변경
+브라우저, 서버 간 데이터 공유 제한으로 인한 팝업 창으로 변경
+```
 현재 응답 결과를 이니시스 측에서 post 로 리다이렉트 해주고, 그 값을 이용해서 주문을 진행해야하는데,
 vue 에서 받을 경우 Post 는 SSR 일때만 받을 수 있어 브라우저와 서버의 쿠키가 공유가 안되고 있어.
 이를 해결하기 위해서 페이지 이동이 아닌 팝업을 새로 띄우려고 해.
@@ -18,7 +81,9 @@ vue 에서 받을 경우 Post 는 SSR 일때만 받을 수 있어 브라우저�
 팝업에서 progress 로 이동한 다음에,
 리다이렉트 된 정보를 부모 페이지에 넘겨 주면서 팝업을 닫는거야.
 부모 페이지에서는 받은 값을 기반으로 주문을 호출하도록 수정 개발 진행해줘.
+```
 
+```
 2에 대한 답변
     1. 팝업 창 플로우 확인
         주문서 → 결제하기 클릭 → 팝업 열기 →
@@ -46,9 +111,9 @@ vue 에서 받을 경우 Post 는 SSR 일때만 받을 수 있어 브라우저�
 
    - returnUrl, closeUrl을 팝업 경로로 변경해야 하나요?
         => 응 returnUrl 을 위에서 만든 팝업 경로로 변경해줘.
+```
 
-
-3. 현재 주문 생성의 request 가 이렇게 되어 있는데 좀 구조화 되었으면 좋겠어
+현재 주문 생성의 request 가 이렇게 되어 있는데 좀 구조화 되었으면 좋겠어
 ```
     주문정보
         주문자명
@@ -95,15 +160,19 @@ point_history 테이블을 하나 생성해서 적립 사용에 대한 내역을
 ```
 
 20250921 14:23
+```
 포인트 사용시 payment 테이블에도 쌓이게 하고 싶어.
 1. pay_type 을 추가해서 결제인지 환불인지 관리 해줘.
 2. payment 테이블의 pk 를 payment_id, payment_method, order_id, pay_type 이렇게 수정해.
 3. 포인트 결제건의 경우 payment_method 에 POINT, pg_company 에 null을 넣어줘.
+```
 
 20250922 09:53
+```
 1. 회원 상세에서 포인트 사용기록은 잘 보이는데, 주문 내역은 보이지 않고 있어.
     mapper 에 findByOrderIdAndOrdSeqAndOrdProcSeq 가 없어서 그런 것으로 보여.
 2. 현재 주문이 완료 됐다는 API 응답이 오지 않아도 주문 완료 페이지로 이동하고 있어. 주문 완료 응답이 오고(createOrder), 이 응답이 정상 응답일 경우 주문 완료 페이지로 이동하고, 실패 했을 경우 주문 실패 페이지로 이동하게 개발해줘.
+```
 
 20250922 10:16
 ```
@@ -393,101 +462,103 @@ createOrder 를 지금 보니까 get(0) 해서 첫번쨰 주문만 반환하는�
 
 20250924 08:02
 ```
-리팩토링 완료 보고서
-
-## 📋 완료된 리팩토링 작업
-
-### 1. ✅ Enum으로 코드성 데이터 관리
-- `PaymentMethod` (CREDIT_CARD, POINT)
-- `PayType` (PAYMENT, REFUND)
-- `PaymentStatus` (SUCCESS, FAILED, CANCELLED, PENDING)
-- `PgCompany` (INICIS, NICEPAY, TOSS)
-- `OrderStatus` (ORDERED, CANCELLED, PAID)
-- `TransactionType` (CHARGE, USE, REFUND)
-
-### 2. ✅ WebClient 기반 API 호출 유틸 구현
-- `WebClientUtil` - JSON/Form/Headers 지원하는 통합 API 호출 유틸
-- `WebClientConfig` - 타임아웃, 연결 설정 최적화
-- RestTemplate → WebClient 전환으로 최신 기술 적용
-
-### 3. ✅ 결제수단별 Factory 패턴 적용
-```java
-PaymentProcessor processor = PaymentProcessorFactory.create(method);
-processor.process(request); // 카드/포인트 구분 없이 동일 인터페이스
-```
-- `PaymentProcessor` 인터페이스
-- `CreditCardPaymentProcessor`, `PointPaymentProcessor` 구현체
-- 새 결제수단 추가 시 기존 코드 수정 없음
-
-### 4. ✅ PG사별 Adapter 패턴 적용
-```java
-PaymentGatewayAdapter adapter = PgAdapterFactory.create(pgCompany);
-PaymentResult result = adapter.requestPayment(standardRequest);
-```
-- `PaymentGatewayAdapter` 인터페이스로 PG사별 API 차이 흡수
-- `InicisAdapter`, `NicePayAdapter`, `TossAdapter` 구현체
-- 각 PG사의 복잡한 API를 표준 인터페이스로 통일
-
-### 5. ✅ 예외처리 및 로깅 개선
-- `BusinessException`, `PaymentException`, `OrderException` 계층화
-- `GlobalExceptionHandler`에서 예외 타입별 구체적 처리
-- 로그에 traceId 포함으로 디버깅 편의성 향상
-
-### 6. ✅ 나이스페이/토스 PG 연동 인터페이스 설계
-- 3개 PG사 (이니시스/나이스페이/토스) 동시 지원 가능한 구조
-- 환경변수 기반 설정으로 배포 환경별 분리
-- PG사별 특성 반영한 개별 Adapter 구현
-
-## 🏗️ 새로운 아키텍처 구조
-
-```
-결제 요청 → PaymentProcessorFactory → 적절한 Processor 선택
-            ↓
-         PaymentGatewayFactory → 적절한 PG Adapter 선택
-            ↓
-         WebClientUtil → 실제 API 호출
-```
-
-## 🚀 확장성 개선 효과
-
-### 새 결제수단 추가 시:
-1. `PaymentProcessor` 구현체만 추가
-2. 기존 코드 수정 없음
-
-### 새 PG사 추가 시:
-1. `PaymentGatewayAdapter` 구현체만 추가
-2. 설정 파일에 환경변수만 추가
-3. 기존 코드 수정 없음
-
-### 코드 품질 개선:
-- OCP 원칙 준수 (확장에는 열림, 수정에는 닫힘)
-- 단일 책임 원칙 적용
-- 의존성 역전을 통한 테스트 용이성 확보
-
-## 📊 리팩토링 전후 비교
-
-### Before:
-```java
-if ("CREDIT_CARD".equals(method)) {
-    // 카드 결제 로직
-    if ("INICIS".equals(pgCompany)) {
-        // 이니시스 전용 로직
+    리팩토링 완료 보고서
+    
+    ## 📋 완료된 리팩토링 작업
+    
+    ### 1. ✅ Enum으로 코드성 데이터 관리
+    - `PaymentMethod` (CREDIT_CARD, POINT)
+    - `PayType` (PAYMENT, REFUND)
+    - `PaymentStatus` (SUCCESS, FAILED, CANCELLED, PENDING)
+    - `PgCompany` (INICIS, NICEPAY, TOSS)
+    - `OrderStatus` (ORDERED, CANCELLED, PAID)
+    - `TransactionType` (CHARGE, USE, REFUND)
+    
+    ### 2. ✅ WebClient 기반 API 호출 유틸 구현
+    - `WebClientUtil` - JSON/Form/Headers 지원하는 통합 API 호출 유틸
+    - `WebClientConfig` - 타임아웃, 연결 설정 최적화
+    - RestTemplate → WebClient 전환으로 최신 기술 적용
+    
+    ### 3. ✅ 결제수단별 Factory 패턴 적용
+    ```java
+    PaymentProcessor processor = PaymentProcessorFactory.create(method);
+    processor.process(request); // 카드/포인트 구분 없이 동일 인터페이스
+    ```
+    - `PaymentProcessor` 인터페이스
+      - `CreditCardPaymentProcessor`, `PointPaymentProcessor` 구현체
+      - 새 결제수단 추가 시 기존 코드 수정 없음
+    
+    ### 4. ✅ PG사별 Adapter 패턴 적용
+    ```
+    ```java
+    PaymentGatewayAdapter adapter = PgAdapterFactory.create(pgCompany);
+    PaymentResult result = adapter.requestPayment(standardRequest);
+    ```
+    - `PaymentGatewayAdapter` 인터페이스로 PG사별 API 차이 흡수
+      - `InicisAdapter`, `NicePayAdapter`, `TossAdapter` 구현체
+      - 각 PG사의 복잡한 API를 표준 인터페이스로 통일
+    
+    ### 5. ✅ 예외처리 및 로깅 개선
+    - `BusinessException`, `PaymentException`, `OrderException` 계층화
+      - `GlobalExceptionHandler`에서 예외 타입별 구체적 처리
+      - 로그에 traceId 포함으로 디버깅 편의성 향상
+    
+    ### 6. ✅ 나이스페이/토스 PG 연동 인터페이스 설계
+    - 3개 PG사 (이니시스/나이스페이/토스) 동시 지원 가능한 구조
+      - 환경변수 기반 설정으로 배포 환경별 분리
+      - PG사별 특성 반영한 개별 Adapter 구현
+    
+    ## 🏗️ 새로운 아키텍처 구조
+    
+    ```
+    결제 요청 → PaymentProcessorFactory → 적절한 Processor 선택
+                ↓
+             PaymentGatewayFactory → 적절한 PG Adapter 선택
+                ↓
+             WebClientUtil → 실제 API 호출
+    ```
+    
+    ## 🚀 확장성 개선 효과
+    
+    ### 새 결제수단 추가 시:
+    1. `PaymentProcessor` 구현체만 추가
+       2. 기존 코드 수정 없음
+    
+    ### 새 PG사 추가 시:
+    1. `PaymentGatewayAdapter` 구현체만 추가
+       2. 설정 파일에 환경변수만 추가
+       3. 기존 코드 수정 없음
+    
+    ### 코드 품질 개선:
+    - OCP 원칙 준수 (확장에는 열림, 수정에는 닫힘)
+      - 단일 책임 원칙 적용
+      - 의존성 역전을 통한 테스트 용이성 확보
+    
+    ## 📊 리팩토링 전후 비교
+    
+    ### Before:
+    ```java
+    if ("CREDIT_CARD".equals(method)) {
+        // 카드 결제 로직
+        if ("INICIS".equals(pgCompany)) {
+            // 이니시스 전용 로직
+        }
+    } else if ("POINT".equals(method)) {
+        // 포인트 결제 로직
     }
-} else if ("POINT".equals(method)) {
-    // 포인트 결제 로직
-}
-// 새 결제수단/PG사 추가시 모든 분기문 수정 필요
+    // 새 결제수단/PG사 추가시 모든 분기문 수정 필요
+    ```
+    
+    ### After:
+    ```java
+    PaymentProcessor processor = paymentProcessorFactory.create(method);
+    PaymentGatewayAdapter adapter = pgAdapterFactory.create(pgCompany);
+    return processor.process(request, adapter);
+    // 새 결제수단/PG사는 구현체만 추가
+    ```
+    
+    이제 새로운 PG사 연동이나 결제수단 추가가 매우 쉬워졌습니다!
 ```
-
-### After:
-```java
-PaymentProcessor processor = paymentProcessorFactory.create(method);
-PaymentGatewayAdapter adapter = pgAdapterFactory.create(pgCompany);
-return processor.process(request, adapter);
-// 새 결제수단/PG사는 구현체만 추가
-```
-
-이제 새로운 PG사 연동이나 결제수단 추가가 매우 쉬워졌습니다!
 
 20250924 09:31
 ```
