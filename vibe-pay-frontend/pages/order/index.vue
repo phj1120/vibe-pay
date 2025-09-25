@@ -33,7 +33,6 @@
               </div>
               <div class="member-details">
                 <div class="member-name">{{ item.raw.name }}</div>
-                <div class="member-points">{{ item.raw.points || 0 }}P 보유</div>
               </div>
             </div>
           </template>
@@ -45,7 +44,6 @@
                 </div>
               </template>
               <v-list-item-title>{{ item.raw.name }}</v-list-item-title>
-              <v-list-item-subtitle>{{ item.raw.points || 0 }}P 보유</v-list-item-subtitle>
             </v-list-item>
           </template>
         </v-select>
