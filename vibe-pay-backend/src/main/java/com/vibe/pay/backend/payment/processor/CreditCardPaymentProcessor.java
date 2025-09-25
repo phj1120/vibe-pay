@@ -105,6 +105,8 @@ public class CreditCardPaymentProcessor implements PaymentProcessor {
         paymentCancelRequest.setPaymentId(paymentId);
         paymentCancelRequest.setAmount(refundPayment.getAmount());
         paymentCancelRequest.setTransactionId(refundPayment.getTransactionId());
+        paymentCancelRequest.setOrderId(refundPayment.getOrderId());
+        paymentCancelRequest.setReason("취소");
 
         adapter.cancel(paymentCancelRequest);
 

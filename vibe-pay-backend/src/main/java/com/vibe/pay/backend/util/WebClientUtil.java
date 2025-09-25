@@ -175,6 +175,34 @@ public class WebClientUtil {
     }
 
     /**
+     * POST 요청 (Raw Form Data String으로 전송, Text 응답)
+     * 나이스페이 API용 - Form Data String 버전
+     */
+    public String postFormDataForText(String url, String formData) {
+        try {
+            log.info("POST Form Data String request for text response to: {}", url);
+            log.debug("Form data string: {}", formData);
+
+            String response = webClient.post()
+                .uri(url)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .acceptCharset(Charset.forName("EUC-KR"))
+                .bodyValue(formData)
+                .retrieve()
+                .bodyToMono(String.class)
+                .timeout(DEFAULT_TIMEOUT)
+                .block();
+
+            log.debug("Text response: {}", response);
+            return response;
+
+        } catch (Exception e) {
+            log.error("POST Form Data String request for text failed to {}: {}", url, e.getMessage(), e);
+            throw new RuntimeException("API call failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * POST 요청 (Text 응답, Form Data, EUC-KR 인코딩)
      * 나이스페이 API용 - Map 버전
      */

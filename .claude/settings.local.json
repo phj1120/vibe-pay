@@ -24,7 +24,8 @@
       "Bash(mkdir:*)",
       "Bash(rm:*)",
       "Bash(rmdir:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "WebFetch(domain:developers.nicepay.co.kr)"
     ],
     "deny": [],
     "ask": []
