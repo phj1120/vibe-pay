@@ -167,7 +167,7 @@
                   <div class="record-section">
                     <h5 class="section-title">상품 정보</h5>
                     <div class="item-list">
-                      <div v-for="item in orderGroup.orderItems" :key="item.orderItemId" class="item-row">
+                      <div v-for="item in getOrderSpecificItems(orderGroup.orderId, 'order')" :key="item.orderItemId" class="item-row">
                         <div class="item-name">{{ item.productName }}</div>
                         <div class="item-details">₩{{ formatNumber(item.priceAtOrder) }} x {{ item.quantity }}개</div>
                       </div>
@@ -207,7 +207,7 @@
                   <div class="record-section">
                     <h5 class="section-title">상품 정보</h5>
                     <div class="item-list">
-                      <div v-for="item in orderGroup.orderItems" :key="'cancel-' + item.orderItemId" class="item-row">
+                      <div v-for="item in getOrderSpecificItems(orderGroup.orderId, 'cancel')" :key="'cancel-' + item.orderItemId" class="item-row">
                         <div class="item-name">{{ item.productName }}</div>
                         <div class="item-details">₩{{ formatNumber(item.priceAtOrder) }} x {{ item.quantity }}개</div>
                       </div>
@@ -571,30 +571,74 @@ const getPaymentMethodText = (paymentMethod) => {
 
 // 주문 결제 정보 필터링 (order_status = 'ORDER')
 const getOrderPayments = (order) => {
-  if (!order || !order.payments) return []
-  return order.payments.filter(payment => payment.orderStatus === 'ORDER')
+  console.log('getOrderPayments - order keys:', Object.keys(order))
+  console.log('getOrderPayments - order.payments:', order.payments)
+  console.log('getOrderPayments - order.cardPayments:', order.cardPayments)
+  console.log('getOrderPayments - order.pointPayments:', order.pointPayments)
+
+  if (!order || !order.payments) {
+    console.log('getOrderPayments - no order or payments')
+    return []
+  }
+  const orderPayments = order.payments.filter(payment => payment.orderStatus === 'ORDER')
+  console.log('getOrderPayments - filtered:', orderPayments)
+  return orderPayments
 }
 
 // 취소 환불 정보 필터링 (order_status = 'CANCELED')
 const getCancelPayments = (order) => {
-  if (!order || !order.payments) return []
-  return order.payments.filter(payment => payment.orderStatus === 'CANCELED')
+  if (!order || !order.payments) {
+    console.log('getCancelPayments - no order or payments')
+    return []
+  }
+  const cancelPayments = order.payments.filter(payment => payment.orderStatus === 'CANCELLED')
+  console.log('getCancelPayments - filtered with CANCELLED:', cancelPayments)
+  return cancelPayments
+}
+
+// 주문/취소별 정확한 상품 정보 가져오기
+const getOrderSpecificItems = (orderId, type) => {
+  // 해당 주문ID와 타입에 맞는 주문들만 필터링
+  const relevantOrders = orders.value.filter(order => {
+    if (order.orderId !== orderId) return false
+
+    if (type === 'order') {
+      // 주문: ordProcSeq가 1이고 취소되지 않은 것
+      return order.ordProcSeq === 1 && !order.claimId
+    } else if (type === 'cancel') {
+      // 취소: claimId가 있는 것
+      return order.claimId
+    }
+    return false
+  })
+
+  // 해당하는 주문들의 상품들을 수집
+  return relevantOrders.flatMap(order => order.orderItems || [])
 }
 
 // 주문을 주문번호별로 그루핑
 const getGroupedOrders = () => {
+  console.log('=== getGroupedOrders 디버깅 ===')
+  console.log('orders.value:', orders.value)
+
   const orderMap = new Map()
 
   // 주문ID별로 그룹핑
   orders.value.forEach(order => {
+    console.log('Processing order:', order)
     const orderId = order.orderId
+    console.log('orderId:', orderId)
 
     if (!orderMap.has(orderId)) {
       // 새로운 주문 그룹 생성
       const orderPayments = getOrderPayments(order)
       const cancelPayments = getCancelPayments(order)
 
-      if (orderPayments.length > 0) {
+      console.log('orderPayments:', orderPayments)
+      console.log('cancelPayments:', cancelPayments)
+
+      // 임시로 주문이 존재하면 표시하도록 수정 (payments가 없어도)
+      if (orderId) {
         const finalStatus = cancelPayments.length > 0 ? 'CANCELLED' : 'ORDERED'
         const orderAmount = orderPayments.reduce((sum, payment) => sum + payment.amount, 0)
         const cancelAmount = cancelPayments.reduce((sum, payment) => sum + payment.amount, 0)
@@ -603,10 +647,11 @@ const getGroupedOrders = () => {
         const claimId = order.orderProcesses?.find(process => process.claimId)?.claimId || 'N/A'
         const cancelDate = cancelPayments[0]?.paymentDate || order.orderDate
 
-        // 같은 주문ID를 가진 모든 주문의 상품들을 수집
-        const allOrderItems = orders.value
-          .filter(o => o.orderId === orderId)
-          .flatMap(o => o.orderItems || [])
+        // 현재 처리 중인 주문과 정확히 일치하는 상품들만 수집
+        const allOrderItems = order.orderItems || []
+
+        // 취소 가능 여부 판단: finalStatus가 'ORDERED'이고 실제로 취소되지 않은 경우만
+        const canCancel = finalStatus === 'ORDERED' && cancelPayments.length === 0
 
         orderMap.set(orderId, {
           orderId: orderId,
@@ -619,7 +664,7 @@ const getGroupedOrders = () => {
           cancelDate: cancelDate,
           claimId: claimId,
           orderItems: allOrderItems,
-          canCancel: order.status === 'ORDERED' && cancelPayments.length === 0,
+          canCancel: canCancel,
           originalOrder: order
         })
       }
@@ -627,7 +672,10 @@ const getGroupedOrders = () => {
   })
 
   // Map을 배열로 변환하고 날짜순 정렬
-  return Array.from(orderMap.values()).sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))
+  const result = Array.from(orderMap.values()).sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))
+  console.log('getGroupedOrders 결과:', result)
+  console.log('result.length:', result.length)
+  return result
 }
 
 // 주문을 주문 기록과 취소 기록으로 확장
@@ -715,9 +763,25 @@ const fetchMemberData = async (memberId) => {
 const fetchOrderHistory = async (memberId, page = 0, append = false) => {
   ordersLoading.value = true
   try {
+    console.log('=== API 호출 시작 ===')
+    console.log('URL:', `/api/members/${memberId}/order-history?page=${page}&size=10`)
+
     const response = await fetch(`/api/members/${memberId}/order-history?page=${page}&size=10`)
-    if (!response.ok) throw new Error('Failed to fetch order details')
+    console.log('API Response status:', response.status)
+    console.log('API Response ok:', response.ok)
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.log('API Error response:', errorText)
+      throw new Error('Failed to fetch order details')
+    }
+
     const data = await response.json()
+    console.log('=== RAW API 응답 데이터 ===')
+    console.log('data:', data)
+    console.log('data.length:', data?.length)
+    console.log('data[0]:', data?.[0])
+
     const processedData = data.map(o => ({
       ...o,
       // orderDate는 그대로 두고 템플릿에서 formatDateTime으로 포맷
@@ -726,11 +790,19 @@ const fetchOrderHistory = async (memberId, page = 0, append = false) => {
       pointPayments: o.payments?.filter(p => p.paymentMethod === 'POINT') || []
     }))
 
+    console.log('=== 처리된 데이터 ===')
+    console.log('processedData:', processedData)
+
     if (append) {
       orders.value = [...orders.value, ...processedData]
     } else {
       orders.value = processedData
     }
+
+    console.log('=== 최종 orders.value ===')
+    console.log('orders.value:', orders.value)
+    console.log('orders.value.length:', orders.value.length)
+
     orderHistoryHasMore.value = data.length === 10
     console.log('주문 상세 정보 조회 성공:', processedData)
   } catch (error) {
