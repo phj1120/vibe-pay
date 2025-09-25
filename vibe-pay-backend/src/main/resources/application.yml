@@ -42,6 +42,12 @@ toss:
   successUrl: ${TOSS_SUCCESS_URL:http://localhost:3000/order/complete}
   failUrl: ${TOSS_FAIL_URL:http://localhost:3000/order/popup}
 
+# PG사 가중치 설정 (확률 기반)
+payment:
+  weight:
+    inicis: 50
+    nicepay: 50
+
 # 개발 환경
 ---
 spring:

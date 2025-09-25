@@ -24,6 +24,7 @@ public class PaymentService {
     private final PaymentMapper paymentMapper;
     private final PaymentProcessorFactory paymentProcessorFactory;
     private final PaymentGatewayFactory paymentGatewayFactory;
+    private final PgWeightSelector pgWeightSelector;
 
 
     public Optional<Payment> getPaymentById(String paymentId) {
@@ -62,8 +63,8 @@ public class PaymentService {
                 request.getOrderId(), request.getPaymentMethod(), request.getPgCompany());
 
         try {
-            // 1. PG 어댑터 선택 (요청에서 전달받은 pgCompany 사용)
-            String pgCompany = request.getPgCompany() != null ? request.getPgCompany() : "INICIS";
+            // 1. PG 어댑터 선택 (가중치 기반 또는 직접 선택)
+            String pgCompany = determinePgCompany(request.getPgCompany());
             PaymentGatewayAdapter pgAdapter = paymentGatewayFactory.getAdapter(pgCompany);
 
             // 2. PG 결제 시작 처리
@@ -73,8 +74,11 @@ public class PaymentService {
                 throw PaymentException.initiationFailed(pgResponse.getErrorMessage());
             }
 
-            log.info("Payment initiation completed: orderId={}, paymentId={}",
-                    request.getOrderId(), pgResponse.getPaymentId());
+            // 3. 실제 선택된 PG사 정보를 응답에 설정
+            pgResponse.setSelectedPgCompany(pgCompany);
+
+            log.info("Payment initiation completed: orderId={}, paymentId={}, selectedPgCompany={}",
+                    request.getOrderId(), pgResponse.getPaymentId(), pgCompany);
 
             return pgResponse;
 
@@ -85,6 +89,20 @@ public class PaymentService {
             log.error("Unexpected error during payment initiation: {}", e.getMessage(), e);
             throw PaymentException.pgSystemError("PAYMENT_SYSTEM", e);
         }
+    }
+
+    /**
+     * PG사를 결정합니다. WEIGHTED 옵션인 경우 가중치 기반으로 선택합니다.
+     */
+    private String determinePgCompany(String requestedPgCompany) {
+        if ("WEIGHTED".equals(requestedPgCompany)) {
+            String selectedPg = pgWeightSelector.selectPgCompanyByWeight();
+            log.info("Weight-based PG selection: {} (weights: {})", 
+                    selectedPg, pgWeightSelector.getWeightInfo());
+            return selectedPg;
+        }
+        
+        return requestedPgCompany != null ? requestedPgCompany : "INICIS";
     }
 
     @Transactional

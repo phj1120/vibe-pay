@@ -40,4 +40,7 @@ public class PaymentInitResponse {
     // 나이스
     private String ediDate;
     private String SignData;
+    
+    // 실제 선택된 PG사 정보 (가중치 선택 시 사용)
+    private String selectedPgCompany;
 }

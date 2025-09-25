@@ -214,6 +214,22 @@
                 </div>
               </template>
             </v-radio>
+            <v-radio
+              value="WEIGHTED"
+              class="pg-radio"
+            >
+              <template v-slot:label>
+                <div class="pg-option">
+                  <div class="pg-logo">
+                    <v-icon size="24" color="orange">mdi-chart-pie</v-icon>
+                  </div>
+                  <div class="pg-info">
+                    <div class="pg-name">가중치</div>
+                    <div class="pg-desc">서버 설정 비율에 따라 자동 선택</div>
+                  </div>
+                </div>
+              </template>
+            </v-radio>
           </v-radio-group>
         </div>
       </div>
@@ -523,7 +539,7 @@ const proceedToPayment = async () => {
       memberId: selectedMember.value.memberId,
       amount: Math.round(total.value), // 정수로 변환
       paymentMethod: 'CREDIT_CARD',
-      pgCompany: selectedPgCompany.value, // 선택된 PG사 추가
+      pgCompany: selectedPgCompany.value, // 선택된 PG사 (WEIGHTED 포함)
       usedMileage: Math.round(usedPoints.value), // 적립금도 정수로 변환
       goodName: goodName,
       buyerName: selectedMember.value.name,
@@ -562,9 +578,11 @@ const proceedToPayment = async () => {
     // 주문 데이터 저장
     currentOrderData.value = orderData;
 
-    // 팝업 열기 (PG사별 다른 크기)
+    // 팝업 열기 (실제 선택된 PG사에 따라 다른 크기)
     console.log('Opening payment popup...');
-    const popupSize = selectedPgCompany.value === 'NICEPAY'
+    const actualPgCompany = paymentInitResponse.selectedPgCompany || selectedPgCompany.value;
+    console.log('Actual PG company for popup size:', actualPgCompany);
+    const popupSize = actualPgCompany === 'NICEPAY'
       ? 'width=570,height=830,scrollbars=yes,resizable=yes'
       : 'width=840,height=600,scrollbars=yes,resizable=yes';
 
@@ -585,7 +603,7 @@ const proceedToPayment = async () => {
         type: 'PAYMENT_PARAMS',
         data: {
           ...paymentInitResponse,
-          pgCompany: selectedPgCompany.value // PG사 정보 추가
+          pgCompany: paymentInitResponse.selectedPgCompany || selectedPgCompany.value // 실제 선택된 PG사 정보 사용
         }
       }, '*');
     };
@@ -643,7 +661,7 @@ const proceedToPayment = async () => {
       sendPaymentParams();
     }, 1000);
 
-    // 팝업이 닫힌 경우 처리 (3초 딜레이 후 체크)
+    // 팝업이 닫힌 경우 처리 (1초 딜레이 후 체크)
     const checkClosed = setInterval(() => {
       if (popup.closed) {
         clearInterval(checkClosed);
@@ -653,7 +671,7 @@ const proceedToPayment = async () => {
           isProcessing.value = false;
           console.log('Payment popup was closed - likely cancelled by user');
           alert('결제 창이 닫혔습니다. 결제를 다시 시도해주세요.');
-        }, 3000);
+        }, 1000);
       }
     }, 1000);
 

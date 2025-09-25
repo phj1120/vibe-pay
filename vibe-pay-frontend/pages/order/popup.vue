@@ -87,8 +87,6 @@
       <input type="hidden" name="charset" value="UTF-8" />
     </form>
 
-    {{paymentParams}}
-
     <!-- 나이스페이 결제 폼 -->
     <form name="nicePayForm" method="post" action="/order/progress-popup" accept-charset="euc-kr" style="display: none;">
       <input type="hidden" name="PayMethod" value="CARD" />
