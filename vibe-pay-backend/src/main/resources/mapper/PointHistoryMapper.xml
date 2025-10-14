@@ -15,71 +15,163 @@
     </resultMap>
 
     <insert id="insert">
-        INSERT INTO point_history (point_history_id, member_id, point_amount, balance_after, transaction_type, reference_type, reference_id, description, created_at)
-        VALUES (nextval('point_history_id_seq'), #{memberId}, #{pointAmount}, #{balanceAfter}, #{transactionType}, #{referenceType}, #{referenceId}, #{description}, #{createdAt})
+        INSERT INTO POINT_HISTORY ( /* PointHistoryMapper.insert */
+               POINT_HISTORY_ID
+             , MEMBER_ID
+             , POINT_AMOUNT
+             , BALANCE_AFTER
+             , TRANSACTION_TYPE
+             , REFERENCE_TYPE
+             , REFERENCE_ID
+             , DESCRIPTION
+             , CREATED_AT
+        )
+        VALUES (
+               NEXTVAL('point_history_id_seq')
+             , #{memberId}
+             , #{pointAmount}
+             , #{balanceAfter}
+             , #{transactionType}
+             , #{referenceType}
+             , #{referenceId}
+             , #{description}
+             , #{createdAt}
+        )
     </insert>
 
     <select id="findByPointHistoryId" resultMap="pointHistoryResultMap">
-        SELECT point_history_id, member_id, point_amount, balance_after, transaction_type, reference_type, reference_id, description, created_at
-        FROM point_history
-        WHERE point_history_id = #{pointHistoryId}
+        SELECT /* PointHistoryMapper.findByPointHistoryId */
+               POINT_HISTORY_ID
+             , MEMBER_ID
+             , POINT_AMOUNT
+             , BALANCE_AFTER
+             , TRANSACTION_TYPE
+             , REFERENCE_TYPE
+             , REFERENCE_ID
+             , DESCRIPTION
+             , CREATED_AT
+          FROM POINT_HISTORY
+         WHERE POINT_HISTORY_ID = #{pointHistoryId}
     </select>
 
     <select id="findByMemberId" resultMap="pointHistoryResultMap">
-        SELECT point_history_id, member_id, point_amount, balance_after, transaction_type, reference_type, reference_id, description, created_at
-        FROM point_history
-        WHERE member_id = #{memberId}
-        ORDER BY created_at DESC
+        SELECT /* PointHistoryMapper.findByMemberId */
+               POINT_HISTORY_ID
+             , MEMBER_ID
+             , POINT_AMOUNT
+             , BALANCE_AFTER
+             , TRANSACTION_TYPE
+             , REFERENCE_TYPE
+             , REFERENCE_ID
+             , DESCRIPTION
+             , CREATED_AT
+          FROM POINT_HISTORY
+         WHERE MEMBER_ID = #{memberId}
+      ORDER BY CREATED_AT DESC
     </select>
 
     <select id="findByMemberIdWithPaging" resultMap="pointHistoryResultMap">
-        SELECT point_history_id, member_id, point_amount, balance_after, transaction_type, reference_type, reference_id, description, created_at
-        FROM point_history
-        WHERE member_id = #{memberId}
-        ORDER BY created_at DESC
-        LIMIT #{limit} OFFSET #{offset}
+        SELECT /* PointHistoryMapper.findByMemberIdWithPaging */
+               POINT_HISTORY_ID
+             , MEMBER_ID
+             , POINT_AMOUNT
+             , BALANCE_AFTER
+             , TRANSACTION_TYPE
+             , REFERENCE_TYPE
+             , REFERENCE_ID
+             , DESCRIPTION
+             , CREATED_AT
+          FROM POINT_HISTORY
+         WHERE MEMBER_ID = #{memberId}
+      ORDER BY CREATED_AT DESC
+         LIMIT #{limit} OFFSET #{offset}
     </select>
 
     <select id="findByMemberIdAndReferenceId" resultMap="pointHistoryResultMap">
-        SELECT point_history_id, member_id, point_amount, balance_after, transaction_type, reference_type, reference_id, description, created_at
-        FROM point_history
-        WHERE member_id = #{memberId} AND reference_id = #{referenceId}
-        ORDER BY created_at DESC
+        SELECT /* PointHistoryMapper.findByMemberIdAndReferenceId */
+               POINT_HISTORY_ID
+             , MEMBER_ID
+             , POINT_AMOUNT
+             , BALANCE_AFTER
+             , TRANSACTION_TYPE
+             , REFERENCE_TYPE
+             , REFERENCE_ID
+             , DESCRIPTION
+             , CREATED_AT
+          FROM POINT_HISTORY
+         WHERE MEMBER_ID = #{memberId}
+           AND REFERENCE_ID = #{referenceId}
+      ORDER BY CREATED_AT DESC
     </select>
 
     <select id="findByReferenceTypeAndId" resultMap="pointHistoryResultMap">
-        SELECT point_history_id, member_id, point_amount, balance_after, transaction_type, reference_type, reference_id, description, created_at
-        FROM point_history
-        WHERE reference_type = #{referenceType} AND reference_id = #{referenceId}
-        ORDER BY created_at DESC
+        SELECT /* PointHistoryMapper.findByReferenceTypeAndId */
+               POINT_HISTORY_ID
+             , MEMBER_ID
+             , POINT_AMOUNT
+             , BALANCE_AFTER
+             , TRANSACTION_TYPE
+             , REFERENCE_TYPE
+             , REFERENCE_ID
+             , DESCRIPTION
+             , CREATED_AT
+          FROM POINT_HISTORY
+         WHERE REFERENCE_TYPE = #{referenceType}
+           AND REFERENCE_ID = #{referenceId}
+      ORDER BY CREATED_AT DESC
     </select>
 
     <select id="findByMemberIdAndTransactionType" resultMap="pointHistoryResultMap">
-        SELECT point_history_id, member_id, point_amount, balance_after, transaction_type, reference_type, reference_id, description, created_at
-        FROM point_history
-        WHERE member_id = #{memberId} AND transaction_type = #{transactionType}
-        ORDER BY created_at DESC
+        SELECT /* PointHistoryMapper.findByMemberIdAndTransactionType */
+               POINT_HISTORY_ID
+             , MEMBER_ID
+             , POINT_AMOUNT
+             , BALANCE_AFTER
+             , TRANSACTION_TYPE
+             , REFERENCE_TYPE
+             , REFERENCE_ID
+             , DESCRIPTION
+             , CREATED_AT
+          FROM POINT_HISTORY
+         WHERE MEMBER_ID = #{memberId}
+           AND TRANSACTION_TYPE = #{transactionType}
+      ORDER BY CREATED_AT DESC
     </select>
 
     <select id="findAll" resultMap="pointHistoryResultMap">
-        SELECT point_history_id, member_id, point_amount, balance_after, transaction_type, reference_type, reference_id, description, created_at
-        FROM point_history
-        ORDER BY created_at DESC
+        SELECT /* PointHistoryMapper.findAll */
+               POINT_HISTORY_ID
+             , MEMBER_ID
+             , POINT_AMOUNT
+             , BALANCE_AFTER
+             , TRANSACTION_TYPE
+             , REFERENCE_TYPE
+             , REFERENCE_ID
+             , DESCRIPTION
+             , CREATED_AT
+          FROM POINT_HISTORY
+      ORDER BY CREATED_AT DESC
     </select>
 
     <update id="update">
-        UPDATE point_history
-        SET point_amount = #{pointAmount}, balance_after = #{balanceAfter}, transaction_type = #{transactionType},
-            reference_type = #{referenceType}, reference_id = #{referenceId}, description = #{description}
-        WHERE point_history_id = #{pointHistoryId}
+        UPDATE POINT_HISTORY /* PointHistoryMapper.update */
+           SET POINT_AMOUNT = #{pointAmount}
+             , BALANCE_AFTER = #{balanceAfter}
+             , TRANSACTION_TYPE = #{transactionType}
+             , REFERENCE_TYPE = #{referenceType}
+             , REFERENCE_ID = #{referenceId}
+             , DESCRIPTION = #{description}
+         WHERE POINT_HISTORY_ID = #{pointHistoryId}
     </update>
 
     <delete id="delete">
-        DELETE FROM point_history WHERE point_history_id = #{pointHistoryId}
+        DELETE /* PointHistoryMapper.delete */
+          FROM POINT_HISTORY
+         WHERE POINT_HISTORY_ID = #{pointHistoryId}
     </delete>
 
     <select id="getNextPointHistorySequence" resultType="java.lang.Long">
-        SELECT nextval('point_history_id_seq')
+        SELECT NEXTVAL('point_history_id_seq')
     </select>
 
 </mapper>

@@ -19,27 +19,115 @@
     </resultMap>
 
     <select id="findAll" resultMap="paymentResultMap">
-        SELECT payment_id, member_id, order_id, claim_id, amount, payment_method, pay_type, pg_company, status, order_status, transaction_id, payment_date FROM payment
+        SELECT /* PaymentMapper.findAll */
+               PAYMENT_ID
+             , MEMBER_ID
+             , ORDER_ID
+             , CLAIM_ID
+             , AMOUNT
+             , PAYMENT_METHOD
+             , PAY_TYPE
+             , PG_COMPANY
+             , STATUS
+             , ORDER_STATUS
+             , TRANSACTION_ID
+             , PAYMENT_DATE
+          FROM PAYMENT
     </select>
 
     <select id="findByPaymentId" resultMap="paymentResultMap">
-        SELECT payment_id, member_id, order_id, claim_id, amount, payment_method, pay_type, pg_company, status, order_status, transaction_id, payment_date FROM payment WHERE payment_id = #{paymentId}
+        SELECT /* PaymentMapper.findByPaymentId */
+               PAYMENT_ID
+             , MEMBER_ID
+             , ORDER_ID
+             , CLAIM_ID
+             , AMOUNT
+             , PAYMENT_METHOD
+             , PAY_TYPE
+             , PG_COMPANY
+             , STATUS
+             , ORDER_STATUS
+             , TRANSACTION_ID
+             , PAYMENT_DATE
+          FROM PAYMENT
+         WHERE PAYMENT_ID = #{paymentId}
     </select>
 
     <select id="findByOrderId" resultMap="paymentResultMap">
-        SELECT payment_id, member_id, order_id, claim_id, amount, payment_method, pay_type, pg_company, status, order_status, transaction_id, payment_date FROM payment WHERE order_id = #{orderId}
+        SELECT /* PaymentMapper.findByOrderId */
+               PAYMENT_ID
+             , MEMBER_ID
+             , ORDER_ID
+             , CLAIM_ID
+             , AMOUNT
+             , PAYMENT_METHOD
+             , PAY_TYPE
+             , PG_COMPANY
+             , STATUS
+             , ORDER_STATUS
+             , TRANSACTION_ID
+             , PAYMENT_DATE
+          FROM PAYMENT
+         WHERE ORDER_ID = #{orderId}
     </select>
 
     <insert id="insert">
-        INSERT INTO payment (payment_id, member_id, order_id, claim_id, amount, payment_method, pay_type, pg_company, status, order_status, transaction_id, payment_date) VALUES (#{paymentId}, #{memberId}, #{orderId}, #{claimId}, #{amount}, #{paymentMethod}, #{payType}, #{pgCompany}, #{status}, #{orderStatus}, #{transactionId}, #{paymentDate})
+        INSERT INTO PAYMENT ( /* PaymentMapper.insert */
+               PAYMENT_ID
+             , MEMBER_ID
+             , ORDER_ID
+             , CLAIM_ID
+             , AMOUNT
+             , PAYMENT_METHOD
+             , PAY_TYPE
+             , PG_COMPANY
+             , STATUS
+             , ORDER_STATUS
+             , TRANSACTION_ID
+             , PAYMENT_DATE
+        )
+        VALUES (
+               #{paymentId}
+             , #{memberId}
+             , #{orderId}
+             , #{claimId}
+             , #{amount}
+             , #{paymentMethod}
+             , #{payType}
+             , #{pgCompany}
+             , #{status}
+             , #{orderStatus}
+             , #{transactionId}
+             , #{paymentDate}
+        )
     </insert>
 
     <update id="update">
-        UPDATE payment SET member_id = #{memberId}, order_id = #{orderId}, claim_id = #{claimId}, amount = #{amount}, payment_method = #{paymentMethod}, pay_type = #{payType}, pg_company = #{pgCompany}, status = #{status}, order_status = #{orderStatus}, transaction_id = #{transactionId}, payment_date = #{paymentDate} WHERE payment_id = #{paymentId} AND payment_method = #{paymentMethod} AND order_id = #{orderId} AND pay_type = #{payType}
+        UPDATE PAYMENT /* PaymentMapper.update */
+           SET MEMBER_ID = #{memberId}
+             , ORDER_ID = #{orderId}
+             , CLAIM_ID = #{claimId}
+             , AMOUNT = #{amount}
+             , PAYMENT_METHOD = #{paymentMethod}
+             , PAY_TYPE = #{payType}
+             , PG_COMPANY = #{pgCompany}
+             , STATUS = #{status}
+             , ORDER_STATUS = #{orderStatus}
+             , TRANSACTION_ID = #{transactionId}
+             , PAYMENT_DATE = #{paymentDate}
+         WHERE PAYMENT_ID = #{paymentId}
+           AND PAYMENT_METHOD = #{paymentMethod}
+           AND ORDER_ID = #{orderId}
+           AND PAY_TYPE = #{payType}
     </update>
 
     <delete id="delete">
-        DELETE FROM payment WHERE payment_id = #{paymentId} AND payment_method = #{paymentMethod} AND order_id = #{orderId} AND pay_type = #{payType}
+        DELETE /* PaymentMapper.delete */
+          FROM PAYMENT
+         WHERE PAYMENT_ID = #{paymentId}
+           AND PAYMENT_METHOD = #{paymentMethod}
+           AND ORDER_ID = #{orderId}
+           AND PAY_TYPE = #{payType}
     </delete>
 
 </mapper>

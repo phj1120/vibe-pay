@@ -1,0 +1,6 @@
+
+
+# ccptracker conversation tracking data
+ccptracker/*
+!ccptracker/data/
+!ccptracker/data/ccptracker.csv

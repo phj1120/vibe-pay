@@ -25,7 +25,8 @@
       "Bash(rm:*)",
       "Bash(rmdir:*)",
       "Bash(mv:*)",
-      "WebFetch(domain:developers.nicepay.co.kr)"
+      "WebFetch(domain:developers.nicepay.co.kr)",
+      "mcp__jetbrains__get_project_vcs_status"
     ],
     "deny": [],
     "ask": []

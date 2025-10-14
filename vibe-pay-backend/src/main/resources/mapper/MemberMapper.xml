@@ -12,23 +12,94 @@
     </resultMap>
 
     <select id="findAll" resultMap="memberResultMap">
-        SELECT member_id, name, shipping_address, phone_number, email, created_at FROM member
+        SELECT /* MemberMapper.findAll */
+               MEMBER_ID
+             , NAME
+             , SHIPPING_ADDRESS
+             , PHONE_NUMBER
+             , EMAIL
+             , CREATED_AT
+          FROM MEMBER
     </select>
 
     <select id="findByMemberId" resultMap="memberResultMap">
-        SELECT member_id, name, shipping_address, phone_number, email, created_at FROM member WHERE member_id = #{memberId}
+        SELECT /* MemberMapper.findByMemberId */
+               MEMBER_ID
+             , NAME
+             , SHIPPING_ADDRESS
+             , PHONE_NUMBER
+             , EMAIL
+             , CREATED_AT
+          FROM MEMBER
+         WHERE MEMBER_ID = #{memberId}
+    </select>
+
+    <select id="findByName" resultMap="memberResultMap">
+        SELECT /* MemberMapper.findByName */
+               MEMBER_ID
+             , NAME
+             , SHIPPING_ADDRESS
+             , PHONE_NUMBER
+             , EMAIL
+             , CREATED_AT
+          FROM MEMBER
+         WHERE NAME = #{name}
+    </select>
+
+    <select id="findByEmail" resultMap="memberResultMap">
+        SELECT /* MemberMapper.findByEmail */
+               MEMBER_ID
+             , NAME
+             , SHIPPING_ADDRESS
+             , PHONE_NUMBER
+             , EMAIL
+             , CREATED_AT
+          FROM MEMBER
+         WHERE EMAIL = #{email}
+    </select>
+
+    <select id="findByPhoneNumber" resultMap="memberResultMap">
+        SELECT /* MemberMapper.findByPhoneNumber */
+               MEMBER_ID
+             , NAME
+             , SHIPPING_ADDRESS
+             , PHONE_NUMBER
+             , EMAIL
+             , CREATED_AT
+          FROM MEMBER
+         WHERE PHONE_NUMBER = #{phoneNumber}
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="memberId">
-        INSERT INTO member (name, shipping_address, phone_number, email, created_at) VALUES (#{name}, #{shippingAddress}, #{phoneNumber}, #{email}, #{createdAt})
+        INSERT INTO MEMBER ( /* MemberMapper.insert */
+               NAME
+             , SHIPPING_ADDRESS
+             , PHONE_NUMBER
+             , EMAIL
+             , CREATED_AT
+        )
+        VALUES (
+               #{name}
+             , #{shippingAddress}
+             , #{phoneNumber}
+             , #{email}
+             , #{createdAt}
+        )
     </insert>
 
     <update id="update">
-        UPDATE member SET name = #{name}, shipping_address = #{shippingAddress}, phone_number = #{phoneNumber}, email = #{email} WHERE member_id = #{memberId}
+        UPDATE MEMBER /* MemberMapper.update */
+           SET NAME = #{name}
+             , SHIPPING_ADDRESS = #{shippingAddress}
+             , PHONE_NUMBER = #{phoneNumber}
+             , EMAIL = #{email}
+         WHERE MEMBER_ID = #{memberId}
     </update>
 
     <delete id="delete">
-        DELETE FROM member WHERE member_id = #{memberId}
+        DELETE /* MemberMapper.delete */
+          FROM MEMBER
+         WHERE MEMBER_ID = #{memberId}
     </delete>
 
 </mapper>

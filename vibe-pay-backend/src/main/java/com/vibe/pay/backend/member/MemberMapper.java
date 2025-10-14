@@ -7,6 +7,9 @@ import java.util.List;
 public interface MemberMapper {
     List<Member> findAll();
     Member findByMemberId(Long memberId);
+    Member findByName(String name);
+    Member findByEmail(String email);
+    Member findByPhoneNumber(String phoneNumber);
     void insert(Member member);
     void update(Member member);
     void delete(Long memberId);

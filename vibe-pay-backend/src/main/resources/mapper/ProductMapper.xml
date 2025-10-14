@@ -9,23 +9,44 @@
     </resultMap>
 
     <select id="findAll" resultMap="productResultMap">
-        SELECT product_id, name, price FROM product
+        SELECT /* ProductMapper.findAll */
+               PRODUCT_ID
+             , NAME
+             , PRICE
+          FROM PRODUCT
     </select>
 
     <select id="findByProductId" resultMap="productResultMap">
-        SELECT product_id, name, price FROM product WHERE product_id = #{productId}
+        SELECT /* ProductMapper.findByProductId */
+               PRODUCT_ID
+             , NAME
+             , PRICE
+          FROM PRODUCT
+         WHERE PRODUCT_ID = #{productId}
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="productId">
-        INSERT INTO product (name, price) VALUES (#{name}, #{price})
+        INSERT INTO PRODUCT ( /* ProductMapper.insert */
+               NAME
+             , PRICE
+        )
+        VALUES (
+               #{name}
+             , #{price}
+        )
     </insert>
 
     <update id="update">
-        UPDATE product SET name = #{name}, price = #{price} WHERE product_id = #{productId}
+        UPDATE PRODUCT /* ProductMapper.update */
+           SET NAME = #{name}
+             , PRICE = #{price}
+         WHERE PRODUCT_ID = #{productId}
     </update>
 
     <delete id="delete">
-        DELETE FROM product WHERE product_id = #{productId}
+        DELETE /* ProductMapper.delete */
+          FROM PRODUCT
+         WHERE PRODUCT_ID = #{productId}
     </delete>
 
 </mapper>

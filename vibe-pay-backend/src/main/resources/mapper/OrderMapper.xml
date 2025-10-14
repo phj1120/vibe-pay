@@ -14,47 +14,167 @@
     </resultMap>
 
     <select id="findAll" resultMap="orderResultMap">
-        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, status FROM orders
+        SELECT /* OrderMapper.findAll */
+               ORDER_ID
+             , ORD_SEQ
+             , ORD_PROC_SEQ
+             , CLAIM_ID
+             , MEMBER_ID
+             , ORDER_DATE
+             , TOTAL_AMOUNT
+             , STATUS
+          FROM ORDERS
     </select>
 
     <select id="findByOrderId" resultMap="orderResultMap">
-        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, status FROM orders WHERE order_id = #{orderId} ORDER BY ord_proc_seq
+        SELECT /* OrderMapper.findByOrderId */
+               ORDER_ID
+             , ORD_SEQ
+             , ORD_PROC_SEQ
+             , CLAIM_ID
+             , MEMBER_ID
+             , ORDER_DATE
+             , TOTAL_AMOUNT
+             , STATUS
+          FROM ORDERS
+         WHERE ORDER_ID = #{orderId}
+      ORDER BY ORD_PROC_SEQ
     </select>
 
     <select id="findByOrderIdAndOrdProcSeq" resultMap="orderResultMap">
-        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, status FROM orders WHERE order_id = #{orderId} AND ord_proc_seq = #{ordProcSeq}
+        SELECT /* OrderMapper.findByOrderIdAndOrdProcSeq */
+               ORDER_ID
+             , ORD_SEQ
+             , ORD_PROC_SEQ
+             , CLAIM_ID
+             , MEMBER_ID
+             , ORDER_DATE
+             , TOTAL_AMOUNT
+             , STATUS
+          FROM ORDERS
+         WHERE ORDER_ID = #{orderId}
+           AND ORD_PROC_SEQ = #{ordProcSeq}
     </select>
 
     <select id="findByOrderIdAndOrdProcSeqList" resultMap="orderResultMap">
-        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, status FROM orders WHERE order_id = #{orderId} AND ord_proc_seq = #{ordProcSeq} ORDER BY ord_seq
+        SELECT /* OrderMapper.findByOrderIdAndOrdProcSeqList */
+               ORDER_ID
+             , ORD_SEQ
+             , ORD_PROC_SEQ
+             , CLAIM_ID
+             , MEMBER_ID
+             , ORDER_DATE
+             , TOTAL_AMOUNT
+             , STATUS
+          FROM ORDERS
+         WHERE ORDER_ID = #{orderId}
+           AND ORD_PROC_SEQ = #{ordProcSeq}
+      ORDER BY ORD_SEQ
     </select>
 
     <select id="findByOrderIdAndClaimId" resultMap="orderResultMap">
-        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, status FROM orders WHERE order_id = #{orderId} AND claim_id = #{claimId}
+        SELECT /* OrderMapper.findByOrderIdAndClaimId */
+               ORDER_ID
+             , ORD_SEQ
+             , ORD_PROC_SEQ
+             , CLAIM_ID
+             , MEMBER_ID
+             , ORDER_DATE
+             , TOTAL_AMOUNT
+             , STATUS
+          FROM ORDERS
+         WHERE ORDER_ID = #{orderId}
+           AND CLAIM_ID = #{claimId}
     </select>
 
     <select id="findByMemberId" resultMap="orderResultMap">
-        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, status FROM orders WHERE member_id = #{memberId} ORDER BY order_date DESC
+        SELECT /* OrderMapper.findByMemberId */
+               ORDER_ID
+             , ORD_SEQ
+             , ORD_PROC_SEQ
+             , CLAIM_ID
+             , MEMBER_ID
+             , ORDER_DATE
+             , TOTAL_AMOUNT
+             , STATUS
+          FROM ORDERS
+         WHERE MEMBER_ID = #{memberId}
+      ORDER BY ORDER_DATE DESC
     </select>
 
     <select id="findByMemberIdAndOrdProcSeq" resultMap="orderResultMap">
-        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, status FROM orders WHERE member_id = #{memberId} AND ord_proc_seq = #{ordProcSeq} ORDER BY order_date DESC
+        SELECT /* OrderMapper.findByMemberIdAndOrdProcSeq */
+               ORDER_ID
+             , ORD_SEQ
+             , ORD_PROC_SEQ
+             , CLAIM_ID
+             , MEMBER_ID
+             , ORDER_DATE
+             , TOTAL_AMOUNT
+             , STATUS
+          FROM ORDERS
+         WHERE MEMBER_ID = #{memberId}
+           AND ORD_PROC_SEQ = #{ordProcSeq}
+      ORDER BY ORDER_DATE DESC
     </select>
 
     <select id="findByMemberIdAndOrdProcSeqWithPaging" resultMap="orderResultMap">
-        SELECT order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, status FROM orders WHERE member_id = #{memberId} AND ord_proc_seq = #{ordProcSeq} ORDER BY order_date DESC LIMIT #{limit} OFFSET #{offset}
+        SELECT /* OrderMapper.findByMemberIdAndOrdProcSeqWithPaging */
+               ORDER_ID
+             , ORD_SEQ
+             , ORD_PROC_SEQ
+             , CLAIM_ID
+             , MEMBER_ID
+             , ORDER_DATE
+             , TOTAL_AMOUNT
+             , STATUS
+          FROM ORDERS
+         WHERE MEMBER_ID = #{memberId}
+           AND ORD_PROC_SEQ = #{ordProcSeq}
+      ORDER BY ORDER_DATE DESC
+         LIMIT #{limit} OFFSET #{offset}
     </select>
 
     <insert id="insert">
-        INSERT INTO orders (order_id, ord_seq, ord_proc_seq, claim_id, member_id, order_date, total_amount, status) VALUES (#{orderId}, #{ordSeq}, #{ordProcSeq}, #{claimId}, #{memberId}, #{orderDate}, #{totalAmount}, #{status})
+        INSERT INTO ORDERS ( /* OrderMapper.insert */
+               ORDER_ID
+             , ORD_SEQ
+             , ORD_PROC_SEQ
+             , CLAIM_ID
+             , MEMBER_ID
+             , ORDER_DATE
+             , TOTAL_AMOUNT
+             , STATUS
+        )
+        VALUES (
+               #{orderId}
+             , #{ordSeq}
+             , #{ordProcSeq}
+             , #{claimId}
+             , #{memberId}
+             , #{orderDate}
+             , #{totalAmount}
+             , #{status}
+        )
     </insert>
 
     <update id="update">
-        UPDATE orders SET member_id = #{memberId}, order_date = #{orderDate}, total_amount = #{totalAmount}, status = #{status} WHERE order_id = #{orderId} AND ord_seq = #{ordSeq} AND ord_proc_seq = #{ordProcSeq}
+        UPDATE ORDERS /* OrderMapper.update */
+           SET MEMBER_ID = #{memberId}
+             , ORDER_DATE = #{orderDate}
+             , TOTAL_AMOUNT = #{totalAmount}
+             , STATUS = #{status}
+         WHERE ORDER_ID = #{orderId}
+           AND ORD_SEQ = #{ordSeq}
+           AND ORD_PROC_SEQ = #{ordProcSeq}
     </update>
 
     <delete id="delete">
-        DELETE FROM orders WHERE order_id = #{orderId} AND ord_seq = #{ordSeq} AND ord_proc_seq = #{ordProcSeq}
+        DELETE /* OrderMapper.delete */
+          FROM ORDERS
+         WHERE ORDER_ID = #{orderId}
+           AND ORD_SEQ = #{ordSeq}
+           AND ORD_PROC_SEQ = #{ordProcSeq}
     </delete>
 
 </mapper>

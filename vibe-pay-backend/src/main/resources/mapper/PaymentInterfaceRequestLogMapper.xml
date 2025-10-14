@@ -12,27 +12,72 @@
     </resultMap>
 
     <select id="findAll" resultMap="paymentInterfaceRequestLogResultMap">
-        SELECT log_id, payment_id, request_type, request_payload, response_payload, timestamp FROM payment_interface_request_log
+        SELECT /* PaymentInterfaceRequestLogMapper.findAll */
+               LOG_ID
+             , PAYMENT_ID
+             , REQUEST_TYPE
+             , REQUEST_PAYLOAD
+             , RESPONSE_PAYLOAD
+             , TIMESTAMP
+          FROM PAYMENT_INTERFACE_REQUEST_LOG
     </select>
 
     <select id="findByLogId" resultMap="paymentInterfaceRequestLogResultMap">
-        SELECT log_id, payment_id, request_type, request_payload, response_payload, timestamp FROM payment_interface_request_log WHERE log_id = #{logId}
+        SELECT /* PaymentInterfaceRequestLogMapper.findByLogId */
+               LOG_ID
+             , PAYMENT_ID
+             , REQUEST_TYPE
+             , REQUEST_PAYLOAD
+             , RESPONSE_PAYLOAD
+             , TIMESTAMP
+          FROM PAYMENT_INTERFACE_REQUEST_LOG
+         WHERE LOG_ID = #{logId}
     </select>
 
     <select id="findByPaymentId" resultMap="paymentInterfaceRequestLogResultMap">
-        SELECT log_id, payment_id, request_type, request_payload, response_payload, timestamp FROM payment_interface_request_log WHERE payment_id = #{paymentId} ORDER BY timestamp ASC
+        SELECT /* PaymentInterfaceRequestLogMapper.findByPaymentId */
+               LOG_ID
+             , PAYMENT_ID
+             , REQUEST_TYPE
+             , REQUEST_PAYLOAD
+             , RESPONSE_PAYLOAD
+             , TIMESTAMP
+          FROM PAYMENT_INTERFACE_REQUEST_LOG
+         WHERE PAYMENT_ID = #{paymentId}
+      ORDER BY TIMESTAMP ASC
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="logId">
-        INSERT INTO payment_interface_request_log (payment_id, request_type, request_payload, response_payload, timestamp) VALUES (#{paymentId}, #{requestType}, #{requestPayload}, #{responsePayload}, #{timestamp})
+        INSERT INTO PAYMENT_INTERFACE_REQUEST_LOG ( /* PaymentInterfaceRequestLogMapper.insert */
+               PAYMENT_ID
+             , REQUEST_TYPE
+             , REQUEST_PAYLOAD
+             , RESPONSE_PAYLOAD
+             , TIMESTAMP
+        )
+        VALUES (
+               #{paymentId}
+             , #{requestType}
+             , #{requestPayload}
+             , #{responsePayload}
+             , #{timestamp}
+        )
     </insert>
 
     <update id="update">
-        UPDATE payment_interface_request_log SET payment_id = #{paymentId}, request_type = #{requestType}, request_payload = #{requestPayload}, response_payload = #{responsePayload}, timestamp = #{timestamp} WHERE log_id = #{logId}
+        UPDATE PAYMENT_INTERFACE_REQUEST_LOG /* PaymentInterfaceRequestLogMapper.update */
+           SET PAYMENT_ID = #{paymentId}
+             , REQUEST_TYPE = #{requestType}
+             , REQUEST_PAYLOAD = #{requestPayload}
+             , RESPONSE_PAYLOAD = #{responsePayload}
+             , TIMESTAMP = #{timestamp}
+         WHERE LOG_ID = #{logId}
     </update>
 
     <delete id="delete">
-        DELETE FROM payment_interface_request_log WHERE log_id = #{logId}
+        DELETE /* PaymentInterfaceRequestLogMapper.delete */
+          FROM PAYMENT_INTERFACE_REQUEST_LOG
+         WHERE LOG_ID = #{logId}
     </delete>
 
 </mapper>

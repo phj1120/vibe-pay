@@ -10,27 +10,59 @@
     </resultMap>
 
     <select id="findAll" resultMap="rewardPointsResultMap">
-        SELECT reward_points_id, member_id, points, last_updated FROM reward_points
+        SELECT /* RewardPointsMapper.findAll */
+               REWARD_POINTS_ID
+             , MEMBER_ID
+             , POINTS
+             , LAST_UPDATED
+          FROM REWARD_POINTS
     </select>
 
     <select id="findByRewardPointsId" resultMap="rewardPointsResultMap">
-        SELECT reward_points_id, member_id, points, last_updated FROM reward_points WHERE reward_points_id = #{rewardPointsId}
+        SELECT /* RewardPointsMapper.findByRewardPointsId */
+               REWARD_POINTS_ID
+             , MEMBER_ID
+             , POINTS
+             , LAST_UPDATED
+          FROM REWARD_POINTS
+         WHERE REWARD_POINTS_ID = #{rewardPointsId}
     </select>
 
     <select id="findByMemberId" resultMap="rewardPointsResultMap">
-        SELECT reward_points_id, member_id, points, last_updated FROM reward_points WHERE member_id = #{memberId}
+        SELECT /* RewardPointsMapper.findByMemberId */
+               REWARD_POINTS_ID
+             , MEMBER_ID
+             , POINTS
+             , LAST_UPDATED
+          FROM REWARD_POINTS
+         WHERE MEMBER_ID = #{memberId}
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="rewardPointsId">
-        INSERT INTO reward_points (member_id, points, last_updated) VALUES (#{memberId}, #{points}, #{lastUpdated})
+        INSERT INTO REWARD_POINTS ( /* RewardPointsMapper.insert */
+               MEMBER_ID
+             , POINTS
+             , LAST_UPDATED
+        )
+        VALUES (
+               #{memberId}
+             , #{points}
+             , #{lastUpdated}
+        )
     </insert>
 
     <update id="update">
-        UPDATE reward_points SET member_id = #{memberId}, points = #{points}, last_updated = #{lastUpdated} WHERE reward_points_id = #{rewardPointsId}
+        UPDATE REWARD_POINTS /* RewardPointsMapper.update */
+           SET MEMBER_ID = #{memberId}
+             , POINTS = #{points}
+             , LAST_UPDATED = #{lastUpdated}
+         WHERE REWARD_POINTS_ID = #{rewardPointsId}
     </update>
 
     <delete id="delete">
-        DELETE FROM reward_points WHERE reward_points_id = #{rewardPointsId}
+        DELETE /* RewardPointsMapper.delete */
+          FROM REWARD_POINTS
+         WHERE REWARD_POINTS_ID = #{rewardPointsId}
     </delete>
 
 </mapper>
