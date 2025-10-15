@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__jetbrains__list_directory_tree",
+      "Bash(cat:*)",
+      "Read(//Users/parkh/.config/**)",
+      "mcp__jetbrains__create_new_file",
+      "Bash(npm run lint)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
