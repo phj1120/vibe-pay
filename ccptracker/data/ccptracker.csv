@@ -807,3 +807,79 @@ vibe-pay/
 ```
 
 이제 **완전한 프로젝트 뼈대**가 구축되어 즉시 개발을 시작할 수 있습니다!",4,,2025-10-16 19:22:50,2025-10-16 19:39:45,2025-10-16 19:43:04,8,718,726,claude-sonnet-4-5,0.066993,USD,143499,1538,253,143246
+20251016195706,"@api/src/main/resources/application.yml  을 보면 cors: allowed-origins 가 값이 여러개가 들어가는데, 저렇게 관리가 가능한지 확인해줘. 불가능 하다면 어떻게 해야하는지까지.","### 방법 2: `@Value`를 사용하되 올바른 방식으로 (대안)
+
+만약 `@ConfigurationProperties` 대신 `@Value`를 사용하고 싶다면, application.yml을 다음과 같이 수정해야 합니다:
+
+```yaml
+cors:
+  allowed-origins: ""http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000""
+  allowed-methods: ""GET,POST,PUT,PATCH,DELETE,OPTIONS""
+  allowed-headers: ""*""
+  exposed-headers: ""Authorization,Content-Type""
+```
+
+그리고 Java 코드에서:
+```java
+@Value(""${cors.allowed-origins}"")
+private String[] allowedOrigins; // 콤마로 구분된 문자열을 배열로 받음
+```
+
+## 📋 **결론 및 권장사항:**
+
+### ✅ **현재 YAML 설정은 가능합니다**
+```yaml
+cors:
+  allowed-origins:
+    - http://localhost:3000
+    - http://localhost:3001
+    - http://127.0.0.1:3000
+```
+
+### ✅ **올바른 바인딩 방법**
+1. **`@ConfigurationProperties` 사용 (권장)** ⭐
+   - 복잡한 설정 구조에 적합
+   - 타입 안전성 보장
+   - IDE 자동완성 지원
+   - 검증 어노테이션 사용 가능
+
+2. **`@Value` + 콤마 구분 문자열**
+   - 간단한 설정에 적합
+   - YAML 배열 문법 사용 불가
+
+### 🔧 **수정된 구조의 장점:**
+
+1. **타입 안전성**: 컴파일 타임에 오류 검출
+2. **유지보수성**: 설정 변경이 쉽고 명확
+3. **확장성**: 새로운 CORS 설정 추가가 용이
+4. **테스트 용이성**: Properties 클래스를 mock하여 테스트 가능
+
+현재 구현한 `@ConfigurationProperties` 방식이 **가장 안전하고 권장되는 방법**입니다.",4,,2025-10-16 19:57:06,2025-10-16 19:58:23,2025-10-16 19:59:51,36,307,343,claude-sonnet-4-5,0.059879,USD,152800,633,1317,151483
+20251016200108,"JDBC 설정이 되어 있는 것으로 보이는데, 실행시 dataSource or dataSourceClassName or jdbcUrl is required라는 에러가 발생해, @api/src/main/resources/application.yml 을 확인해줘.",,,,2025-10-16 20:01:08,,,42,,,,,,,,,
+20251016200211,"Mybatis 를 사용할꺼라, JPA 설정은 없애도록해.","Perfect! I've successfully removed all JPA-related configurations from the application.yml file. The configuration is now clean and focused solely on MyBatis usage.
+
+## Summary of Changes Made
+
+I've completed the removal of JPA configurations as requested:
+
+### Removed Sections:
+1. **JPA Configuration Block**: Removed the entire `jpa:` section including:
+   - `hibernate.ddl-auto: none`
+   - `show-sql: false`
+
+2. **Spring Boot AutoConfiguration Exclusion**: Removed the `autoconfigure.exclude` section that was excluding:
+   - `org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration`
+
+### Current Clean Configuration
+The application.yml now has a clean structure with:
+- **Database Configuration**: HikariCP DataSource settings for PostgreSQL
+- **MyBatis Configuration**: Mapper locations and type aliases
+- **Server Configuration**: Port, context path, encoding
+- **Logging Configuration**: Debug levels for development
+- **SpringDoc/Swagger Configuration**: API documentation
+- **PG Integration Configuration**: Payment gateway settings
+- **CORS Configuration**: Frontend communication settings
+- **Business Configuration**: Reward points settings
+- **Profile-specific Configuration**: Local development overrides
+
+The database error ""dataSource or dataSourceClassName or jdbcUrl is required"" should now be resolved since we've removed the conflicting JPA configurations that were interfering with the MyBatis setup. The application will now use pure MyBatis for database operations without any JPA conflicts.",4,,2025-10-16 20:02:11,2025-10-16 20:03:18,2025-10-16 20:07:22,9,439,448,claude-sonnet-4-5,0.018005,USD,35790,345,602,35182

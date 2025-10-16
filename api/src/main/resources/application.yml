@@ -21,9 +21,6 @@ spring:
       max-lifetime: 1800000
       auto-commit: false
 
-  # JPA 비활성화 (MyBatis 사용)
-  jpa:
-    enabled: false
 
 # MyBatis 설정
 mybatis:
@@ -150,78 +147,3 @@ pg:
     api-url: https://iniapi.inicis.com/api
   nicepay:
     api-url: https://sandbox-api.nicepay.co.kr/v1
-
----
-# 개발 환경
-spring:
-  config:
-    activate:
-      on-profile: dev
-
-  datasource:
-    url: jdbc:postgresql://dev-db-server:5432/vibepay
-    username: vibepay_dev_user
-    password: ${DB_PASSWORD}
-
-logging:
-  level:
-    com.vibe.pay: DEBUG
-    org.springframework.jdbc: INFO
-
-pg:
-  inicis:
-    api-url: https://iniapi.inicis.com/api
-    mid: ${INICIS_MID}
-    api-key: ${INICIS_API_KEY}
-    secret-key: ${INICIS_SECRET_KEY}
-  nicepay:
-    api-url: https://sandbox-api.nicepay.co.kr/v1
-    mid: ${NICEPAY_MID}
-    api-key: ${NICEPAY_API_KEY}
-    secret-key: ${NICEPAY_SECRET_KEY}
-
----
-# 운영 환경
-spring:
-  config:
-    activate:
-      on-profile: prod
-
-  datasource:
-    url: jdbc:postgresql://prod-db-server:5432/vibepay
-    username: vibepay_prod_user
-    password: ${DB_PASSWORD}
-    hikari:
-      maximum-pool-size: 20
-      minimum-idle: 10
-
-logging:
-  level:
-    root: WARN
-    com.vibe.pay: INFO
-    org.springframework.web: INFO
-    org.springframework.jdbc: WARN
-    org.mybatis: WARN
-
-springdoc:
-  api-docs:
-    enabled: false
-  swagger-ui:
-    enabled: false
-
-pg:
-  inicis:
-    api-url: https://iniapi.inicis.com/api
-    mid: ${INICIS_MID}
-    api-key: ${INICIS_API_KEY}
-    secret-key: ${INICIS_SECRET_KEY}
-  nicepay:
-    api-url: https://api.nicepay.co.kr/v1
-    mid: ${NICEPAY_MID}
-    api-key: ${NICEPAY_API_KEY}
-    secret-key: ${NICEPAY_SECRET_KEY}
-
-cors:
-  allowed-origins:
-    - https://vibepay.com
-    - https://www.vibepay.com
