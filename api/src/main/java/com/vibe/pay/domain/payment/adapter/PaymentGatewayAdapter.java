@@ -1,10 +1,11 @@
 package com.vibe.pay.domain.payment.adapter;
 
+import com.vibe.pay.domain.payment.dto.PaymentCancelRequest;
+import com.vibe.pay.domain.payment.dto.PaymentCancelResponse;
 import com.vibe.pay.domain.payment.dto.PaymentConfirmRequest;
 import com.vibe.pay.domain.payment.dto.PaymentConfirmResponse;
 import com.vibe.pay.domain.payment.dto.PaymentInitiateRequest;
 import com.vibe.pay.domain.payment.dto.PaymentInitResponse;
-import com.vibe.pay.domain.payment.dto.PaymentCancelRequest;
 import com.vibe.pay.enums.PgCompany;
 
 /**
@@ -52,15 +53,17 @@ public interface PaymentGatewayAdapter {
      * 결제 취소/환불
      *
      * @param request 결제 취소 요청
+     * @return 결제 취소 응답
      * @throws RuntimeException PG사 취소 실패 시
      */
-    void cancel(PaymentCancelRequest request);
+    PaymentCancelResponse cancel(PaymentCancelRequest request);
 
     /**
      * 망취소 (결제 승인 후 주문 생성 실패 시)
      *
      * @param request 망취소 요청
+     * @return 망취소 응답
      * @throws RuntimeException PG사 망취소 실패 시
      */
-    void netCancel(PaymentCancelRequest request);
+    PaymentCancelResponse netCancel(PaymentCancelRequest request);
 }

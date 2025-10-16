@@ -8,6 +8,7 @@ import java.util.Optional;
 @Mapper
 public interface PaymentInterfaceRequestLogMapper {
     void insert(PaymentInterfaceRequestLog log);
+    void updateResponse(PaymentInterfaceRequestLog log);
     Optional<PaymentInterfaceRequestLog> findByLogId(Long logId);
     List<PaymentInterfaceRequestLog> findByPaymentId(String paymentId);
     List<PaymentInterfaceRequestLog> findAll();

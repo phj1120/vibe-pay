@@ -82,6 +82,11 @@ public class Payment {
     private String transactionId;
 
     /**
+     * 승인 번호 (PG사에서 발급)
+     */
+    private String approvalNumber;
+
+    /**
      * 결제 일시
      */
     private LocalDateTime paymentDate;

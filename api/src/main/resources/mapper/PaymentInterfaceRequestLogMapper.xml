@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.vibe.pay.domain.payment.repository.PaymentInterfaceRequestLogMapper">
+
+    <!-- Result Map -->
+    <resultMap id="PaymentInterfaceRequestLogResultMap" type="PaymentInterfaceRequestLog">
+        <id property="logId" column="log_id"/>
+        <result property="paymentId" column="payment_id"/>
+        <result property="requestType" column="request_type"/>
+        <result property="requestPayload" column="request_payload"/>
+        <result property="responsePayload" column="response_payload"/>
+        <result property="timestamp" column="timestamp"/>
+    </resultMap>
+
+    <!-- Insert -->
+    <insert id="insert" parameterType="PaymentInterfaceRequestLog" useGeneratedKeys="true" keyProperty="logId">
+        INSERT INTO payment_interface_request_log (
+            payment_id,
+            request_type,
+            request_payload,
+            response_payload,
+            timestamp
+        ) VALUES (
+            #{paymentId},
+            #{requestType},
+            #{requestPayload},
+            #{responsePayload},
+            #{timestamp}
+        )
+    </insert>
+
+    <!-- Update Response -->
+    <update id="updateResponse" parameterType="PaymentInterfaceRequestLog">
+        UPDATE payment_interface_request_log
+        SET response_payload = #{responsePayload}
+        WHERE log_id = #{logId}
+    </update>
+
+    <!-- Find by Log ID -->
+    <select id="findByLogId" resultMap="PaymentInterfaceRequestLogResultMap">
+        SELECT
+            log_id,
+            payment_id,
+            request_type,
+            request_payload,
+            response_payload,
+            timestamp
+        FROM payment_interface_request_log
+        WHERE log_id = #{logId}
+    </select>
+
+    <!-- Find by Payment ID -->
+    <select id="findByPaymentId" resultMap="PaymentInterfaceRequestLogResultMap">
+        SELECT
+            log_id,
+            payment_id,
+            request_type,
+            request_payload,
+            response_payload,
+            timestamp
+        FROM payment_interface_request_log
+        WHERE payment_id = #{paymentId}
+        ORDER BY timestamp DESC
+    </select>
+
+    <!-- Find All -->
+    <select id="findAll" resultMap="PaymentInterfaceRequestLogResultMap">
+        SELECT
+            log_id,
+            payment_id,
+            request_type,
+            request_payload,
+            response_payload,
+            timestamp
+        FROM payment_interface_request_log
+        ORDER BY timestamp DESC
+    </select>
+
+    <!-- Delete -->
+    <delete id="delete">
+        DELETE FROM payment_interface_request_log
+        WHERE log_id = #{logId}
+    </delete>
+
+</mapper>

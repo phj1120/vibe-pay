@@ -84,27 +84,68 @@ public class PaymentService {
      * 결제 환불 처리
      *
      * PG사를 통한 결제 환불을 처리합니다.
-     * 현재는 stub 구현이며, 실제 PG 연동 시 구현 필요
+     * PaymentProcessorFactory를 통해 결제 수단별 프로세서를 주입받아 환불을 처리합니다.
      *
-     * TODO: 실제 PG 연동 구현 필요 (payment-and-pg-integration-spec.md 참조)
-     * 1. PaymentProcessor.processRefund(payment) 호출
-     * 2. PaymentGatewayAdapter.cancel() 호출하여 PG사 취소 API 연동
-     * 3. PaymentInterfaceRequestLogMapper에 요청/응답 로그 기록
-     * 4. 환불 Payment 엔티티 생성 및 DB 저장 (payType=REFUND, 음수 금액)
+     * Technical Specification 참조: payment-and-pg-integration-spec.md
      *
      * @param payment 환불할 원본 결제 엔티티
      * @throws RuntimeException 결제 환불 실패 시
      */
     @Transactional
     public void processRefund(Payment payment) {
-        log.info("Processing refund: paymentId={}", payment.getPaymentId());
+        log.info("Processing refund: paymentId={}, orderId={}, amount={}",
+                payment.getPaymentId(), payment.getOrderId(), payment.getAmount());
 
-        // TODO: 실제 PG 환불 로직 구현
-        // 1. PaymentProcessor.processRefund(payment)
-        // 2. PaymentGatewayAdapter.cancel(PaymentCancelRequest) -> PG사 취소 API 호출
-        // 3. 환불 Payment 엔티티 생성 및 저장
+        try {
+            // 1. 환불 가능 여부 검증
+            validateRefundable(payment);
 
-        log.info("Refund processed (stub): paymentId={}", payment.getPaymentId());
+            // 2. PaymentProcessorFactory에서 결제 수단별 Processor 주입
+            PaymentProcessor processor = processorFactory.getProcessor(payment.getPaymentMethod());
+
+            // 3. PaymentProcessor.processRefund() 호출 - 내부적으로 PG사 연동 처리
+            // - PaymentGatewayAdapter.cancel() 호출하여 PG사 취소 API 연동
+            // - PaymentInterfaceRequestLogMapper에 요청/응답 로그 기록
+            // - 환불 Payment 엔티티 생성 및 DB 저장 (payType=REFUND, 음수 금액)
+            processor.processRefund(payment);
+
+            log.info("Refund processed successfully: paymentId={}", payment.getPaymentId());
+
+        } catch (Exception e) {
+            log.error("Refund processing failed: paymentId={}, orderId={}",
+                    payment.getPaymentId(), payment.getOrderId(), e);
+            throw new RuntimeException("Refund processing failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 환불 가능 여부 검증
+     *
+     * @param payment 원본 결제 엔티티
+     * @throws RuntimeException 환불 불가능한 경우
+     */
+    private void validateRefundable(Payment payment) {
+        // 1. 결제 상태 검증
+        if (!"SUCCESS".equals(payment.getStatus())) {
+            throw new RuntimeException("Only successful payments can be refunded: status=" + payment.getStatus());
+        }
+
+        // 2. 결제 타입 검증 (PAYMENT만 환불 가능)
+        if (!PayType.PAYMENT.equals(payment.getPayType())) {
+            throw new RuntimeException("Only payment type PAYMENT can be refunded: payType=" + payment.getPayType());
+        }
+
+        // 3. 이미 환불된 결제인지 확인
+        List<Payment> refunds = paymentMapper.findByOrderId(payment.getOrderId());
+        boolean alreadyRefunded = refunds.stream()
+                .anyMatch(p -> PayType.REFUND.equals(p.getPayType())
+                        && "SUCCESS".equals(p.getStatus()));
+
+        if (alreadyRefunded) {
+            throw new RuntimeException("Payment already refunded: paymentId=" + payment.getPaymentId());
+        }
+
+        log.debug("Payment validation passed for refund: paymentId={}", payment.getPaymentId());
     }
 
     /**

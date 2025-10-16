@@ -1,5 +1,7 @@
 package com.vibe.pay.domain.payment.processor;
 
+import com.vibe.pay.domain.payment.dto.PaymentCancelRequest;
+import com.vibe.pay.domain.payment.dto.PaymentCancelResponse;
 import com.vibe.pay.domain.payment.dto.PaymentConfirmRequest;
 import com.vibe.pay.domain.payment.dto.PaymentConfirmResponse;
 import com.vibe.pay.domain.payment.entity.Payment;
@@ -85,17 +87,52 @@ public class CreditCardPaymentProcessor implements PaymentProcessor {
 
     @Override
     public void processRefund(Payment payment) {
-        log.info("Processing credit card refund: paymentId={}, amount={}",
-                payment.getPaymentId(), payment.getAmount());
+        log.info("Processing credit card refund: paymentId={}, orderId={}, amount={}",
+                payment.getPaymentId(), payment.getOrderId(), payment.getAmount());
 
         try {
-            // TODO: 실제 환불 Payment 엔티티 생성 및 PG사 환불 API 호출
             // 1. PaymentCancelRequest 생성
-            // 2. PaymentGatewayAdapter.cancel() 호출
-            // 3. 환불 Payment 엔티티 생성 (payType=REFUND, 음수 금액)
-            // 4. DB 저장
+            PaymentCancelRequest cancelRequest = new PaymentCancelRequest();
+            cancelRequest.setOrderId(payment.getOrderId());
+            cancelRequest.setPaymentId(payment.getPaymentId());
+            cancelRequest.setAmount(payment.getAmount());
+            cancelRequest.setPgCompany(payment.getPgCompany());
+            cancelRequest.setOriginalTransactionId(payment.getTransactionId());
+            cancelRequest.setOriginalApprovalNumber(payment.getApprovalNumber());
+            cancelRequest.setCancelReason("User requested refund");
+            cancelRequest.setClaimId(payment.getClaimId());
 
-            log.info("Credit card refund processed (stub): paymentId={}", payment.getPaymentId());
+            // 2. PaymentGatewayAdapter.cancel() 호출하여 PG사 취소 API 연동
+            PaymentCancelResponse cancelResponse = gatewayFactory
+                    .getAdapter(payment.getPgCompany())
+                    .cancel(cancelRequest);
+
+            if (!cancelResponse.isSuccess()) {
+                throw new RuntimeException("PG refund failed: " + cancelResponse.getMessage());
+            }
+
+            // 3. 환불 Payment 엔티티 생성 (payType=REFUND, 음수 금액)
+            Long refundSequence = paymentMapper.getNextPaymentSequence();
+
+            Payment refundPayment = new Payment();
+            refundPayment.setPaymentId(generatePaymentId(refundSequence));
+            refundPayment.setOrderId(payment.getOrderId());
+            refundPayment.setMemberId(payment.getMemberId());
+            refundPayment.setAmount(payment.getAmount().negate()); // 음수 금액
+            refundPayment.setPaymentMethod(PaymentMethod.CREDIT_CARD);
+            refundPayment.setPayType(PayType.REFUND);
+            refundPayment.setPgCompany(payment.getPgCompany());
+            refundPayment.setTransactionId(cancelResponse.getCancelTransactionId());
+            refundPayment.setApprovalNumber(cancelResponse.getCancelApprovalNumber());
+            refundPayment.setPaymentDate(LocalDateTime.now());
+            refundPayment.setStatus("SUCCESS");
+            refundPayment.setClaimId(payment.getClaimId());
+
+            // 4. DB 저장
+            paymentMapper.insert(refundPayment);
+
+            log.info("Credit card refund processed successfully: originalPaymentId={}, refundPaymentId={}, refundTransactionId={}",
+                    payment.getPaymentId(), refundPayment.getPaymentId(), refundPayment.getTransactionId());
 
         } catch (Exception e) {
             log.error("Credit card refund processing failed: paymentId={}", payment.getPaymentId(), e);

@@ -1,14 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "mcp__jetbrains__list_directory_tree",
-      "Bash(cat:*)",
-      "Read(//Users/parkh/.config/**)",
-      "mcp__jetbrains__create_new_file",
-      "Bash(npm run lint)",
-      "Bash(rm:*)",
-      "Bash(mkdir:*)",
-      "Bash(./gradlew:*)"
+      "mcp__jetbrains__find_files_by_name_keyword"
     ],
     "deny": [],
     "ask": []
