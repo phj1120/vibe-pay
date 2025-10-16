@@ -49,7 +49,7 @@ public class PaymentInterfaceRequestLogService {
         requestLog.setRequestType(requestType);
         requestLog.setRequestPayload(requestPayload);
         requestLog.setResponsePayload(responsePayload);
-        requestLog.setRequestDate(LocalDateTime.now());
+        requestLog.setTimestamp(LocalDateTime.now());
 
         logMapper.insert(requestLog);
         log.debug("PG request logged: logId={}", requestLog.getLogId());

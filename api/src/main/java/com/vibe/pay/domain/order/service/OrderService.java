@@ -13,6 +13,7 @@ import com.vibe.pay.domain.payment.entity.Payment;
 import com.vibe.pay.domain.payment.service.PaymentService;
 import com.vibe.pay.domain.product.entity.Product;
 import com.vibe.pay.domain.product.service.ProductService;
+import com.vibe.pay.enums.OrderStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -130,7 +131,7 @@ public class OrderService {
                 order.setMemberId(request.getMemberId());
                 order.setOrderDate(LocalDateTime.now());
                 order.setTotalAmount(product.getPrice().multiply(BigDecimal.valueOf(itemRequest.getQuantity())));
-                order.setStatus("ORDERED");
+                order.setStatus(OrderStatus.ORDERED);
 
                 orderMapper.insert(order);
                 log.debug("Order created: orderId={}, ordSeq={}", order.getOrderId(), order.getOrdSeq());
@@ -193,7 +194,7 @@ public class OrderService {
         log.info("Cancelling order: orderId={}", orderId);
 
         // 1. 원본 주문 조회
-        List<Order> originalOrders = orderMapper.findByOrderIdAndOrdProcSeqList(orderId, 1);
+        List<Order> originalOrders = orderMapper.findByOrderIdAndOrdProcSeq(orderId, 1);
         if (originalOrders.isEmpty()) {
             throw new RuntimeException("Order not found: " + orderId);
         }
@@ -221,7 +222,7 @@ public class OrderService {
             cancelOrder.setMemberId(originalOrder.getMemberId());
             cancelOrder.setOrderDate(LocalDateTime.now());
             cancelOrder.setTotalAmount(originalOrder.getTotalAmount().negate()); // 음수 금액
-            cancelOrder.setStatus("CANCELLED");
+            cancelOrder.setStatus(OrderStatus.CANCELLED);
 
             orderMapper.insert(cancelOrder);
             log.debug("Cancel order created: orderId={}, ordSeq={}, ordProcSeq={}",
@@ -296,7 +297,7 @@ public class OrderService {
         log.debug("Fetching order details with payments by memberId: {}", memberId);
 
         // 1. 원본 주문 조회 (ordProcSeq = 1)
-        List<Order> originalOrders = orderMapper.findByMemberIdAndOrdProcSeq(memberId, 1);
+        List<Order> originalOrders = orderMapper.getOrderDetailsWithPaymentsByMemberId(memberId);
         List<OrderDetailDto> orderDetails = new ArrayList<>();
 
         for (Order originalOrder : originalOrders) {

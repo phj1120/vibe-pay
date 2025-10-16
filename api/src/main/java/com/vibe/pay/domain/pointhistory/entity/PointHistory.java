@@ -33,12 +33,12 @@ public class PointHistory {
     /**
      * 포인트 변동 금액 (양수: 적립, 음수: 사용)
      */
-    private Integer pointAmount;
+    private Long pointAmount;
 
     /**
      * 변동 후 잔액
      */
-    private Integer balanceAfter;
+    private Long balanceAfter;
 
     /**
      * 거래 유형 (EARN, USE, REFUND 등)

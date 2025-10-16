@@ -66,7 +66,7 @@ public class MemberService {
      */
     public Optional<Member> getMemberById(Long memberId) {
         log.debug("Fetching member by ID: memberId={}", memberId);
-        return memberMapper.findById(memberId);
+        return memberMapper.findByMemberId(memberId);
     }
 
     /**
@@ -91,7 +91,7 @@ public class MemberService {
     public Member updateMember(Long memberId, MemberRequest request) {
         log.info("Updating member: memberId={}", memberId);
 
-        Member member = memberMapper.findById(memberId)
+        Member member = memberMapper.findByMemberId(memberId)
                 .orElseThrow(() -> new RuntimeException("Member not found: " + memberId));
 
         member.setName(request.getName());
@@ -115,7 +115,7 @@ public class MemberService {
     public void deleteMember(Long memberId) {
         log.info("Deleting member: memberId={}", memberId);
 
-        Member member = memberMapper.findById(memberId)
+        Member member = memberMapper.findByMemberId(memberId)
                 .orElseThrow(() -> new RuntimeException("Member not found: " + memberId));
 
         memberMapper.delete(memberId);

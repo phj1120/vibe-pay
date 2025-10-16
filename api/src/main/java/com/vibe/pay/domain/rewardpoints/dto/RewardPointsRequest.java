@@ -35,5 +35,5 @@ public class RewardPointsRequest {
      */
     @Schema(description = "포인트", example = "1000")
     // @NotNull(message = "포인트는 필수입니다")
-    private Integer points;
+    private Long points;
 }

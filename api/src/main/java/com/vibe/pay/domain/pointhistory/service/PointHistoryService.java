@@ -52,7 +52,7 @@ public class PointHistoryService {
         history.setReferenceType(referenceType);
         history.setReferenceId(referenceId);
         history.setDescription(description);
-        history.setTransactionDate(LocalDateTime.now());
+        history.setCreatedAt(LocalDateTime.now());
 
         pointHistoryMapper.insert(history);
         log.debug("Point earn recorded: pointHistoryId={}", history.getPointHistoryId());
@@ -83,7 +83,7 @@ public class PointHistoryService {
         history.setReferenceType(referenceType);
         history.setReferenceId(referenceId);
         history.setDescription(description);
-        history.setTransactionDate(LocalDateTime.now());
+        history.setCreatedAt(LocalDateTime.now());
 
         pointHistoryMapper.insert(history);
         log.debug("Point use recorded: pointHistoryId={}", history.getPointHistoryId());

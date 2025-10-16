@@ -41,7 +41,7 @@ public class RewardPointsResponse {
      * 보유 포인트
      */
     @Schema(description = "보유 포인트")
-    private Integer points;
+    private Long points;
 
     /**
      * 마지막 업데이트 일시

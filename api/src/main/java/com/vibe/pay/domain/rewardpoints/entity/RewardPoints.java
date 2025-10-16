@@ -33,7 +33,7 @@ public class RewardPoints {
     /**
      * 보유 포인트
      */
-    private Integer points;
+    private Long points;
 
     /**
      * 마지막 업데이트 일시

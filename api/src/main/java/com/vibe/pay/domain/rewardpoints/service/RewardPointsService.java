@@ -52,7 +52,7 @@ public class RewardPointsService {
      */
     public Optional<RewardPoints> getRewardPointsById(Long rewardPointsId) {
         log.debug("Fetching reward points by ID: rewardPointsId={}", rewardPointsId);
-        return rewardPointsMapper.findById(rewardPointsId);
+        return rewardPointsMapper.findByRewardPointsId(rewardPointsId);
     }
 
     /**
@@ -91,15 +91,12 @@ public class RewardPointsService {
             log.debug("No existing reward points found, creating new: memberId={}", memberId);
             rewardPoints = new RewardPoints();
             rewardPoints.setMemberId(memberId);
-            rewardPoints.setCurrentPoints(pointsToAdd);
-            rewardPoints.setTotalEarnedPoints(pointsToAdd);
-            rewardPoints.setTotalUsedPoints(0L);
+            rewardPoints.setPoints(pointsToAdd);
             rewardPointsMapper.insert(rewardPoints);
         } else {
             // 기존 포인트에 적립
             rewardPoints = optionalRewardPoints.get();
-            rewardPoints.setCurrentPoints(rewardPoints.getCurrentPoints() + pointsToAdd);
-            rewardPoints.setTotalEarnedPoints(rewardPoints.getTotalEarnedPoints() + pointsToAdd);
+            rewardPoints.setPoints(rewardPoints.getPoints() + pointsToAdd);
             rewardPointsMapper.update(rewardPoints);
         }
 
@@ -107,13 +104,13 @@ public class RewardPointsService {
         pointHistoryService.recordPointEarn(
                 memberId,
                 pointsToAdd,
-                rewardPoints.getCurrentPoints(),
+                rewardPoints.getPoints() + pointsToAdd,
                 "INITIAL",
                 null,
                 "포인트 적립"
         );
 
-        log.info("Points added successfully: memberId={}, newBalance={}", memberId, rewardPoints.getCurrentPoints());
+        log.info("Points added successfully: memberId={}, newBalance={}", memberId, rewardPoints.getPoints() + pointsToAdd);
         return rewardPoints;
     }
 
@@ -136,29 +133,28 @@ public class RewardPointsService {
                 .orElseThrow(() -> new RuntimeException("Reward points not found for member: " + memberId));
 
         // 잔액 확인
-        if (rewardPoints.getCurrentPoints() < pointsToUse) {
+        if (rewardPoints.getPoints() < pointsToUse) {
             log.warn("Insufficient points: memberId={}, currentPoints={}, pointsToUse={}",
-                    memberId, rewardPoints.getCurrentPoints(), pointsToUse);
-            throw new RuntimeException("Insufficient points: current=" + rewardPoints.getCurrentPoints()
+                    memberId, rewardPoints.getPoints(), pointsToUse);
+            throw new RuntimeException("Insufficient points: current=" + rewardPoints.getPoints()
                     + ", required=" + pointsToUse);
         }
 
         // 포인트 차감
-        rewardPoints.setCurrentPoints(rewardPoints.getCurrentPoints() - pointsToUse);
-        rewardPoints.setTotalUsedPoints(rewardPoints.getTotalUsedPoints() + pointsToUse);
+        rewardPoints.setPoints(rewardPoints.getPoints() - pointsToUse);
         rewardPointsMapper.update(rewardPoints);
 
         // 포인트 이력 기록
         pointHistoryService.recordPointUse(
                 memberId,
                 pointsToUse,
-                rewardPoints.getCurrentPoints(),
+                rewardPoints.getPoints() - pointsToUse,
                 "ORDER",
                 null,
                 "포인트 사용"
         );
 
-        log.info("Points used successfully: memberId={}, newBalance={}", memberId, rewardPoints.getCurrentPoints());
+        log.info("Points used successfully: memberId={}, newBalance={}", memberId, rewardPoints.getPoints() - pointsToUse);
         return rewardPoints;
     }
 }

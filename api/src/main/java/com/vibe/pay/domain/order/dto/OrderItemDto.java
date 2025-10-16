@@ -23,7 +23,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OrderItemDto {
-    private static final long serialVersionUID = 9999999999999999999L;
+    private static final long serialVersionUID = 999999999999999999L;
 
     /**
      * 주문 상품 ID (Primary Key)

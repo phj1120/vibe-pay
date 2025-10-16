@@ -11,6 +11,7 @@ public interface OrderMapper {
     List<Order> findByOrderId(String orderId);
     List<Order> findByMemberId(Long memberId);
     List<Order> findByOrderIdAndOrdProcSeq(@Param("orderId") String orderId, @Param("ordProcSeq") Integer ordProcSeq);
+    List<Order> getOrderDetailsWithPaymentsByMemberId(@Param("memberId") Long memberId);
     List<Order> findAll();
     void update(Order order);
     void delete(@Param("orderId") String orderId, @Param("ordSeq") Integer ordSeq, @Param("ordProcSeq") Integer ordProcSeq);

@@ -54,7 +54,7 @@ public class ProductService {
      */
     public Optional<Product> getProductById(Long productId) {
         log.debug("Fetching product by ID: productId={}", productId);
-        return productMapper.findById(productId);
+        return productMapper.findByProductId(productId);
     }
 
     /**
@@ -79,7 +79,7 @@ public class ProductService {
     public Product updateProduct(Long productId, ProductRequest request) {
         log.info("Updating product: productId={}", productId);
 
-        Product product = productMapper.findById(productId)
+        Product product = productMapper.findByProductId(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found: " + productId));
 
         product.setName(request.getName());
@@ -101,7 +101,7 @@ public class ProductService {
     public void deleteProduct(Long productId) {
         log.info("Deleting product: productId={}", productId);
 
-        Product product = productMapper.findById(productId)
+        Product product = productMapper.findByProductId(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found: " + productId));
 
         productMapper.delete(productId);
