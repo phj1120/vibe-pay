@@ -978,4 +978,83 @@ Step별로 진행하며 각 Step 완료 시:
 20251016220609,"단계별로 나의 확인을 받으라고 요청했는데, 나한테 묻지말고 단계별로 커밋하고 후 계속 진행해.",Session limit reached ∙ resets 11pm,4,,2025-10-16 22:06:09,2025-10-16 22:07:23,2025-10-16 23:02:51,15,10,25,claude-sonnet-4-5,0.000195,USD,,,,
 20251016230255,계속 진행해줘.,,,,2025-10-16 23:02:55,,,3,,,,,,,,,
 20251016234535,agent 를 이용해서 개발해,,,,2025-10-16 23:45:35,,,5,,,,,,,,,
-20251016234734,"agent 를 통해서 개발할때, bash 말고 다른 방식으로 파일을 작성해줘.",,,,2025-10-16 23:47:34,,,13,,,,,,,,,
+20251016234734,"agent 를 통해서 개발할때, bash 말고 다른 방식으로 파일을 작성해줘.","완벽합니다! 모든 파일이 정상적으로 생성되었습니다. 이제 최종 확인을 위해 구현된 내용을 요약하겠습니다.
+
+## ✅ Step 4: 외부 PG API 연동 구현 완료
+
+### 생성된 파일 목록
+
+#### 1. DTO 파일 (2개)
+- ✅ `/api/src/main/java/com/vibe/pay/domain/payment/dto/PaymentInitiateRequest.java`
+- ✅ `/api/src/main/java/com/vibe/pay/domain/payment/dto/PaymentInitResponse.java`
+
+#### 2. Adapter 구현체 (3개)
+- ✅ `/api/src/main/java/com/vibe/pay/domain/payment/adapter/NicePayAdapter.java`
+- ✅ `/api/src/main/java/com/vibe/pay/domain/payment/adapter/TossAdapter.java`
+- ✅ `/api/src/main/java/com/vibe/pay/domain/payment/adapter/PointPaymentProcessor.java`
+
+#### 3. 테스트 코드 (4개)
+- ✅ `/api/src/test/java/com/vibe/pay/domain/payment/adapter/InicisAdapterTest.java`
+- ✅ `/api/src/test/java/com/vibe/pay/domain/payment/adapter/NicePayAdapterTest.java`
+- ✅ `/api/src/test/java/com/vibe/pay/domain/payment/adapter/TossAdapterTest.java`
+- ✅ `/api/src/test/java/com/vibe/pay/domain/payment/adapter/PointPaymentProcessorTest.java`
+
+### 구현 내용 요약
+
+#### **PaymentInitiateRequest & PaymentInitResponse**
+- 결제 초기화 요청/응답 DTO 생성
+- PG사 결제창 호출을 위한 필수 정보 포함
+- 각 PG사별로 다른 파라미터를 Map으로 유연하게 관리
+
+#### **NicePayAdapter (나이스페이)**
+- InicisAdapter와 동일한 구조로 구현
+- 나이스페이 특화 기능:
+  - SHA-256 서명 생성 (SignData)
+  - 결제 초기화 시 필수 파라미터 (mid, moid, amt, ediDate, SignData 등)
+  - resultCode ""3001"" (승인 성공), ""2001"" (취소 성공) 처리
+- Stub 방식으로 구현, 실제 PG 연동 시 TODO 주석 포함
+
+#### **TossAdapter (토스페이먼츠)**
+- 최신 RESTful API 방식 사용
+- 토스페이먼츠 특화 기능:
+  - Basic Auth 인증 방식 (Base64 인코딩)
+  - RESTful API 엔드포인트 (/v1/payments)
+  - 상태 코드 ""DONE"" (승인 성공), ""CANCELED"" (취소 성공)
+- Client SDK 방식으로 프론트엔드와 협업
+
+#### **PointPaymentProcessor (포인트 결제)**
+- 외부 PG 연동 없이 내부 포인트 시스템 연동
+- 포인트 특화 기능:
+  - 회원 포인트 잔액 조회 및 검증
+  - 포인트 차감 및 환급 처리
+  - 포인트 트랜잭션 기록 관리
+- 향후 PointService 주입 필요 (TODO 주석 포함)
+
+### 테스트 코드 특징
+
+모든 테스트는 **Given-When-Then 패턴**을 사용:
+
+1. **InicisAdapterTest**: 이니시스 기본 기능 테스트
+2. **NicePayAdapterTest**: 나이스페이 필수 파라미터 및 결과 코드 검증
+3. **TossAdapterTest**: RESTful API 방식 및 최신 PG 특성 검증
+4. **PointPaymentProcessorTest**: 내부 시스템 연동 및 회원 ID 필수 검증
+
+### 주요 특징
+
+✅ **InicisAdapter와 동일한 구조**: 일관된 코드 스타일 유지  
+✅ **Stub 방식 구현**: 실제 PG 연동 전까지 안전하게 테스트 가능  
+✅ **TODO 주석**: 실제 PG 연동 시 필요한 작업 명시  
+✅ **로깅**: 모든 작업에 대한 상세 로그 기록  
+✅ **에러 처리**: RuntimeException을 통한 명확한 에러 전달  
+✅ **검증 로직**: 금액 일치, 응답 코드 확인 등
+
+### 다음 단계
+
+이제 실제 PG 연동을 위해:
+1. 각 PG사로부터 MID, MerchantKey 등의 인증 정보 발급
+2. application.yml에 PG사별 설정 추가
+3. WebClientUtil을 사용한 실제 HTTP 통신 구현
+4. 각 어댑터의 TODO 주석 부분 구현
+
+모든 파일이 성공적으로 생성되었으며, 테스트 코드도 작성 완료되었습니다! 🎉",4,,2025-10-16 23:47:34,2025-10-17 06:12:07,2025-10-17 06:24:34,13,696,709,claude-sonnet-4-5,0.042284,USD,60137,1558,253,59884
+20251017062443,어디까지 진행됐어?,,,,2025-10-17 06:24:43,,,3,,,,,,,,,
