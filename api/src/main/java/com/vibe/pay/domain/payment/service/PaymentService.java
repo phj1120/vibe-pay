@@ -1,7 +1,10 @@
 package com.vibe.pay.domain.payment.service;
 
+import com.vibe.pay.domain.payment.dto.PaymentConfirmRequest;
 import com.vibe.pay.domain.payment.dto.PaymentMethodRequest;
 import com.vibe.pay.domain.payment.entity.Payment;
+import com.vibe.pay.domain.payment.factory.PaymentProcessorFactory;
+import com.vibe.pay.domain.payment.processor.PaymentProcessor;
 import com.vibe.pay.domain.payment.repository.PaymentMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,19 +34,15 @@ import java.util.List;
 public class PaymentService {
 
     private final PaymentMapper paymentMapper;
+    private final PaymentProcessorFactory processorFactory;
 
     /**
      * 결제 승인 처리
      *
      * PG사를 통한 결제 승인을 처리합니다.
-     * 현재는 stub 구현이며, 실제 PG 연동 시 구현 필요
+     * PaymentProcessorFactory를 통해 결제 수단별 프로세서를 주입받아 처리합니다.
      *
-     * TODO: 실제 PG 연동 구현 필요 (payment-and-pg-integration-spec.md 참조)
-     * 1. PaymentProcessorFactory에서 결제 수단별 Processor 주입
-     * 2. PaymentGatewayFactory에서 PG사별 Adapter 주입
-     * 3. PaymentGatewayAdapter.confirm() 호출하여 PG사 승인 API 연동
-     * 4. PaymentInterfaceRequestLogMapper에 요청/응답 로그 기록
-     * 5. Payment 엔티티 생성 및 DB 저장
+     * Technical Specification 참조: payment-and-pg-integration-spec.md
      *
      * @param request 결제 수단 요청 DTO
      * @return 승인된 결제 엔티티
@@ -54,24 +53,31 @@ public class PaymentService {
         log.info("Confirming payment: method={}, amount={}",
                 request.getPaymentMethod(), request.getAmount());
 
-        // TODO: 실제 PG 승인 로직 구현
-        // 1. PaymentProcessorFactory.getProcessor(request.getPaymentMethod())
-        // 2. PaymentProcessor.processPayment(request)
-        // 3. PaymentGatewayAdapter.confirm(request) -> PG사 API 호출
-        // 4. PG사 응답 검증 (resultCode, 금액 일치 여부)
-        // 5. Payment 엔티티 생성 및 저장
+        try {
+            // 1. PaymentProcessorFactory에서 결제 수단별 Processor 주입
+            PaymentProcessor processor = processorFactory.getProcessor(request.getPaymentMethod());
 
-        // Stub: 임시 Payment 엔티티 생성 및 저장
-        Payment payment = new Payment();
-        // payment.setPaymentId(generatePaymentId());
-        // payment.setMemberId(request.getMemberId());
-        // payment.setAmount(request.getAmount());
-        // payment.setPaymentMethod(request.getPaymentMethod());
-        // payment.setStatus("SUCCESS");
-        // paymentMapper.insert(payment);
+            // 2. PaymentConfirmRequest 생성 (PaymentMethodRequest -> PaymentConfirmRequest 변환)
+            PaymentConfirmRequest confirmRequest = new PaymentConfirmRequest();
+            confirmRequest.setOrderId(request.getOrderId());
+            confirmRequest.setMemberId(request.getMemberId());
+            confirmRequest.setAmount(request.getAmount());
+            confirmRequest.setPaymentMethod(request.getPaymentMethod());
+            confirmRequest.setPgCompany(request.getPgCompany());
 
-        log.info("Payment confirmed (stub): paymentId={}", payment.getPaymentId());
-        return payment;
+            // 3. PaymentProcessor.processPayment() 호출 - 내부적으로 PG사 연동 처리
+            Payment payment = processor.processPayment(confirmRequest);
+
+            log.info("Payment confirmed successfully: paymentId={}, transactionId={}",
+                    payment.getPaymentId(), payment.getTransactionId());
+
+            return payment;
+
+        } catch (Exception e) {
+            log.error("Payment confirmation failed: method={}, amount={}",
+                    request.getPaymentMethod(), request.getAmount(), e);
+            throw new RuntimeException("Payment confirmation failed: " + e.getMessage(), e);
+        }
     }
 
     /**
