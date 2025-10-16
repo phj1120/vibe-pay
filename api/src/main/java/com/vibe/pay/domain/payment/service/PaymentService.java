@@ -1,11 +1,15 @@
 package com.vibe.pay.domain.payment.service;
 
+import com.vibe.pay.domain.payment.dto.PaymentCancelRequest;
 import com.vibe.pay.domain.payment.dto.PaymentConfirmRequest;
 import com.vibe.pay.domain.payment.dto.PaymentMethodRequest;
 import com.vibe.pay.domain.payment.entity.Payment;
+import com.vibe.pay.domain.payment.factory.PaymentGatewayFactory;
 import com.vibe.pay.domain.payment.factory.PaymentProcessorFactory;
 import com.vibe.pay.domain.payment.processor.PaymentProcessor;
 import com.vibe.pay.domain.payment.repository.PaymentMapper;
+import com.vibe.pay.domain.payment.adapter.PaymentGatewayAdapter;
+import com.vibe.pay.enums.PayType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,18 +19,20 @@ import java.util.List;
 
 /**
  * 결제 서비스
- * 결제 승인, 환불, 조회 등의 비즈니스 로직을 처리하는 계층
+ * 결제 승인, 환불, 망취소 등의 비즈니스 로직을 처리하는 계층
  *
  * Technical Specification 참조:
  * - docs/v5/TechnicalSpecification/payment-and-pg-integration-spec.md
  *
- * TODO: PG 연동 로직 구현 필요
- * - PG사별 결제 승인 API 연동 (이니시스, 나이스페이, 토스페이먼츠)
- * - PaymentGatewayFactory 및 PaymentProcessorFactory 활용
- * - PaymentGatewayAdapter를 통한 PG사별 연동 처리
+ * 주요 기능:
+ * - 결제 승인: PaymentProcessorFactory를 통한 결제 수단별 처리
+ * - 결제 환불: PaymentProcessor.processRefund()를 통한 PG사 취소 API 연동
+ * - 망취소: PaymentGatewayAdapter.netCancel()을 통한 PG사 망취소 API 연동
  *
  * @see Payment
  * @see PaymentMapper
+ * @see PaymentProcessorFactory
+ * @see PaymentGatewayFactory
  */
 @Service
 @Slf4j
@@ -35,6 +41,7 @@ public class PaymentService {
 
     private final PaymentMapper paymentMapper;
     private final PaymentProcessorFactory processorFactory;
+    private final PaymentGatewayFactory gatewayFactory;
 
     /**
      * 결제 승인 처리
@@ -168,5 +175,42 @@ public class PaymentService {
     public List<Payment> findByMemberId(Long memberId) {
         log.debug("Fetching payments by memberId: {}", memberId);
         return paymentMapper.findByMemberId(memberId);
+    }
+
+    /**
+     * 망취소 처리
+     *
+     * 결제 승인 후 주문 생성 실패 시 PG사에 이미 승인된 결제를 취소합니다.
+     * 망취소는 결제 정보를 DB에 저장하지 않고, PG사 API만 호출합니다.
+     *
+     * Technical Specification 참조: payment-and-pg-integration-spec.md
+     *
+     * @param request 망취소 요청 (PaymentCancelRequest 사용)
+     * @throws RuntimeException 망취소 실패 시
+     */
+    @Transactional
+    public void netCancel(PaymentCancelRequest request) {
+        log.info("Processing net cancel: paymentId={}, orderId={}, reason={}",
+                request.getPaymentId(), request.getOrderId(), request.getReason());
+
+        try {
+            // 1. PaymentGatewayFactory에서 PG사별 Adapter 주입
+            PaymentGatewayAdapter adapter = gatewayFactory.getAdapter(request.getPgCompany());
+
+            // 2. PaymentGatewayAdapter.netCancel() 호출 - 내부적으로 PG사 망취소 API 연동
+            // - PG사 망취소 API 호출
+            // - PaymentInterfaceRequestLogMapper에 요청/응답 로그 기록
+            adapter.netCancel(request);
+
+            log.info("Net cancel processed successfully: paymentId={}, orderId={}",
+                    request.getPaymentId(), request.getOrderId());
+
+        } catch (Exception e) {
+            log.error("Net cancel processing failed: paymentId={}, orderId={}, reason={}",
+                    request.getPaymentId(), request.getOrderId(), request.getReason(), e);
+            // 망취소 실패는 심각한 상황이므로 예외를 다시 던짐
+            // 실무에서는 별도 알림/모니터링 시스템과 연동 필요
+            throw new RuntimeException("Net cancel processing failed: " + e.getMessage(), e);
+        }
     }
 }

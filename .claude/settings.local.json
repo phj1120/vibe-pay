@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "mcp__jetbrains__find_files_by_name_keyword"
+      "mcp__jetbrains__find_files_by_name_keyword",
+      "Bash(git commit -m \"$(cat <<''EOF''\nStep 2: 결제 환불 비즈니스 로직 구현\n\n- PaymentService.processRefund() 메서드 완전 구현\n- PaymentCancelRequest, PaymentCancelResponse DTO 생성\n- CreditCardPaymentProcessor.processRefund() 완전 구현\n- InicisAdapter.cancel(), netCancel() 메서드 완전 구현\n- 환불 Payment 엔티티 생성 로직 (payType=REFUND, 음수 금액)\n- 환불 가능 여부 검증 로직 추가\n- PG사 통신 로그 기록 기능 완성\n- PaymentInterfaceRequestLog 관련 엔티티 및 매퍼 생성\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []

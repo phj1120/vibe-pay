@@ -8,6 +8,7 @@ import com.vibe.pay.domain.order.entity.Order;
 import com.vibe.pay.domain.order.entity.OrderItem;
 import com.vibe.pay.domain.order.repository.OrderItemMapper;
 import com.vibe.pay.domain.order.repository.OrderMapper;
+import com.vibe.pay.domain.payment.dto.PaymentCancelRequest;
 import com.vibe.pay.domain.payment.dto.PaymentMethodRequest;
 import com.vibe.pay.domain.payment.entity.Payment;
 import com.vibe.pay.domain.payment.service.PaymentService;
@@ -93,9 +94,7 @@ public class OrderService {
      * 1. 결제 승인 처리 (PaymentService.confirmPayment)
      * 2. 상품 정보 조회 및 주문 생성
      * 3. DB 저장
-     * 4. 실패 시 망취소 처리
-     *
-     * TODO: PG 연동 망취소 로직 구현 필요 (payment-and-pg-integration-spec.md 참조)
+     * 4. 실패 시 망취소 처리 (PaymentService.netCancel)
      *
      * @param request 주문 생성 요청 DTO
      * @return 생성된 주문 엔티티 목록
@@ -107,13 +106,21 @@ public class OrderService {
 
         List<Order> createdOrders = new ArrayList<>();
 
+        List<Payment> completedPayments = new ArrayList<>();
+
         try {
             // 1. 결제 승인 처리
             for (PaymentMethodRequest paymentMethod : request.getPaymentMethods()) {
                 log.debug("Processing payment: method={}, amount={}",
                         paymentMethod.getPaymentMethod(), paymentMethod.getAmount());
-                // TODO: PaymentService.confirmPayment() 호출
-                // paymentService.confirmPayment(paymentMethod);
+
+                // PaymentMethodRequest에 orderId와 memberId 설정
+                paymentMethod.setOrderId(request.getOrderNumber());
+                paymentMethod.setMemberId(request.getMemberId());
+
+                Payment payment = paymentService.confirmPayment(paymentMethod);
+                completedPayments.add(payment);
+                log.debug("Payment confirmed successfully: paymentId={}", payment.getPaymentId());
             }
 
             // 2. 주문 생성
@@ -160,14 +167,37 @@ public class OrderService {
         } catch (Exception e) {
             log.error("Order creation failed, attempting net cancel: orderNumber={}", request.getOrderNumber(), e);
 
-            // TODO: 망취소 처리 구현 필요
-            // for (PaymentMethodRequest paymentMethod : request.getPaymentMethods()) {
-            //     try {
-            //         paymentService.netCancel(paymentMethod);
-            //     } catch (Exception netCancelException) {
-            //         log.error("Net cancel failed", netCancelException);
-            //     }
-            // }
+            // 망취소 처리: 결제 승인은 성공했으나 주문 생성 중 실패한 경우
+            // 승인된 결제들을 모두 망취소 처리
+            if (!completedPayments.isEmpty()) {
+                log.warn("Attempting net cancel for {} completed payments", completedPayments.size());
+
+                for (Payment payment : completedPayments) {
+                    try {
+                        log.debug("Net cancelling payment: paymentId={}, amount={}",
+                                payment.getPaymentId(), payment.getAmount());
+
+                        // PaymentCancelRequest 생성
+                        PaymentCancelRequest cancelRequest = new PaymentCancelRequest();
+                        cancelRequest.setPaymentId(payment.getPaymentId());
+                        cancelRequest.setOrderId(payment.getOrderId());
+                        cancelRequest.setTransactionId(payment.getTransactionId());
+                        cancelRequest.setAmount(payment.getAmount());
+                        cancelRequest.setPgCompany(payment.getPgCompany());
+                        cancelRequest.setReason("Order creation failed - Net cancel");
+
+                        // PaymentService를 통한 망취소 호출
+                        paymentService.netCancel(cancelRequest);
+
+                        log.info("Net cancel completed for payment: {}", payment.getPaymentId());
+
+                    } catch (Exception netCancelException) {
+                        log.error("Net cancel failed for paymentId={}: {}",
+                                payment.getPaymentId(), netCancelException.getMessage(), netCancelException);
+                        // 망취소 실패는 심각한 상황이므로 별도 알림/모니터링 필요
+                    }
+                }
+            }
 
             throw new RuntimeException("Order creation failed: " + e.getMessage(), e);
         }
@@ -181,9 +211,7 @@ public class OrderService {
      * 2. 클레임 번호 생성
      * 3. 취소 주문 생성 (음수 금액, ordProcSeq+1)
      * 4. 취소 주문 상품 생성 (음수 수량)
-     * 5. 결제 환불 처리
-     *
-     * TODO: 결제 환불 연동 구현 필요 (payment-and-pg-integration-spec.md 참조)
+     * 5. 결제 환불 처리 (PaymentService.processRefund)
      *
      * @param orderId 취소할 주문 ID
      * @return 취소된 주문 엔티티
@@ -252,9 +280,18 @@ public class OrderService {
         List<Payment> payments = paymentService.findByOrderId(orderId);
         for (Payment payment : payments) {
             log.debug("Processing refund: paymentId={}", payment.getPaymentId());
+
+            // 환불할 원본 결제에 claimId 설정
             payment.setClaimId(claimId);
-            // TODO: PaymentService.processRefund() 호출
-            // paymentService.processRefund(payment);
+
+            // PaymentService를 통한 환불 처리
+            // - 환불 가능 여부 검증 (결제 상태, 결제 타입, 중복 환불 확인)
+            // - PaymentProcessor.processRefund() 호출
+            // - PG사 취소 API 연동
+            // - 환불 Payment 엔티티 생성 및 DB 저장
+            paymentService.processRefund(payment);
+
+            log.info("Refund processed successfully: paymentId={}", payment.getPaymentId());
         }
 
         log.info("Order cancelled successfully: orderId={}, claimId={}", orderId, claimId);

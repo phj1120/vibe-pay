@@ -83,4 +83,16 @@ public class PaymentMethodRequest {
      */
     @Schema(description = "다음 앱 URL")
     private String nextAppUrl;
+
+    /**
+     * 주문 ID
+     */
+    @Schema(description = "주문 ID")
+    private String orderId;
+
+    /**
+     * 회원 ID
+     */
+    @Schema(description = "회원 ID")
+    private Long memberId;
 }
