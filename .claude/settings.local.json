@@ -5,7 +5,10 @@
       "Bash(cat:*)",
       "Read(//Users/parkh/.config/**)",
       "mcp__jetbrains__create_new_file",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(rm:*)",
+      "Bash(mkdir:*)",
+      "Bash(./gradlew:*)"
     ],
     "deny": [],
     "ask": []
