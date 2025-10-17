@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git commit -m \"$(cat <<''EOF''\nStep 3: 주문-결제 연동 로직 구현\n\n- OrderService.createOrder() 결제 승인 연동 완전 구현\n- OrderService.createOrder() 망취소 처리 완전 구현\n- OrderService.cancelOrder() 결제 환불 연동 완전 구현\n- PaymentService.netCancel() 메서드 신규 추가\n- PaymentMethodRequest 필드 확장 (orderId, memberId)\n- PaymentCancelRequest 필드 확장 (reason 등)\n- 모든 TODO 주석 제거 및 실제 비즈니스 로직 구현\n- 에러 처리 및 로깅 강화\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(rm:*)",
+      "Bash(./gradlew clean build:*)",
+      "Bash(./gradlew clean:*)",
+      "Bash(./gradlew compileJava:*)"
     ],
     "deny": [],
     "ask": []

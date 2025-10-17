@@ -55,4 +55,49 @@ public class PaymentCancelRequest {
      * 클레임 ID (주문 취소 시)
      */
     private String claimId;
+
+    /**
+     * PG사 거래 ID (취소 요청에 사용)
+     * originalTransactionId와 동일하지만 setter 지원을 위한 별도 필드
+     */
+    private String transactionId;
+
+    /**
+     * 취소 사유 (cancelReason의 별칭)
+     */
+    private String reason;
+
+    /**
+     * cancelReason의 getter 별칭
+     * PaymentService에서 getReason() 호출을 지원하기 위함
+     */
+    public String getReason() {
+        return this.reason != null ? this.reason : this.cancelReason;
+    }
+
+    /**
+     * cancelReason의 setter 별칭
+     * PaymentService에서 setReason() 호출을 지원하기 위함
+     */
+    public void setReason(String reason) {
+        this.reason = reason;
+        this.cancelReason = reason;
+    }
+
+    /**
+     * transactionId getter
+     * originalTransactionId를 우선 반환
+     */
+    public String getTransactionId() {
+        return this.transactionId != null ? this.transactionId : this.originalTransactionId;
+    }
+
+    /**
+     * transactionId setter
+     * originalTransactionId도 함께 설정
+     */
+    public void setTransactionId(String transactionId) {
+        this.transactionId = transactionId;
+        this.originalTransactionId = transactionId;
+    }
 }

@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.vibe.pay.domain.payment.repository.PaymentMapper">
+
+    <!-- Result Map -->
+    <resultMap id="PaymentResultMap" type="Payment">
+        <id property="paymentId" column="payment_id"/>
+        <id property="paymentMethod" column="payment_method"/>
+        <id property="orderId" column="order_id"/>
+        <id property="payType" column="pay_type"/>
+        <result property="memberId" column="member_id"/>
+        <result property="claimId" column="claim_id"/>
+        <result property="amount" column="amount"/>
+        <result property="pgCompany" column="pg_company"/>
+        <result property="status" column="status"/>
+        <result property="orderStatus" column="order_status"/>
+        <result property="transactionId" column="transaction_id"/>
+        <result property="approvalNumber" column="approval_number"/>
+        <result property="paymentDate" column="payment_date"/>
+    </resultMap>
+
+    <!-- Get Next Payment Sequence -->
+    <select id="getNextPaymentSequence" resultType="Long">
+        SELECT nextval('payment_seq')
+    </select>
+
+    <!-- Insert -->
+    <insert id="insert" parameterType="Payment">
+        INSERT INTO payment (
+            payment_id,
+            payment_method,
+            order_id,
+            pay_type,
+            member_id,
+            claim_id,
+            amount,
+            pg_company,
+            status,
+            order_status,
+            transaction_id,
+            approval_number,
+            payment_date
+        ) VALUES (
+            #{paymentId},
+            #{paymentMethod}::payment_method,
+            #{orderId},
+            #{payType}::pay_type,
+            #{memberId},
+            #{claimId},
+            #{amount},
+            #{pgCompany}::pg_company,
+            #{status},
+            #{orderStatus}::order_status,
+            #{transactionId},
+            #{approvalNumber},
+            #{paymentDate}
+        )
+    </insert>
+
+    <!-- Update -->
+    <update id="update" parameterType="Payment">
+        UPDATE payment
+        SET
+            member_id = #{memberId},
+            claim_id = #{claimId},
+            amount = #{amount},
+            pg_company = #{pgCompany}::pg_company,
+            status = #{status},
+            order_status = #{orderStatus}::order_status,
+            transaction_id = #{transactionId},
+            approval_number = #{approvalNumber},
+            payment_date = #{paymentDate}
+        WHERE payment_id = #{paymentId}
+          AND payment_method = #{paymentMethod}::payment_method
+          AND order_id = #{orderId}
+          AND pay_type = #{payType}::pay_type
+    </update>
+
+    <!-- Find by Payment ID -->
+    <select id="findByPaymentId" resultMap="PaymentResultMap">
+        SELECT
+            payment_id,
+            payment_method,
+            order_id,
+            pay_type,
+            member_id,
+            claim_id,
+            amount,
+            pg_company,
+            status,
+            order_status,
+            transaction_id,
+            approval_number,
+            payment_date
+        FROM payment
+        WHERE payment_id = #{paymentId}
+    </select>
+
+    <!-- Find by Order ID -->
+    <select id="findByOrderId" resultMap="PaymentResultMap">
+        SELECT
+            payment_id,
+            payment_method,
+            order_id,
+            pay_type,
+            member_id,
+            claim_id,
+            amount,
+            pg_company,
+            status,
+            order_status,
+            transaction_id,
+            approval_number,
+            payment_date
+        FROM payment
+        WHERE order_id = #{orderId}
+        ORDER BY payment_date DESC
+    </select>
+
+    <!-- Find by Member ID -->
+    <select id="findByMemberId" resultMap="PaymentResultMap">
+        SELECT
+            payment_id,
+            payment_method,
+            order_id,
+            pay_type,
+            member_id,
+            claim_id,
+            amount,
+            pg_company,
+            status,
+            order_status,
+            transaction_id,
+            approval_number,
+            payment_date
+        FROM payment
+        WHERE member_id = #{memberId}
+        ORDER BY payment_date DESC
+    </select>
+
+    <!-- Find All -->
+    <select id="findAll" resultMap="PaymentResultMap">
+        SELECT
+            payment_id,
+            payment_method,
+            order_id,
+            pay_type,
+            member_id,
+            claim_id,
+            amount,
+            pg_company,
+            status,
+            order_status,
+            transaction_id,
+            approval_number,
+            payment_date
+        FROM payment
+        ORDER BY payment_date DESC
+    </select>
+
+    <!-- Delete -->
+    <delete id="delete">
+        DELETE FROM payment
+        WHERE payment_id = #{paymentId}
+    </delete>
+
+</mapper>

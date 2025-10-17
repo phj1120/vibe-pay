@@ -84,3 +84,45 @@ This generated password is for development use only. Your security configuration
 2025-10-17 00:07:14.709 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/api'
 2025-10-17 00:07:14.718 [restartedMain] INFO  com.api.ApiApplication - Started ApiApplication in 0.915 seconds (process running for 14445.787)
 2025-10-17 00:07:14.721 [restartedMain] INFO  o.s.b.d.a.ConditionEvaluationDeltaLoggingListener - Condition evaluation unchanged
+2025-10-17 09:01:22.406 [restartedMain] INFO  com.api.ApiApplication - Starting ApiApplication using Java 17.0.6 with PID 72191 (/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/classes/java/main started by parkh in /Users/parkh/Dev/git/Project/vibe-pay-claude)
+2025-10-17 09:01:22.408 [restartedMain] INFO  com.api.ApiApplication - The following 1 profile is active: "local"
+2025-10-17 09:01:22.430 [restartedMain] INFO  o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2025-10-17 09:01:22.430 [restartedMain] INFO  o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2025-10-17 09:01:22.866 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Identified candidate component class: file [/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/classes/java/main/com/vibe/pay/domain/member/repository/MemberMapper.class]
+2025-10-17 09:01:22.866 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Identified candidate component class: file [/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/classes/java/main/com/vibe/pay/domain/order/repository/OrderItemMapper.class]
+2025-10-17 09:01:22.867 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Identified candidate component class: file [/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/classes/java/main/com/vibe/pay/domain/order/repository/OrderMapper.class]
+2025-10-17 09:01:22.867 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Identified candidate component class: file [/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/classes/java/main/com/vibe/pay/domain/payment/repository/PaymentInterfaceRequestLogMapper.class]
+2025-10-17 09:01:22.867 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Identified candidate component class: file [/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/classes/java/main/com/vibe/pay/domain/payment/repository/PaymentMapper.class]
+2025-10-17 09:01:22.867 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Identified candidate component class: file [/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/classes/java/main/com/vibe/pay/domain/pointhistory/repository/PointHistoryMapper.class]
+2025-10-17 09:01:22.867 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Identified candidate component class: file [/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/classes/java/main/com/vibe/pay/domain/product/repository/ProductMapper.class]
+2025-10-17 09:01:22.867 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Identified candidate component class: file [/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/classes/java/main/com/vibe/pay/domain/rewardpoints/repository/RewardPointsMapper.class]
+2025-10-17 09:01:22.867 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Creating MapperFactoryBean with name 'memberMapper' and 'com.vibe.pay.domain.member.repository.MemberMapper' mapperInterface
+2025-10-17 09:01:22.868 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Creating MapperFactoryBean with name 'orderItemMapper' and 'com.vibe.pay.domain.order.repository.OrderItemMapper' mapperInterface
+2025-10-17 09:01:22.868 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Creating MapperFactoryBean with name 'orderMapper' and 'com.vibe.pay.domain.order.repository.OrderMapper' mapperInterface
+2025-10-17 09:01:22.868 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Creating MapperFactoryBean with name 'paymentInterfaceRequestLogMapper' and 'com.vibe.pay.domain.payment.repository.PaymentInterfaceRequestLogMapper' mapperInterface
+2025-10-17 09:01:22.868 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Creating MapperFactoryBean with name 'paymentMapper' and 'com.vibe.pay.domain.payment.repository.PaymentMapper' mapperInterface
+2025-10-17 09:01:22.868 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Creating MapperFactoryBean with name 'pointHistoryMapper' and 'com.vibe.pay.domain.pointhistory.repository.PointHistoryMapper' mapperInterface
+2025-10-17 09:01:22.869 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Creating MapperFactoryBean with name 'productMapper' and 'com.vibe.pay.domain.product.repository.ProductMapper' mapperInterface
+2025-10-17 09:01:22.869 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Creating MapperFactoryBean with name 'rewardPointsMapper' and 'com.vibe.pay.domain.rewardpoints.repository.RewardPointsMapper' mapperInterface
+2025-10-17 09:01:23.076 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2025-10-17 09:01:23.084 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-10-17 09:01:23.087 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.46]
+2025-10-17 09:01:23.117 [restartedMain] INFO  o.a.c.c.C.[.[localhost].[/api] - Initializing Spring embedded WebApplicationContext
+2025-10-17 09:01:23.117 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 687 ms
+2025-10-17 09:01:23.286 [restartedMain] DEBUG o.m.spring.SqlSessionFactoryBean - Parsed mapper file: 'file [/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/resources/main/mapper/PaymentInterfaceRequestLogMapper.xml]'
+2025-10-17 09:01:23.294 [restartedMain] DEBUG o.m.spring.SqlSessionFactoryBean - Parsed mapper file: 'file [/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/resources/main/mapper/PaymentMapper.xml]'
+2025-10-17 09:01:23.482 [restartedMain] DEBUG o.s.w.s.m.m.a.RequestMappingHandlerMapping - 31 mappings in 'requestMappingHandlerMapping'
+2025-10-17 09:01:23.506 [restartedMain] DEBUG o.s.w.s.h.SimpleUrlHandlerMapping - Patterns [/webjars/**, /**, /swagger-ui*/*swagger-initializer.js, /swagger-ui*/**] in 'resourceHandlerMapping'
+2025-10-17 09:01:23.523 [restartedMain] WARN  o.s.b.a.s.s.UserDetailsServiceAutoConfiguration - 
+
+Using generated security password: 24735550-fae5-44c8-815a-f0bb4866a676
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2025-10-17 09:01:23.527 [restartedMain] INFO  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2025-10-17 09:01:23.586 [restartedMain] INFO  o.s.v.b.OptionalValidatorFactoryBean - Failed to set up a Bean Validation provider: jakarta.validation.NoProviderFoundException: Unable to create a Configuration, because no Jakarta Bean Validation provider could be found. Add a provider like Hibernate Validator (RI) to your classpath.
+2025-10-17 09:01:23.598 [restartedMain] DEBUG o.s.w.s.m.m.a.RequestMappingHandlerAdapter - ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 1 ResponseBodyAdvice
+2025-10-17 09:01:23.623 [restartedMain] DEBUG o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - ControllerAdvice beans: 2 @ExceptionHandler, 1 ResponseBodyAdvice
+2025-10-17 09:01:23.699 [restartedMain] INFO  o.s.b.d.a.OptionalLiveReloadServer - LiveReload server is running on port 35729
+2025-10-17 09:01:23.724 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/api'
+2025-10-17 09:01:23.732 [restartedMain] INFO  com.api.ApiApplication - Started ApiApplication in 1.611 seconds (process running for 3.07)

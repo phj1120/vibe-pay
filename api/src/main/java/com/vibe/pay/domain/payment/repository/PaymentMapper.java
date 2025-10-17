@@ -15,4 +15,12 @@ public interface PaymentMapper {
     List<Payment> findAll();
     void update(Payment payment);
     void delete(String paymentId);
+
+    /**
+     * 결제 시퀀스 번호 조회
+     * payment_seq 시퀀스에서 다음 값을 가져옵니다.
+     *
+     * @return 다음 시퀀스 번호
+     */
+    Long getNextPaymentSequence();
 }
