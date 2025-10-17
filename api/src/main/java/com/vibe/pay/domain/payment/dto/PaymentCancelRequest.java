@@ -100,4 +100,21 @@ public class PaymentCancelRequest {
         this.transactionId = transactionId;
         this.originalTransactionId = transactionId;
     }
+
+    /**
+     * 이니시스 인증 토큰 (authToken)
+     * 망취소 시 사용
+     */
+    private String authToken;
+
+    /**
+     * 이니시스 망취소 API URL (netCancelUrl)
+     * 망취소 시 사용
+     */
+    private String netCancelUrl;
+
+    /**
+     * 이니시스 가맹점 ID (mid)
+     */
+    private String mid;
 }

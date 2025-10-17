@@ -4,7 +4,10 @@
       "Bash(rm:*)",
       "Bash(./gradlew clean build:*)",
       "Bash(./gradlew clean:*)",
-      "Bash(./gradlew compileJava:*)"
+      "Bash(./gradlew compileJava:*)",
+      "mcp__jetbrains__get_project_vcs_status",
+      "mcp__jetbrains__search_in_files_by_text",
+      "Bash(./gradlew test:*)"
     ],
     "deny": [],
     "ask": []

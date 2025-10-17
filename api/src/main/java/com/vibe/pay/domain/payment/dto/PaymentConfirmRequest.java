@@ -56,4 +56,27 @@ public class PaymentConfirmRequest {
      * 카드 승인 번호
      */
     private String approvalNumber;
+
+    /**
+     * 이니시스 인증 토큰 (authToken)
+     * 이니시스 결제창에서 전달받은 인증 토큰
+     */
+    private String authToken;
+
+    /**
+     * 이니시스 승인 API URL (authUrl)
+     * 이니시스 결제창에서 전달받은 승인 URL
+     */
+    private String authUrl;
+
+    /**
+     * 이니시스 망취소 API URL (netCancelUrl)
+     * 이니시스 결제창에서 전달받은 망취소 URL
+     */
+    private String netCancelUrl;
+
+    /**
+     * 이니시스 가맹점 ID (mid)
+     */
+    private String mid;
 }

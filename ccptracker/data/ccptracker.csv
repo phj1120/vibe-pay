@@ -1084,3 +1084,554 @@ Step별로 진행하며 각 Step 완료 시:
 
 실제 코드 수정을 진행할까요?",5,,2025-10-17 08:47:09,2025-10-17 08:48:32,2025-10-17 08:50:00,94,182,276,claude-sonnet-4-5,0.025388,USD,33074,2,4464,28597
 20251017085006,응 그렇게 진행해.,,,,2025-10-17 08:50:06,,,3,,,,,,,,,
+20251017090820,"# 역할
+당신은 비즈니스 로직 구현 전문가입니다.
+
+# 목표
+Technical Specification을 기반으로 특정 기능의 상세 로직을 정교하게 구현해주세요.
+
+
+# 구현 범위
+
+## 이 단계에서 구현할 것
+✅ 복잡한 비즈니스 로직 (계산식, 검증, 상태 전이)
+✅ 외부 API 연동 (PG, 인증, 결제 등)
+✅ 모든 에러 케이스 처리
+✅ 트랜잭션 및 동시성 제어
+✅ 성능 최적화 (쿼리 최적화, 캐싱)
+✅ 보안 처리 (검증, 암호화, 마스킹)
+✅ 상세한 로깅
+
+# 구현 방식
+
+Step 1: 결제 승인 비즈니스 로직 구현
+Step 2: 결제 환불 비즈니스 로직 구현
+Step 3: 주문-결제 연동 로직 구현
+Step 4: 외부 PG API 연동 구현
+Step 5: 에러 처리 및 예외 상황 대응
+Step 6: 성능 최적화
+Step 7: 로깅 및 검증
+
+
+# 검증 체크리스트
+
+구현 완료 후 다음을 확인:
+- [ ] Tech Spec의 모든 계산식이 정확히 구현됨
+- [ ] 모든 검증 규칙이 적용됨
+- [ ] 모든 에러 케이스가 처리됨
+- [ ] 상태 전이 규칙이 정확함
+- [ ] 외부 API 연동이 Spec과 일치
+- [ ] 트랜잭션 경계가 올바름
+- [ ] 동시성 문제가 해결됨
+- [ ] 성능 최적화가 적용됨
+- [ ] 로깅이 적절히 추가됨
+
+# 중요 원칙
+
+⚠️ **Tech Spec 100% 준수**: 단 하나의 계산식, 검증 규칙도 임의 변경 금지
+⚠️ **모든 에러 케이스 처리**: Technical Specification에 명시된 모든 예외 상황 구현
+⚠️ **로깅 추가**: 중요한 비즈니스 로직에는 INFO 레벨 로그 추가
+⚠️ **주석 작성**: 복잡한 로직에는 Tech Spec 섹션 참조 주석 추가
+
+# 출력 형식
+
+Step별로 진행하며 각 Step 완료 시:
+[Step N 완료]
+수정된 파일:
+
+- path/to/File1.java (비즈니스 로직 추가)
+- path/to/File2.java (에러 처리 추가)
+
+구현된 기능:
+
+- 기능 1
+- 기능 2
+
+다음 Step으로 진행할까요?
+
+# 시작 전 분석
+
+먼저 다음을 분석하고 제시하세요:
+1. **구현할 TODO 목록**: 스켈레톤 코드의 TODO 추출
+2. **핵심 비즈니스 로직 수**: Tech Spec에 명시된 주요 로직 개수
+3. **외부 API 연동 수**: 구현할 외부 연동 개수
+4. **에러 케이스 수**: 처리할 예외 상황 개수
+5. **예상 소요 시간**: 대략적인 구현 시간
+
+이전 작업자에게 Step4 까지 구현이 완료 되었다고 전달 받았으나,
+실제 구현된 소스를 확인해보니 FO 및 sql 에 대한 구현은 진행 되지 않음.
+docs/v5/TechnicalSpecification 아래의 폴더를 확인해서 이어서 개발을 진행 할 것.","# 시작 전 분석 보고서
+
+## 📋 현재 상태 분석
+
+### ✅ Step 1-4 완료 사항
+- 결제 승인 비즈니스 로직 스켈레톤 구현 완료
+- 결제 환불 비즈니스 로직 스켈레톤 구현 완료  
+- 주문-결제 연동 로직 기본 구조 완료
+- 외부 PG API 연동 인터페이스 정의 완료
+
+### ❌ 미완료 사항 (FO 및 상세 구현)
+- **PG Adapter 실제 API 연동 미구현** (stub만 존재)
+- **FO 결제창 연동 로직 전체 미구현**
+- **SQL 최적화 미적용**
+
+---
+
+## 1. 구현할 TODO 목록 (총 19개)
+
+### 🔴 Backend - PG Adapter (12개)
+**InicisAdapter.java:**
+1. ✅ 결제 초기화 API 연동 구현 (line 48)
+2. ✅ 승인 API 연동 구현 (line 69)
+
+**NicePayAdapter.java:**
+3. ✅ 결제 초기화 구현 (line 59)
+4. ✅ 승인 API 연동 구현 (line 105)
+5. ✅ 취소 API 구현 (line 151)
+6. ✅ 망취소 API 구현 (line 207)
+7. ✅ SHA-256 해싱 구현 (line 250)
+
+**TossAdapter.java:**
+8. ✅ 결제 초기화 구현 (line 60)
+9. ✅ 승인 API 연동 구현 (line 98)
+10. ✅ 취소 API 구현 (line 144)
+11. ✅ 망취소 API 구현 (line 201)
+12. ✅ Base64 인코딩 구현 (line 241)
+
+### 🟡 Backend - Payment Processor (4개)
+**PointPaymentProcessor.java:**
+13. ✅ PointService 주입 및 실제 포인트 결제 승인 구현 (line 41, 60)
+14. ✅ 포인트 환불 구현 (line 119)
+15. ✅ PaymentMapper.getNextPaymentSequence() 구현 (line 56, 135, 167)
+
+**PaymentMapper.xml:**
+16. ✅ getNextPaymentSequence() SQL 구현
+
+### 🟠 Backend - Optimization (1개)
+**OrderService.java:**
+17. ✅ N+1 쿼리 최적화 (MyBatis association/collection 활용) (line 328)
+
+### 🔵 Frontend - Payment Integration (2개)
+**FO 구현 항목:**
+18. ✅ **PG 결제창 초기화 및 팝업 처리 로직** - `/api/payments/initiate` 호출 후 PG사별 결제창 팝업 띄우기
+19. ✅ **결제 결과 수신 및 승인 처리** - 팝업에서 부모창으로 메시지 전달 후 `/api/payments/return` 호출
+
+---
+
+## 2. 핵심 비즈니스 로직 수: **8개**
+
+1. ✅ **결제 초기화 (initiatePayment)** - PG사 선택 및 결제창 파라미터 생성
+2. ✅ **결제 승인 (confirmPayment)** - PG사 최종 승인 API 호출 및 Payment 저장
+3. ✅ **결제 취소 (cancel)** - PG사 취소 API 호출
+4. ✅ **망취소 (netCancel)** - 결제 승인 후 주문 생성 실패 시 자동 망취소
+5. ✅ **포인트 결제 승인** - 포인트 차감 및 트랜잭션 기록
+6. ✅ **포인트 환불** - 포인트 환급 및 트랜잭션 기록
+7. ✅ **주문-결제 연동** - 주문 생성 시 결제 승인, 주문 취소 시 결제 환불
+8. ✅ **PG사 가중치 선택** - ""WEIGHTED"" 요청 시 가중치 기반 PG사 선택
+
+---
+
+## 3. 외부 API 연동 수: **9개**
+
+### PG사별 API (각 3개 × 3개 PG사 = 9개)
+**이니시스 (INICIS):**
+1. ✅ 결제 승인 API (`/stdpay/web/INIStdPayAppr.ini`)
+2. ✅ 결제 취소 API
+3. ✅ 망취소 API (`/stdpay/web/INIStdPayNetCancel.ini`)
+
+**나이스페이 (NICEPAY):**
+4. ✅ 결제 승인 API (`NextAppURL` 사용)
+5. ✅ 결제 취소 API
+6. ✅ 망취소 API
+
+**토스페이먼츠 (TOSS):**
+7. ✅ 결제 승인 API (REST API, Authorization: Basic Base64)
+8. ✅ 결제 취소 API
+9. ✅ 망취소 API
+
+---
+
+## 4. 에러 케이스 수: **15개**
+
+### Backend 에러 케이스 (12개)
+1. ✅ 결제 초기화 실패 (PG사 응답 오류)
+2. ✅ PG사 승인 API 호출 실패 (네트워크 오류)
+3. ✅ PG사 승인 결과 실패 (resultCode != ""0000"")
+4. ✅ 금액 불일치 (요청 금액 vs PG사 응답 금액)
+5. ✅ 결제 승인 후 주문 생성 실패 → 망취소 시도
+6. ✅ 망취소 실패 (심각한 데이터 불일치 상황)
+7. ✅ 포인트 잔액 부족
+8. ✅ 포인트 차감 실패 (동시성 이슈)
+9. ✅ 포인트 환불 실패
+10. ✅ Payment 저장 실패 (DB 오류)
+11. ✅ PG사 취소 API 호출 실패
+12. ✅ PG사 로그 기록 실패
+
+### Frontend 에러 케이스 (3개)
+13. ✅ PG 결제창 팝업 차단
+14. ✅ 결제 중 사용자 취소
+15. ✅ 결제 승인 API 호출 실패
+
+---
+
+## 5. 예상 소요 시간: **약 8-12시간**
+
+### Step 5: 에러 처리 및 예외 상황 대응 **(2-3시간)**
+- PG Adapter 실제 API 연동 (3개 PG사): **1.5시간**
+- 에러 처리 및 로깅 강화: **1시간**
+
+### Step 6: 성능 최적화 **(1-2시간)**
+- N+1 쿼리 최적화 (MyBatis): **1시간**
+- SQL 쿼리 최적화: **0.5시간**
+
+### Step 7: FO 결제창 연동 구현 **(3-4시간)**
+- PG 결제창 초기화 로직: **1시간**
+- 팝업-부모창 통신 구현: **1.5시간**
+- 결제 결과 처리 및 승인 API 호출: **1시간**
+
+### 기타 보완 작업 **(2-3시간)**
+- PointPaymentProcessor 실제 구현: **1시간**
+- PaymentMapper.getNextPaymentSequence() 구현: **0.5시간**
+- 통합 테스트 및 검증: **1시간**
+
+---
+
+## 🎯 우선순위 제안
+
+### Priority 1 (High - 필수): 
+1. **PG Adapter 실제 API 연동** (이니시스 우선)
+2. **FO 결제창 연동 로직**
+3. **에러 처리 및 망취소 로직 검증**
+
+### Priority 2 (Medium):
+4. **PointPaymentProcessor 실제 구현**
+5. **N+1 쿼리 최적화**
+
+### Priority 3 (Low):
+6. **성능 최적화 및 로깅 강화**
+
+---
+
+## 📌 다음 단계 제안
+
+사용자님, 분석이 완료되었습니다. 다음 중 어떤 방식으로 진행하시겠습니까?
+
+**A. 순차적 구현 (권장)**
+- Step 5부터 차근차근 진행
+
+**B. 우선순위 기반 구현**
+- PG Adapter → FO 연동 → 나머지 순으로 진행
+
+**C. 특정 영역 집중**
+- Backend만 완성 또는 FO만 완성
+
+어떤 방식으로 진행할까요?",,,2025-10-17 09:08:20,2025-10-17 09:10:54,,392,1029,1421,claude-sonnet-4-5,0.077388,USD,96403,2838,1699,94691
+20251017091557,"정상적으로 결제가 진행 되는지를 화면에서 확인을 해보고 싶어. 성능, 예외처리, 로깅에 대한 부분은 추후에 구현하고,
+PG 사도 이니시스가 정상적으로 결제 되는 것이 확인 되면, 나이스 페이 연동을 진행해.","완벽합니다! **최소 구현으로 E2E 결제 플로우 완성**에 집중하겠습니다.
+
+# 구현 계획: 이니시스 결제 화면 검증
+
+## 🎯 목표
+화면에서 이니시스 결제가 **실제로 작동하는지 확인** (성능/예외처리/로깅은 제외)
+
+---
+
+## 📋 구현 범위
+
+### ✅ 구현할 것
+1. **Backend: InicisAdapter 실제 API 연동**
+2. **Backend: PaymentMapper.getNextPaymentSequence() SQL**
+3. **Frontend: 결제 초기화 및 팝업 연동**
+4. **Frontend: 결제 결과 수신 및 승인 처리**
+5. **Frontend: 주문-결제 통합 플로우**
+
+### ❌ 제외할 것
+- 성능 최적화 (N+1 쿼리 등)
+- 상세한 예외 처리 (기본만)
+- 로깅 강화 (기존 것만 활용)
+- 나이스페이/토스 (이니시스 확인 후)
+- 포인트 결제 실제 구현
+
+---
+
+## 🔧 구현 상세
+
+### Step 1: Backend - InicisAdapter 실제 API 연동
+
+**파일: `InicisAdapter.java`**
+
+#### 1.1 결제 초기화 (initiate)
+```java
+// TODO 제거: line 48
+// 이니시스 결제창 파라미터 생성
+- mid (가맹점 ID)
+- oid (주문번호)
+- price (금액)
+- goodName (상품명)
+- buyerName, buyerTel, buyerEmail
+- timestamp
+- signature (HMAC-SHA256)
+- returnUrl (프론트엔드 결제 결과 수신 URL)
+```
+
+#### 1.2 결제 승인 (confirm)
+```java
+// TODO 제거: line 69
+// 실제 이니시스 승인 API 호출
+- authUrl에 authToken 파라미터로 POST 요청
+- 응답 파싱 (resultCode, tid, price 등)
+- PaymentConfirmResponse 반환
+```
+
+#### 1.3 망취소 (netCancel)
+```java
+// 기본 구현만 (주문 생성 실패 시 자동 호출됨)
+- netCancelUrl에 authToken 파라미터로 POST 요청
+```
+
+---
+
+### Step 2: Backend - PaymentMapper SQL
+
+**파일: `PaymentMapper.xml`**
+
+```xml
+<select id=""getNextPaymentSequence"" resultType=""long"">
+    SELECT NEXT VALUE FOR payment_id_seq
+</select>
+```
+
+**파일: `PaymentMapper.java`**
+```java
+Long getNextPaymentSequence();
+```
+
+---
+
+### Step 3: Frontend - 결제 초기화 로직
+
+**파일: `fo/src/app/order/page.tsx`**
+
+#### 3.1 기존 코드 수정
+현재 구조:
+```typescript
+// 주문 생성
+const order = await createOrder(orderRequest);
+// 결제 처리
+const paymentResult = await processPayment(paymentRequest);
+```
+
+변경 후:
+```typescript
+// 1. 결제 초기화 (PG 결제창 파라미터 받기)
+const initResponse = await initiatePayment({
+  memberId: orderForm.memberId,
+  amount: cartState.totalAmount,
+  paymentMethod: 'CREDIT_CARD',
+  pgCompany: 'INICIS',
+  orderId: generatedOrderId, // 주문번호 미리 채번
+  goodName: '상품명',
+  buyerName: orderForm.name,
+  buyerTel: orderForm.phoneNumber,
+  buyerEmail: orderForm.email,
+});
+
+// 2. PG 결제창 팝업 띄우기
+openPaymentPopup(initResponse);
+```
+
+#### 3.2 새로운 함수 추가
+```typescript
+// PG 결제창 팝업 열기
+const openPaymentPopup = (initResponse: PaymentInitResponse) => {
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = initResponse.paymentUrl; // 이니시스 결제창 URL
+  form.target = 'payment_popup';
+  
+  // 파라미터 추가
+  Object.entries(initResponse.paymentParams).forEach(([key, value]) => {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = key;
+    input.value = value;
+    form.appendChild(input);
+  });
+  
+  document.body.appendChild(form);
+  
+  // 팝업 열기
+  window.open('', 'payment_popup', 'width=500,height=600');
+  form.submit();
+  document.body.removeChild(form);
+};
+```
+
+---
+
+### Step 4: Frontend - 결제 결과 수신
+
+**새 파일 생성: `fo/src/app/payment/callback/page.tsx`**
+
+이니시스 결제창이 리다이렉트할 콜백 페이지 (팝업 내에서 실행)
+
+```typescript
+'use client';
+
+export default function PaymentCallbackPage() {
+  useEffect(() => {
+    // URL 파라미터에서 이니시스 응답 받기
+    const params = new URLSearchParams(window.location.search);
+    const resultCode = params.get('resultCode');
+    const authToken = params.get('authToken');
+    const authUrl = params.get('authUrl');
+    const oid = params.get('oid');
+    
+    // 부모 창으로 결과 전달
+    if (window.opener) {
+      window.opener.postMessage({
+        type: 'PAYMENT_RESULT',
+        data: {
+          resultCode,
+          authToken,
+          authUrl,
+          oid,
+        }
+      }, window.location.origin);
+      
+      window.close();
+    }
+  }, []);
+  
+  return <div>결제 처리 중...</div>;
+}
+```
+
+---
+
+### Step 5: Frontend - 부모창에서 결제 결과 처리
+
+**파일: `fo/src/app/order/page.tsx`**
+
+```typescript
+// 메시지 리스너 등록
+useEffect(() => {
+  const handlePaymentResult = async (event: MessageEvent) => {
+    if (event.data.type === 'PAYMENT_RESULT') {
+      const { resultCode, authToken, authUrl, oid } = event.data.data;
+      
+      if (resultCode === '0000') {
+        // 결제 승인 API 호출
+        const confirmRequest = {
+          orderId: oid,
+          authToken,
+          authUrl,
+          memberId: orderForm.memberId,
+          paymentMethod: 'CREDIT_CARD',
+          pgCompany: 'INICIS',
+        };
+        
+        const result = await confirmPayment(confirmRequest);
+        
+        // 주문 생성 (결제 승인 완료 후)
+        const order = await createOrderWithPayment({
+          ...orderRequest,
+          paymentIds: [result.paymentId],
+        });
+        
+        // 성공 페이지로 이동
+        router.push(`/order/complete?orderId=${order.orderId}`);
+      } else {
+        alert('결제 실패');
+        router.push('/order/failed');
+      }
+    }
+  };
+  
+  window.addEventListener('message', handlePaymentResult);
+  return () => window.removeEventListener('message', handlePaymentResult);
+}, []);
+```
+
+---
+
+### Step 6: API 클라이언트 함수 추가
+
+**파일: `fo/src/lib/api/payments.ts`**
+
+```typescript
+// 결제 초기화
+export const initiatePayment = async (request: PaymentInitiateRequest): Promise<PaymentInitResponse> => {
+  const response = await apiClient.post<ApiResponse<PaymentInitResponse>>(
+    '/api/payments/initiate', 
+    request
+  );
+  return response.data.data;
+};
+
+// 결제 승인 (PG 리다이렉트 후 최종 승인)
+export const confirmPayment = async (request: PaymentConfirmRequest): Promise<PaymentResponse> => {
+  const response = await apiClient.post<ApiResponse<PaymentResponse>>(
+    '/api/payments/confirm', 
+    request
+  );
+  return response.data.data;
+};
+```
+
+---
+
+## 📁 변경 파일 목록
+
+### Backend (Java)
+1. `api/src/main/java/com/vibe/pay/domain/payment/adapter/InicisAdapter.java` - 실제 API 연동
+2. `api/src/main/resources/mapper/PaymentMapper.xml` - getNextPaymentSequence SQL 추가
+3. `api/src/main/java/com/vibe/pay/domain/payment/repository/PaymentMapper.java` - 인터페이스 메서드 추가
+
+### Frontend (Next.js)
+4. `fo/src/app/order/page.tsx` - 결제 초기화 및 팝업 로직 추가
+5. `fo/src/app/payment/callback/page.tsx` - **신규 파일** (결제 결과 콜백)
+6. `fo/src/lib/api/payments.ts` - initiatePayment, confirmPayment 함수 추가
+7. `fo/src/types/payment.ts` - PaymentInitiateRequest, PaymentInitResponse 타입 추가
+
+---
+
+## 🔄 E2E 플로우
+
+1. **사용자**: 주문 페이지에서 ""결제하기"" 클릭
+2. **FO → BE**: `POST /api/payments/initiate` (이니시스 결제창 파라미터 요청)
+3. **BE**: InicisAdapter가 결제창 파라미터 생성 (signature 포함)
+4. **BE → FO**: PaymentInitResponse 반환
+5. **FO**: 이니시스 결제창 팝업 오픈 (POST 방식)
+6. **사용자**: 팝업에서 카드 정보 입력 및 결제
+7. **이니시스**: `/payment/callback`로 리다이렉트 (팝업 내)
+8. **FO (팝업)**: 결제 결과를 부모창으로 postMessage
+9. **FO (부모)**: `POST /api/payments/confirm` (최종 승인 요청)
+10. **BE**: InicisAdapter가 authUrl로 승인 API 호출
+11. **BE**: Payment 엔티티 DB 저장
+12. **FO**: 주문 생성 및 완료 페이지 이동
+
+---
+
+## ✅ 검증 포인트
+
+- [ ] 이니시스 결제창이 정상적으로 팝업으로 뜨는가?
+- [ ] 테스트 카드로 결제가 승인되는가?
+- [ ] 결제 승인 후 Payment가 DB에 저장되는가?
+- [ ] 주문 완료 페이지로 정상 이동하는가?
+- [ ] 결제 취소 시 팝업이 닫히는가?
+
+---
+
+## 🚀 다음 단계 (이니시스 확인 후)
+
+1. **나이스페이 연동** (동일 패턴)
+2. **토스페이먼츠 연동** (REST API 방식)
+3. **에러 처리 강화**
+4. **성능 최적화**
+5. **로깅 강화**
+
+---
+
+이 계획으로 진행하시겠습니까? 승인하시면 바로 구현을 시작하겠습니다! 🚀",5,,2025-10-17 09:15:57,2025-10-17 09:17:02,2025-10-17 09:17:15,34,1956,1990,claude-sonnet-4-5,0.364691,USD,97225,7,97215,
+20251017091719,응 구현 시작해.,Session limit reached ∙ resets 11am,,,2025-10-17 09:17:19,2025-10-17 09:31:19,,3,10,13,claude-sonnet-4-5,0.000159,USD,,,,

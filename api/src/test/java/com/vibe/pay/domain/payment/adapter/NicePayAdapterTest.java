@@ -55,7 +55,7 @@ class NicePayAdapterTest {
         initiateRequest.setMemberId(2L);
         initiateRequest.setAmount(BigDecimal.valueOf(15000));
         initiateRequest.setProductName("나이스페이 테스트 상품");
-        initiateRequest.setPaymentMethod(PaymentMethod.CARD);
+        initiateRequest.setPaymentMethod(PaymentMethod.CREDIT_CARD);
         initiateRequest.setPgCompany(PgCompany.NICEPAY);
         initiateRequest.setBuyerName("김나이스");
         initiateRequest.setBuyerEmail("nicepay@example.com");
@@ -67,7 +67,7 @@ class NicePayAdapterTest {
         confirmRequest.setOrderId("ORDER_TEST_002");
         confirmRequest.setMemberId(2L);
         confirmRequest.setAmount(BigDecimal.valueOf(15000));
-        confirmRequest.setPaymentMethod(PaymentMethod.CARD);
+        confirmRequest.setPaymentMethod(PaymentMethod.CREDIT_CARD);
         confirmRequest.setPgCompany(PgCompany.NICEPAY);
         confirmRequest.setPgTransactionId("NICEPAY_TXN_002");
 

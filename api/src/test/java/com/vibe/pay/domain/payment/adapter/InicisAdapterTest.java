@@ -1,6 +1,8 @@
 package com.vibe.pay.domain.payment.adapter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vibe.pay.common.exception.PaymentException;
+import com.vibe.pay.common.util.WebClientUtil;
 import com.vibe.pay.domain.payment.dto.PaymentCancelRequest;
 import com.vibe.pay.domain.payment.dto.PaymentCancelResponse;
 import com.vibe.pay.domain.payment.dto.PaymentConfirmRequest;
@@ -17,12 +19,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -38,10 +42,12 @@ class InicisAdapterTest {
     private PaymentInterfaceRequestLogMapper logMapper;
 
     @Mock
-    private ObjectMapper objectMapper;
+    private WebClientUtil webClientUtil;
 
     @InjectMocks
     private InicisAdapter inicisAdapter;
+
+    private ObjectMapper objectMapper;
 
     private PaymentInitiateRequest initiateRequest;
     private PaymentConfirmRequest confirmRequest;
@@ -49,13 +55,22 @@ class InicisAdapterTest {
 
     @BeforeEach
     void setUp() {
+        // ObjectMapper 실제 인스턴스 생성
+        objectMapper = new ObjectMapper();
+        ReflectionTestUtils.setField(inicisAdapter, "objectMapper", objectMapper);
+
+        // @Value 필드 설정 (ReflectionTestUtils 사용)
+        ReflectionTestUtils.setField(inicisAdapter, "mid", "INIpayTest");
+        ReflectionTestUtils.setField(inicisAdapter, "apiKey", "TEST_API_KEY");
+        ReflectionTestUtils.setField(inicisAdapter, "signKey", "TEST_SIGN_KEY");
+        ReflectionTestUtils.setField(inicisAdapter, "testApiUrl", "https://stgstdpay.inicis.com");
         // Given: 테스트에 사용할 기본 요청 객체 준비
         initiateRequest = new PaymentInitiateRequest();
         initiateRequest.setOrderId("ORDER_TEST_001");
         initiateRequest.setMemberId(1L);
         initiateRequest.setAmount(BigDecimal.valueOf(10000));
         initiateRequest.setProductName("테스트 상품");
-        initiateRequest.setPaymentMethod(PaymentMethod.CARD);
+        initiateRequest.setPaymentMethod(PaymentMethod.CREDIT_CARD);
         initiateRequest.setPgCompany(PgCompany.INICIS);
         initiateRequest.setBuyerName("홍길동");
         initiateRequest.setBuyerEmail("test@example.com");
@@ -67,9 +82,12 @@ class InicisAdapterTest {
         confirmRequest.setOrderId("ORDER_TEST_001");
         confirmRequest.setMemberId(1L);
         confirmRequest.setAmount(BigDecimal.valueOf(10000));
-        confirmRequest.setPaymentMethod(PaymentMethod.CARD);
+        confirmRequest.setPaymentMethod(PaymentMethod.CREDIT_CARD);
         confirmRequest.setPgCompany(PgCompany.INICIS);
         confirmRequest.setPgTransactionId("INICIS_TXN_001");
+        confirmRequest.setAuthToken("TEST_AUTH_TOKEN");
+        confirmRequest.setAuthUrl("https://stgstdpay.inicis.com/stdpay/web/INIStdPayAppr.ini");
+        confirmRequest.setMid("INIpayTest");
 
         cancelRequest = new PaymentCancelRequest();
         cancelRequest.setOrderId("ORDER_TEST_001");
@@ -79,6 +97,9 @@ class InicisAdapterTest {
         cancelRequest.setOriginalTransactionId("INICIS_TXN_001");
         cancelRequest.setOriginalApprovalNumber("INICIS_APPROVAL_001");
         cancelRequest.setCancelReason("고객 변심");
+        cancelRequest.setAuthToken("TEST_AUTH_TOKEN");
+        cancelRequest.setNetCancelUrl("https://stgstdpay.inicis.com/stdpay/web/INIStdPayNetCancel.ini");
+        cancelRequest.setMid("INIpayTest");
     }
 
     @Test
@@ -117,13 +138,40 @@ class InicisAdapterTest {
         assertThat(response).isNotNull();
         assertThat(response.isSuccess()).isTrue();
         assertThat(response.getPaymentUrl()).isNotEmpty();
+        assertThat(response.getPaymentUrl()).contains("stdpay/pay.ini");
         assertThat(response.getMessage()).contains("INICIS");
+
+        // Then: 결제창 파라미터 검증
+        Map<String, String> parameters = response.getParameters();
+        assertThat(parameters).isNotNull();
+        assertThat(parameters).containsKeys("mid", "oid", "price", "goodName", "buyerName",
+                "buyerTel", "buyerEmail", "timestamp", "mKey", "signature", "verification");
+        assertThat(parameters.get("mid")).isEqualTo("INIpayTest");
+        assertThat(parameters.get("oid")).isEqualTo("ORDER_TEST_001");
+        assertThat(parameters.get("price")).isEqualTo("10000");
+        assertThat(parameters.get("goodName")).isEqualTo("테스트 상품");
     }
 
     @Test
     @DisplayName("결제 승인 성공")
-    void confirm_shouldReturnSuccessResponse_whenValidRequest() {
-        // Given: 유효한 결제 승인 요청
+    void confirm_shouldReturnSuccessResponse_whenValidRequest() throws Exception {
+        // Given: 유효한 결제 승인 요청 및 Mock 설정
+        doNothing().when(logMapper).insert(any());
+        doNothing().when(logMapper).updateResponse(any());
+
+        // 이니시스 승인 API 응답 Mock
+        String mockResponse = """
+                {
+                    "resultCode": "0000",
+                    "resultMsg": "결제 성공",
+                    "tid": "INIpayTest_20251017_123456",
+                    "TotPrice": 10000,
+                    "applNum": "12345678",
+                    "CARD_Num": "************1234",
+                    "CARD_IssuerName": "국민카드"
+                }
+                """;
+        when(webClientUtil.postFormUrlEncoded(anyString(), anyMap())).thenReturn(mockResponse);
 
         // When: 결제 승인 수행
         PaymentConfirmResponse response = inicisAdapter.confirm(confirmRequest);
@@ -131,16 +179,23 @@ class InicisAdapterTest {
         // Then: 성공 응답 반환
         assertThat(response).isNotNull();
         assertThat(response.isSuccess()).isTrue();
-        assertThat(response.getTransactionId()).isNotEmpty();
-        assertThat(response.getApprovalNumber()).isNotEmpty();
-        assertThat(response.getAmount()).isEqualTo(confirmRequest.getAmount());
+        assertThat(response.getTransactionId()).isEqualTo("INIpayTest_20251017_123456");
+        assertThat(response.getApprovalNumber()).isEqualTo("12345678");
+        assertThat(response.getAmount()).isEqualTo(BigDecimal.valueOf(10000));
+        assertThat(response.getResultCode()).isEqualTo("0000");
+        assertThat(response.getMaskedCardNumber()).isEqualTo("************1234");
+        assertThat(response.getCardCompany()).isEqualTo("국민카드");
+
+        // Then: API 호출 및 로그 기록 확인
+        verify(webClientUtil, times(1)).postFormUrlEncoded(anyString(), anyMap());
+        verify(logMapper, times(1)).insert(any());
+        verify(logMapper, times(1)).updateResponse(any());
     }
 
     @Test
     @DisplayName("결제 취소 성공")
     void cancel_shouldReturnSuccessResponse_whenValidRequest() throws Exception {
         // Given: 유효한 결제 취소 요청
-        when(objectMapper.writeValueAsString(any())).thenReturn("{}");
         doNothing().when(logMapper).insert(any());
         doNothing().when(logMapper).updateResponse(any());
 
@@ -163,7 +218,6 @@ class InicisAdapterTest {
     @DisplayName("망취소 성공")
     void netCancel_shouldReturnSuccessResponse_whenValidRequest() throws Exception {
         // Given: 유효한 망취소 요청
-        when(objectMapper.writeValueAsString(any())).thenReturn("{}");
         doNothing().when(logMapper).insert(any());
         doNothing().when(logMapper).updateResponse(any());
 
@@ -182,10 +236,62 @@ class InicisAdapterTest {
     }
 
     @Test
+    @DisplayName("결제 승인 실패 - resultCode가 0000이 아님")
+    void confirm_shouldThrowException_whenResultCodeIsNotSuccess() throws Exception {
+        // Given: 실패 응답을 반환하는 Mock 설정
+        doNothing().when(logMapper).insert(any());
+        doNothing().when(logMapper).updateResponse(any());
+
+        String mockResponse = """
+                {
+                    "resultCode": "1001",
+                    "resultMsg": "카드 승인 거절",
+                    "tid": "INIpayTest_20251017_123456"
+                }
+                """;
+        when(webClientUtil.postFormUrlEncoded(anyString(), anyMap())).thenReturn(mockResponse);
+
+        // When & Then: PaymentException 발생
+        PaymentException exception = assertThrows(PaymentException.class, () -> {
+            inicisAdapter.confirm(confirmRequest);
+        });
+
+        // Then: 예외 메시지 검증
+        assertThat(exception.getPgErrorCode()).isEqualTo("1001");
+        assertThat(exception.getPgErrorMessage()).isEqualTo("카드 승인 거절");
+    }
+
+    @Test
+    @DisplayName("결제 승인 실패 - 금액 불일치")
+    void confirm_shouldThrowException_whenAmountMismatch() throws Exception {
+        // Given: 금액이 다른 응답을 반환하는 Mock 설정
+        doNothing().when(logMapper).insert(any());
+        doNothing().when(logMapper).updateResponse(any());
+
+        String mockResponse = """
+                {
+                    "resultCode": "0000",
+                    "resultMsg": "결제 성공",
+                    "tid": "INIpayTest_20251017_123456",
+                    "TotPrice": 5000,
+                    "applNum": "12345678"
+                }
+                """;
+        when(webClientUtil.postFormUrlEncoded(anyString(), anyMap())).thenReturn(mockResponse);
+
+        // When & Then: PaymentException 발생
+        PaymentException exception = assertThrows(PaymentException.class, () -> {
+            inicisAdapter.confirm(confirmRequest);
+        });
+
+        // Then: 예외 메시지 검증
+        assertThat(exception.getPgErrorCode()).isEqualTo("AMOUNT_MISMATCH");
+    }
+
+    @Test
     @DisplayName("결제 취소 시 금액 불일치 시 예외 발생")
     void cancel_shouldThrowException_whenAmountMismatch() throws Exception {
         // Given: 금액이 불일치하는 결제 취소 요청
-        when(objectMapper.writeValueAsString(any())).thenReturn("{}");
         doNothing().when(logMapper).insert(any());
         doNothing().when(logMapper).updateResponse(any());
 

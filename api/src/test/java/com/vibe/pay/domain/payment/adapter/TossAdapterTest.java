@@ -55,7 +55,7 @@ class TossAdapterTest {
         initiateRequest.setMemberId(3L);
         initiateRequest.setAmount(BigDecimal.valueOf(20000));
         initiateRequest.setProductName("토스 테스트 상품");
-        initiateRequest.setPaymentMethod(PaymentMethod.CARD);
+        initiateRequest.setPaymentMethod(PaymentMethod.CREDIT_CARD);
         initiateRequest.setPgCompany(PgCompany.TOSS);
         initiateRequest.setBuyerName("이토스");
         initiateRequest.setBuyerEmail("toss@example.com");
@@ -67,7 +67,7 @@ class TossAdapterTest {
         confirmRequest.setOrderId("ORDER_TEST_003");
         confirmRequest.setMemberId(3L);
         confirmRequest.setAmount(BigDecimal.valueOf(20000));
-        confirmRequest.setPaymentMethod(PaymentMethod.CARD);
+        confirmRequest.setPaymentMethod(PaymentMethod.CREDIT_CARD);
         confirmRequest.setPgCompany(PgCompany.TOSS);
         confirmRequest.setPgTransactionId("TOSS_TXN_003");
 
