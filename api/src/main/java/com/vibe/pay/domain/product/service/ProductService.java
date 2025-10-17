@@ -36,7 +36,11 @@ public class ProductService {
     public Product createProduct(ProductRequest request) {
         log.info("Creating new product: name={}", request.getName());
 
+        // 시퀀스에서 ID 생성
+        Long productId = productMapper.getNextProductSequence();
+
         Product product = new Product();
+        product.setProductId(productId);
         product.setName(request.getName());
         product.setPrice(request.getPrice());
 

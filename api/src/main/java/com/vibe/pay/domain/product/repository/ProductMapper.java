@@ -7,6 +7,7 @@ import java.util.Optional;
 
 @Mapper
 public interface ProductMapper {
+    Long getNextProductSequence();
     void insert(Product product);
     Optional<Product> findByProductId(Long productId);
     List<Product> findAll();

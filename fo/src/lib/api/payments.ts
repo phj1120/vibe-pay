@@ -1,6 +1,14 @@
 import apiClient from './client';
 import { ApiResponse, PageRequest, PageResponse } from '@/types/api';
-import { Payment, PaymentRequest, PaymentResponse, RefundRequest } from '@/types/payment';
+import {
+  Payment,
+  PaymentRequest,
+  PaymentResponse,
+  RefundRequest,
+  PaymentInitiateRequest,
+  PaymentInitResponse,
+  PaymentConfirmRequest
+} from '@/types/payment';
 
 // 결제 목록 조회
 export const getPayments = async (params?: PageRequest): Promise<PageResponse<Payment>> => {
@@ -58,6 +66,28 @@ export const cancelPayment = async (paymentId: string, reason?: string): Promise
   const response = await apiClient.post<ApiResponse<PaymentResponse>>(
     `/payments/${paymentId}/cancel`,
     { reason }
+  );
+  return response.data.data;
+};
+
+// 결제 초기화 (PG 결제창 파라미터 받기)
+export const initiatePayment = async (
+  request: PaymentInitiateRequest
+): Promise<PaymentInitResponse> => {
+  const response = await apiClient.post<ApiResponse<PaymentInitResponse>>(
+    '/api/payments/initiate',
+    request
+  );
+  return response.data.data;
+};
+
+// 결제 승인 (PG 리다이렉트 후 최종 승인)
+export const confirmPaymentWithPG = async (
+  request: PaymentConfirmRequest
+): Promise<PaymentResponse> => {
+  const response = await apiClient.post<ApiResponse<PaymentResponse>>(
+    '/api/payments/confirm',
+    request
   );
   return response.data.data;
 };

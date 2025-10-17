@@ -676,3 +676,63 @@ com.vibe.pay.common.exception.PaymentException: PG사 거래가 실패했습니�
 	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72)
 	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69)
 	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74)
+2025-10-17 12:18:55.046 [restartedMain] INFO  com.api.ApiApplication - Starting ApiApplication using Java 17.0.6 with PID 64689 (/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/classes/java/main started by parkh in /Users/parkh/Dev/git/Project/vibe-pay-claude/api)
+2025-10-17 12:18:55.048 [restartedMain] INFO  com.api.ApiApplication - The following 1 profile is active: "local"
+2025-10-17 12:18:55.066 [restartedMain] INFO  o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2025-10-17 12:18:55.066 [restartedMain] INFO  o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2025-10-17 12:18:55.476 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Identified candidate component class: file [/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/classes/java/main/com/vibe/pay/domain/member/repository/MemberMapper.class]
+2025-10-17 12:18:55.476 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Identified candidate component class: file [/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/classes/java/main/com/vibe/pay/domain/order/repository/OrderItemMapper.class]
+2025-10-17 12:18:55.476 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Identified candidate component class: file [/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/classes/java/main/com/vibe/pay/domain/order/repository/OrderMapper.class]
+2025-10-17 12:18:55.476 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Identified candidate component class: file [/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/classes/java/main/com/vibe/pay/domain/payment/repository/PaymentInterfaceRequestLogMapper.class]
+2025-10-17 12:18:55.477 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Identified candidate component class: file [/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/classes/java/main/com/vibe/pay/domain/payment/repository/PaymentMapper.class]
+2025-10-17 12:18:55.477 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Identified candidate component class: file [/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/classes/java/main/com/vibe/pay/domain/pointhistory/repository/PointHistoryMapper.class]
+2025-10-17 12:18:55.477 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Identified candidate component class: file [/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/classes/java/main/com/vibe/pay/domain/product/repository/ProductMapper.class]
+2025-10-17 12:18:55.477 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Identified candidate component class: file [/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/classes/java/main/com/vibe/pay/domain/rewardpoints/repository/RewardPointsMapper.class]
+2025-10-17 12:18:55.477 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Creating MapperFactoryBean with name 'memberMapper' and 'com.vibe.pay.domain.member.repository.MemberMapper' mapperInterface
+2025-10-17 12:18:55.478 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Creating MapperFactoryBean with name 'orderItemMapper' and 'com.vibe.pay.domain.order.repository.OrderItemMapper' mapperInterface
+2025-10-17 12:18:55.478 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Creating MapperFactoryBean with name 'orderMapper' and 'com.vibe.pay.domain.order.repository.OrderMapper' mapperInterface
+2025-10-17 12:18:55.478 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Creating MapperFactoryBean with name 'paymentInterfaceRequestLogMapper' and 'com.vibe.pay.domain.payment.repository.PaymentInterfaceRequestLogMapper' mapperInterface
+2025-10-17 12:18:55.478 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Creating MapperFactoryBean with name 'paymentMapper' and 'com.vibe.pay.domain.payment.repository.PaymentMapper' mapperInterface
+2025-10-17 12:18:55.479 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Creating MapperFactoryBean with name 'pointHistoryMapper' and 'com.vibe.pay.domain.pointhistory.repository.PointHistoryMapper' mapperInterface
+2025-10-17 12:18:55.479 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Creating MapperFactoryBean with name 'productMapper' and 'com.vibe.pay.domain.product.repository.ProductMapper' mapperInterface
+2025-10-17 12:18:55.479 [restartedMain] DEBUG o.m.s.mapper.ClassPathMapperScanner - Creating MapperFactoryBean with name 'rewardPointsMapper' and 'com.vibe.pay.domain.rewardpoints.repository.RewardPointsMapper' mapperInterface
+2025-10-17 12:18:55.662 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2025-10-17 12:18:55.669 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-10-17 12:18:55.669 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.46]
+2025-10-17 12:18:55.694 [restartedMain] INFO  o.a.c.c.C.[.[localhost].[/api] - Initializing Spring embedded WebApplicationContext
+2025-10-17 12:18:55.694 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 627 ms
+2025-10-17 12:18:55.844 [restartedMain] DEBUG o.m.spring.SqlSessionFactoryBean - Parsed mapper file: 'file [/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/resources/main/mapper/MemberMapper.xml]'
+2025-10-17 12:18:55.850 [restartedMain] DEBUG o.m.spring.SqlSessionFactoryBean - Parsed mapper file: 'file [/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/resources/main/mapper/PaymentInterfaceRequestLogMapper.xml]'
+2025-10-17 12:18:55.859 [restartedMain] DEBUG o.m.spring.SqlSessionFactoryBean - Parsed mapper file: 'file [/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/resources/main/mapper/PaymentMapper.xml]'
+2025-10-17 12:18:55.864 [restartedMain] DEBUG o.m.spring.SqlSessionFactoryBean - Parsed mapper file: 'file [/Users/parkh/Dev/git/Project/vibe-pay-claude/api/build/resources/main/mapper/ProductMapper.xml]'
+2025-10-17 12:18:56.023 [restartedMain] DEBUG o.s.w.s.m.m.a.RequestMappingHandlerMapping - 31 mappings in 'requestMappingHandlerMapping'
+2025-10-17 12:18:56.043 [restartedMain] DEBUG o.s.w.s.h.SimpleUrlHandlerMapping - Patterns [/webjars/**, /**, /swagger-ui*/*swagger-initializer.js, /swagger-ui*/**] in 'resourceHandlerMapping'
+2025-10-17 12:18:56.052 [restartedMain] WARN  o.s.b.a.s.s.UserDetailsServiceAutoConfiguration - 
+
+Using generated security password: bfd52c76-aa29-40b6-936a-a5f8aadc0bab
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2025-10-17 12:18:56.055 [restartedMain] INFO  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2025-10-17 12:18:56.112 [restartedMain] INFO  o.s.v.b.OptionalValidatorFactoryBean - Failed to set up a Bean Validation provider: jakarta.validation.NoProviderFoundException: Unable to create a Configuration, because no Jakarta Bean Validation provider could be found. Add a provider like Hibernate Validator (RI) to your classpath.
+2025-10-17 12:18:56.122 [restartedMain] DEBUG o.s.w.s.m.m.a.RequestMappingHandlerAdapter - ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 1 ResponseBodyAdvice
+2025-10-17 12:18:56.145 [restartedMain] DEBUG o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - ControllerAdvice beans: 2 @ExceptionHandler, 1 ResponseBodyAdvice
+2025-10-17 12:18:56.217 [restartedMain] WARN  o.s.b.d.a.OptionalLiveReloadServer - Unable to start LiveReload server
+2025-10-17 12:18:56.230 [restartedMain] WARN  o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.context.ApplicationContextException: Failed to start bean 'webServerStartStop'
+2025-10-17 12:18:56.241 [restartedMain] INFO  o.s.b.a.l.ConditionEvaluationReportLogger - 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2025-10-17 12:18:56.249 [restartedMain] ERROR o.s.b.d.LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Web server failed to start. Port 8080 was already in use.
+
+Action:
+
+Identify and stop the process that's listening on port 8080 or configure this application to listen on another port.
+

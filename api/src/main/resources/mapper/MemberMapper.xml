@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.vibe.pay.domain.member.repository.MemberMapper">
+
+    <!-- Result Map -->
+    <resultMap id="MemberResultMap" type="Member">
+        <id property="memberId" column="member_id"/>
+        <result property="name" column="name"/>
+        <result property="shippingAddress" column="shipping_address"/>
+        <result property="phoneNumber" column="phone"/>
+        <result property="email" column="email"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <!-- Get Next Member Sequence -->
+    <select id="getNextMemberSequence" resultType="Long">
+        SELECT nextval('member_seq')
+    </select>
+
+    <!-- Insert -->
+    <insert id="insert" parameterType="Member">
+        INSERT INTO member (
+            member_id,
+            name,
+            shipping_address,
+            phone,
+            email,
+            created_at
+        ) VALUES (
+            #{memberId},
+            #{name},
+            #{shippingAddress},
+            #{phoneNumber},
+            #{email},
+            NOW()
+        )
+    </insert>
+
+    <!-- Find by Member ID -->
+    <select id="findByMemberId" resultMap="MemberResultMap">
+        SELECT
+            member_id,
+            name,
+            shipping_address,
+            phone,
+            email,
+            created_at
+        FROM member
+        WHERE member_id = #{memberId}
+    </select>
+
+    <!-- Find All -->
+    <select id="findAll" resultMap="MemberResultMap">
+        SELECT
+            member_id,
+            name,
+            shipping_address,
+            phone,
+            email,
+            created_at
+        FROM member
+        ORDER BY member_id ASC
+    </select>
+
+    <!-- Update -->
+    <update id="update" parameterType="Member">
+        UPDATE member
+        SET
+            name = #{name},
+            shipping_address = #{shippingAddress},
+            phone = #{phoneNumber},
+            email = #{email}
+        WHERE member_id = #{memberId}
+    </update>
+
+    <!-- Delete -->
+    <delete id="delete">
+        DELETE FROM member
+        WHERE member_id = #{memberId}
+    </delete>
+
+</mapper>

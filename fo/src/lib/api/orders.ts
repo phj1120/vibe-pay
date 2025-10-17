@@ -2,6 +2,12 @@ import apiClient from './client';
 import { ApiResponse, PageRequest, PageResponse } from '@/types/api';
 import { Order, OrderItem, CreateOrderRequest, CancelOrderRequest } from '@/types/order';
 
+// 주문 번호 채번
+export const generateOrderNumber = async (): Promise<string> => {
+  const response = await apiClient.get<ApiResponse<string>>('/api/orders/generateOrderNumber');
+  return response.data.data;
+};
+
 // 주문 목록 조회
 export const getOrders = async (params?: PageRequest): Promise<PageResponse<Order>> => {
   const response = await apiClient.get<ApiResponse<PageResponse<Order>>>('/orders', { params });

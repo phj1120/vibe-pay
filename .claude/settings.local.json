@@ -7,7 +7,11 @@
       "Bash(./gradlew compileJava:*)",
       "mcp__jetbrains__get_project_vcs_status",
       "mcp__jetbrains__search_in_files_by_text",
-      "Bash(./gradlew test:*)"
+      "Bash(./gradlew test:*)",
+      "Bash(./gradlew bootRun:*)",
+      "Bash(curl:*)",
+      "mcp__jetbrains__find_files_by_name_keyword",
+      "Bash(PGPASSWORD=vibepay_password psql:*)"
     ],
     "deny": [],
     "ask": []

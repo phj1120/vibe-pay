@@ -6,8 +6,20 @@ import { Product, CreateProductRequest, UpdateProductRequest, ProductSearchCondi
 export const getProducts = async (
   params?: PageRequest & ProductSearchCondition
 ): Promise<PageResponse<Product>> => {
-  const response = await apiClient.get<ApiResponse<PageResponse<Product>>>('/products', { params });
-  return response.data.data;
+  const response = await apiClient.get<Product[]>('/products', { params });
+
+  // API가 배열을 직접 반환하므로 PageResponse 형태로 변환
+  const products = response.data;
+  return {
+    content: products,
+    totalElements: products.length,
+    totalPages: 1,
+    number: 0,
+    size: products.length,
+    first: true,
+    last: true,
+    empty: products.length === 0
+  };
 };
 
 // 상품 상세 조회

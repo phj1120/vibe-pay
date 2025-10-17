@@ -56,3 +56,40 @@ export interface RefundRequest {
   amount: number;
   reason?: string;
 }
+
+// 결제 초기화 요청 타입
+export interface PaymentInitiateRequest {
+  memberId: number;
+  amount: number;
+  paymentMethod: string;
+  pgCompany: string;
+  orderId: string;
+  productName: string;
+  buyerName: string;
+  buyerPhone: string;
+  buyerEmail: string;
+  returnUrl?: string;
+  cancelUrl?: string;
+}
+
+// 결제 초기화 응답 타입
+export interface PaymentInitResponse {
+  success: boolean;
+  paymentUrl: string;
+  parameters: Record<string, string>;
+  message?: string;
+  errorCode?: string;
+}
+
+// 결제 승인 요청 타입 (PG로부터 받은 데이터)
+export interface PaymentConfirmRequest {
+  orderId: string;
+  authToken: string;
+  authUrl: string;
+  mid?: string;
+  amount: number;
+  memberId: number;
+  paymentMethod: string;
+  pgCompany: string;
+  netCancelUrl?: string;
+}

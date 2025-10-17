@@ -41,7 +41,11 @@ public class MemberService {
     public Member createMember(MemberRequest request) {
         log.info("Creating new member: name={}", request.getName());
 
+        // 시퀀스에서 ID 생성
+        Long memberId = memberMapper.getNextMemberSequence();
+
         Member member = new Member();
+        member.setMemberId(memberId);
         member.setName(request.getName());
         member.setShippingAddress(request.getShippingAddress());
         member.setPhoneNumber(request.getPhoneNumber());

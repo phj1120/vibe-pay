@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/point-history")
+@RequestMapping("/point-history")
 @RequiredArgsConstructor
 public class PointHistoryController {
 

@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.vibe.pay.domain.order.repository.OrderMapper">
+
+    <!-- Result Map -->
+    <resultMap id="OrderResultMap" type="Order">
+        <id property="orderId" column="order_id"/>
+        <id property="ordSeq" column="ord_seq"/>
+        <id property="ordProcSeq" column="ord_proc_seq"/>
+        <result property="claimId" column="claim_id"/>
+        <result property="memberId" column="member_id"/>
+        <result property="orderDate" column="order_date"/>
+        <result property="totalAmount" column="total_amount"/>
+        <result property="status" column="status" typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+    </resultMap>
+
+    <!-- Get Next Order Sequence -->
+    <select id="getNextOrderSequence" resultType="Long">
+        SELECT nextval('order_seq')
+    </select>
+
+    <!-- Get Next Claim Sequence -->
+    <select id="getNextClaimSequence" resultType="Long">
+        SELECT nextval('claim_seq')
+    </select>
+
+    <!-- Insert -->
+    <insert id="insert" parameterType="Order">
+        INSERT INTO orders (
+            order_id,
+            ord_seq,
+            ord_proc_seq,
+            claim_id,
+            member_id,
+            order_date,
+            total_amount,
+            status,
+            created_at
+        ) VALUES (
+            #{orderId},
+            #{ordSeq},
+            #{ordProcSeq},
+            #{claimId},
+            #{memberId},
+            #{orderDate},
+            #{totalAmount},
+            #{status, typeHandler=org.apache.ibatis.type.EnumTypeHandler},
+            NOW()
+        )
+    </insert>
+
+    <!-- Find by Order ID -->
+    <select id="findByOrderId" resultMap="OrderResultMap">
+        SELECT
+            order_id,
+            ord_seq,
+            ord_proc_seq,
+            claim_id,
+            member_id,
+            order_date,
+            total_amount,
+            status
+        FROM orders
+        WHERE order_id = #{orderId}
+        ORDER BY ord_seq ASC, ord_proc_seq ASC
+    </select>
+
+    <!-- Find by Member ID -->
+    <select id="findByMemberId" resultMap="OrderResultMap">
+        SELECT
+            order_id,
+            ord_seq,
+            ord_proc_seq,
+            claim_id,
+            member_id,
+            order_date,
+            total_amount,
+            status
+        FROM orders
+        WHERE member_id = #{memberId}
+        ORDER BY order_date DESC, ord_seq ASC, ord_proc_seq ASC
+    </select>
+
+    <!-- Find by Order ID and Order Process Sequence -->
+    <select id="findByOrderIdAndOrdProcSeq" resultMap="OrderResultMap">
+        SELECT
+            order_id,
+            ord_seq,
+            ord_proc_seq,
+            claim_id,
+            member_id,
+            order_date,
+            total_amount,
+            status
+        FROM orders
+        WHERE order_id = #{orderId}
+          AND ord_proc_seq = #{ordProcSeq}
+        ORDER BY ord_seq ASC
+    </select>
+
+    <!-- Get Order Details with Payments by Member ID -->
+    <select id="getOrderDetailsWithPaymentsByMemberId" resultMap="OrderResultMap">
+        SELECT DISTINCT
+            o.order_id,
+            o.ord_seq,
+            o.ord_proc_seq,
+            o.claim_id,
+            o.member_id,
+            o.order_date,
+            o.total_amount,
+            o.status
+        FROM orders o
+        LEFT JOIN payment p ON o.order_id = p.order_id
+        WHERE o.member_id = #{memberId}
+        ORDER BY o.order_date DESC, o.ord_seq ASC, o.ord_proc_seq ASC
+    </select>
+
+    <!-- Find All -->
+    <select id="findAll" resultMap="OrderResultMap">
+        SELECT
+            order_id,
+            ord_seq,
+            ord_proc_seq,
+            claim_id,
+            member_id,
+            order_date,
+            total_amount,
+            status
+        FROM orders
+        ORDER BY order_date DESC, ord_seq ASC, ord_proc_seq ASC
+    </select>
+
+    <!-- Update -->
+    <update id="update" parameterType="Order">
+        UPDATE orders
+        SET
+            claim_id = #{claimId},
+            total_amount = #{totalAmount},
+            status = #{status, typeHandler=org.apache.ibatis.type.EnumTypeHandler}
+        WHERE order_id = #{orderId}
+          AND ord_seq = #{ordSeq}
+          AND ord_proc_seq = #{ordProcSeq}
+    </update>
+
+    <!-- Delete -->
+    <delete id="delete">
+        DELETE FROM orders
+        WHERE order_id = #{orderId}
+          AND ord_seq = #{ordSeq}
+          AND ord_proc_seq = #{ordProcSeq}
+    </delete>
+
+</mapper>

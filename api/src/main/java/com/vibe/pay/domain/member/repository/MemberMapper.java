@@ -7,6 +7,7 @@ import java.util.Optional;
 
 @Mapper
 public interface MemberMapper {
+    Long getNextMemberSequence();
     void insert(Member member);
     Optional<Member> findByMemberId(Long memberId);
     List<Member> findAll();
