@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.vibe.pay.backend.order.OrderMapper">
+
+    <resultMap id="OrderResultMap" type="com.vibe.pay.backend.order.Order">
+        <id property="orderId" column="ORDER_ID"/>
+        <result property="ordSeq" column="ORD_SEQ"/>
+        <result property="ordProcSeq" column="ORD_PROC_SEQ"/>
+        <result property="claimId" column="CLAIM_ID"/>
+        <result property="memberId" column="MEMBER_ID"/>
+        <result property="orderDate" column="ORDER_DATE"/>
+        <result property="totalAmount" column="TOTAL_AMOUNT"/>
+        <result property="status" column="STATUS"/>
+    </resultMap>
+
+    <insert id="insert">
+        /* OrderMapper.insert */
+        INSERT INTO ORDERS (
+               ORDER_ID
+             , ORD_SEQ
+             , ORD_PROC_SEQ
+             , CLAIM_ID
+             , MEMBER_ID
+             , ORDER_DATE
+             , TOTAL_AMOUNT
+             , STATUS
+        )
+        VALUES (
+               #{orderId}
+             , #{ordSeq}
+             , #{ordProcSeq}
+             , #{claimId}
+             , #{memberId}
+             , #{orderDate}
+             , #{totalAmount}
+             , #{status}
+        )
+    </insert>
+
+    <select id="selectByOrderId" resultMap="OrderResultMap">
+        SELECT /* OrderMapper.selectByOrderId */
+               ORDER_ID
+             , ORD_SEQ
+             , ORD_PROC_SEQ
+             , CLAIM_ID
+             , MEMBER_ID
+             , ORDER_DATE
+             , TOTAL_AMOUNT
+             , STATUS
+          FROM ORDERS
+         WHERE ORDER_ID = #{orderId}
+         ORDER BY ORD_SEQ, ORD_PROC_SEQ
+    </select>
+
+    <select id="selectByMemberId" resultMap="OrderResultMap">
+        SELECT /* OrderMapper.selectByMemberId */
+               ORDER_ID
+             , ORD_SEQ
+             , ORD_PROC_SEQ
+             , CLAIM_ID
+             , MEMBER_ID
+             , ORDER_DATE
+             , TOTAL_AMOUNT
+             , STATUS
+          FROM ORDERS
+         WHERE MEMBER_ID = #{memberId}
+         ORDER BY ORDER_DATE DESC
+    </select>
+
+    <select id="selectAll" resultMap="OrderResultMap">
+        SELECT /* OrderMapper.selectAll */
+               ORDER_ID
+             , ORD_SEQ
+             , ORD_PROC_SEQ
+             , CLAIM_ID
+             , MEMBER_ID
+             , ORDER_DATE
+             , TOTAL_AMOUNT
+             , STATUS
+          FROM ORDERS
+         ORDER BY ORDER_DATE DESC
+    </select>
+
+    <update id="update">
+        /* OrderMapper.update */
+        UPDATE ORDERS
+           SET STATUS = #{status}
+             , TOTAL_AMOUNT = #{totalAmount}
+         WHERE ORDER_ID = #{orderId}
+           AND ORD_SEQ = #{ordSeq}
+           AND ORD_PROC_SEQ = #{ordProcSeq}
+    </update>
+
+    <delete id="delete">
+        /* OrderMapper.delete */
+        DELETE
+          FROM ORDERS
+         WHERE ORDER_ID = #{orderId}
+    </delete>
+
+    <select id="getNextOrderSequence" resultType="long">
+        /* OrderMapper.getNextOrderSequence */
+        SELECT NEXTVAL('ORDER_ID_SEQ')
+    </select>
+
+    <select id="getNextClaimSequence" resultType="long">
+        /* OrderMapper.getNextClaimSequence */
+        SELECT NEXTVAL('CLAIM_ID_SEQ')
+    </select>
+
+</mapper>

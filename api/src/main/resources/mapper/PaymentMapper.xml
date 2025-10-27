@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.vibe.pay.backend.payment.PaymentMapper">
+
+    <resultMap id="PaymentResultMap" type="com.vibe.pay.backend.payment.Payment">
+        <id property="paymentId" column="PAYMENT_ID"/>
+        <result property="memberId" column="MEMBER_ID"/>
+        <result property="orderId" column="ORDER_ID"/>
+        <result property="claimId" column="CLAIM_ID"/>
+        <result property="amount" column="AMOUNT"/>
+        <result property="paymentMethod" column="PAYMENT_METHOD"/>
+        <result property="payType" column="PAY_TYPE"/>
+        <result property="pgCompany" column="PG_COMPANY"/>
+        <result property="status" column="STATUS"/>
+        <result property="orderStatus" column="ORDER_STATUS"/>
+        <result property="transactionId" column="TRANSACTION_ID"/>
+        <result property="paymentDate" column="PAYMENT_DATE"/>
+    </resultMap>
+
+    <insert id="insert">
+        /* PaymentMapper.insert */
+        INSERT INTO PAYMENT (
+               PAYMENT_ID
+             , MEMBER_ID
+             , ORDER_ID
+             , CLAIM_ID
+             , AMOUNT
+             , PAYMENT_METHOD
+             , PAY_TYPE
+             , PG_COMPANY
+             , STATUS
+             , ORDER_STATUS
+             , TRANSACTION_ID
+             , PAYMENT_DATE
+        )
+        VALUES (
+               #{paymentId}
+             , #{memberId}
+             , #{orderId}
+             , #{claimId}
+             , #{amount}
+             , #{paymentMethod}
+             , #{payType}
+             , #{pgCompany}
+             , #{status}
+             , #{orderStatus}
+             , #{transactionId}
+             , #{paymentDate}
+        )
+    </insert>
+
+    <select id="selectByPaymentId" resultMap="PaymentResultMap">
+        SELECT /* PaymentMapper.selectByPaymentId */
+               PAYMENT_ID
+             , MEMBER_ID
+             , ORDER_ID
+             , CLAIM_ID
+             , AMOUNT
+             , PAYMENT_METHOD
+             , PAY_TYPE
+             , PG_COMPANY
+             , STATUS
+             , ORDER_STATUS
+             , TRANSACTION_ID
+             , PAYMENT_DATE
+          FROM PAYMENT
+         WHERE PAYMENT_ID = #{paymentId}
+    </select>
+
+    <select id="selectByOrderId" resultMap="PaymentResultMap">
+        SELECT /* PaymentMapper.selectByOrderId */
+               PAYMENT_ID
+             , MEMBER_ID
+             , ORDER_ID
+             , CLAIM_ID
+             , AMOUNT
+             , PAYMENT_METHOD
+             , PAY_TYPE
+             , PG_COMPANY
+             , STATUS
+             , ORDER_STATUS
+             , TRANSACTION_ID
+             , PAYMENT_DATE
+          FROM PAYMENT
+         WHERE ORDER_ID = #{orderId}
+         ORDER BY PAYMENT_DATE
+    </select>
+
+    <select id="selectAll" resultMap="PaymentResultMap">
+        SELECT /* PaymentMapper.selectAll */
+               PAYMENT_ID
+             , MEMBER_ID
+             , ORDER_ID
+             , CLAIM_ID
+             , AMOUNT
+             , PAYMENT_METHOD
+             , PAY_TYPE
+             , PG_COMPANY
+             , STATUS
+             , ORDER_STATUS
+             , TRANSACTION_ID
+             , PAYMENT_DATE
+          FROM PAYMENT
+         ORDER BY PAYMENT_DATE DESC
+    </select>
+
+    <update id="update">
+        /* PaymentMapper.update */
+        UPDATE PAYMENT
+           SET STATUS = #{status}
+             , ORDER_STATUS = #{orderStatus}
+             , TRANSACTION_ID = #{transactionId}
+         WHERE PAYMENT_ID = #{paymentId}
+           AND PAYMENT_METHOD = #{paymentMethod}
+           AND ORDER_ID = #{orderId}
+           AND PAY_TYPE = #{payType}
+    </update>
+
+    <delete id="delete">
+        /* PaymentMapper.delete */
+        DELETE
+          FROM PAYMENT
+         WHERE PAYMENT_ID = #{paymentId}
+           AND PAYMENT_METHOD = #{paymentMethod}
+           AND ORDER_ID = #{orderId}
+           AND PAY_TYPE = #{payType}
+    </delete>
+
+    <select id="getNextPaymentSequence" resultType="long">
+        /* PaymentMapper.getNextPaymentSequence */
+        SELECT NEXTVAL('PAYMENT_ID_SEQ')
+    </select>
+
+</mapper>

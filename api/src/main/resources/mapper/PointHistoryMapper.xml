@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.vibe.pay.backend.pointhistory.PointHistoryMapper">
+
+    <resultMap id="PointHistoryResultMap" type="com.vibe.pay.backend.pointhistory.PointHistory">
+        <id property="pointHistoryId" column="POINT_HISTORY_ID"/>
+        <result property="memberId" column="MEMBER_ID"/>
+        <result property="pointAmount" column="POINT_AMOUNT"/>
+        <result property="balanceAfter" column="BALANCE_AFTER"/>
+        <result property="transactionType" column="TRANSACTION_TYPE"/>
+        <result property="referenceType" column="REFERENCE_TYPE"/>
+        <result property="referenceId" column="REFERENCE_ID"/>
+        <result property="description" column="DESCRIPTION"/>
+        <result property="createdAt" column="CREATED_AT"/>
+    </resultMap>
+
+    <insert id="insert">
+        /* PointHistoryMapper.insert */
+        INSERT INTO POINT_HISTORY (
+               POINT_HISTORY_ID
+             , MEMBER_ID
+             , POINT_AMOUNT
+             , BALANCE_AFTER
+             , TRANSACTION_TYPE
+             , REFERENCE_TYPE
+             , REFERENCE_ID
+             , DESCRIPTION
+             , CREATED_AT
+        )
+        VALUES (
+               NEXTVAL('POINT_HISTORY_ID_SEQ')
+             , #{memberId}
+             , #{pointAmount}
+             , #{balanceAfter}
+             , #{transactionType}
+             , #{referenceType}
+             , #{referenceId}
+             , #{description}
+             , NOW()
+        )
+    </insert>
+
+    <select id="selectById" resultMap="PointHistoryResultMap">
+        SELECT /* PointHistoryMapper.selectById */
+               POINT_HISTORY_ID
+             , MEMBER_ID
+             , POINT_AMOUNT
+             , BALANCE_AFTER
+             , TRANSACTION_TYPE
+             , REFERENCE_TYPE
+             , REFERENCE_ID
+             , DESCRIPTION
+             , CREATED_AT
+          FROM POINT_HISTORY
+         WHERE POINT_HISTORY_ID = #{pointHistoryId}
+    </select>
+
+    <select id="selectByMemberId" resultMap="PointHistoryResultMap">
+        SELECT /* PointHistoryMapper.selectByMemberId */
+               POINT_HISTORY_ID
+             , MEMBER_ID
+             , POINT_AMOUNT
+             , BALANCE_AFTER
+             , TRANSACTION_TYPE
+             , REFERENCE_TYPE
+             , REFERENCE_ID
+             , DESCRIPTION
+             , CREATED_AT
+          FROM POINT_HISTORY
+         WHERE MEMBER_ID = #{memberId}
+         ORDER BY CREATED_AT DESC
+    </select>
+
+    <select id="selectAll" resultMap="PointHistoryResultMap">
+        SELECT /* PointHistoryMapper.selectAll */
+               POINT_HISTORY_ID
+             , MEMBER_ID
+             , POINT_AMOUNT
+             , BALANCE_AFTER
+             , TRANSACTION_TYPE
+             , REFERENCE_TYPE
+             , REFERENCE_ID
+             , DESCRIPTION
+             , CREATED_AT
+          FROM POINT_HISTORY
+         ORDER BY CREATED_AT DESC
+    </select>
+
+    <delete id="delete">
+        /* PointHistoryMapper.delete */
+        DELETE
+          FROM POINT_HISTORY
+         WHERE POINT_HISTORY_ID = #{pointHistoryId}
+    </delete>
+
+</mapper>

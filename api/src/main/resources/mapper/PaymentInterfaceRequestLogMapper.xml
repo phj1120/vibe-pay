@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.vibe.pay.backend.paymentlog.PaymentInterfaceRequestLogMapper">
+
+    <resultMap id="PaymentInterfaceRequestLogResultMap" type="com.vibe.pay.backend.paymentlog.PaymentInterfaceRequestLog">
+        <id property="logId" column="LOG_ID"/>
+        <result property="paymentId" column="PAYMENT_ID"/>
+        <result property="requestType" column="REQUEST_TYPE"/>
+        <result property="requestPayload" column="REQUEST_PAYLOAD"/>
+        <result property="responsePayload" column="RESPONSE_PAYLOAD"/>
+        <result property="timestamp" column="TIMESTAMP"/>
+    </resultMap>
+
+    <insert id="insert">
+        /* PaymentInterfaceRequestLogMapper.insert */
+        INSERT INTO PAYMENT_INTERFACE_REQUEST_LOG (
+               LOG_ID
+             , PAYMENT_ID
+             , REQUEST_TYPE
+             , REQUEST_PAYLOAD
+             , RESPONSE_PAYLOAD
+             , TIMESTAMP
+        )
+        VALUES (
+               NEXTVAL('PAYMENT_INTERFACE_REQUEST_LOG_ID_SEQ')
+             , #{paymentId}
+             , #{requestType}
+             , #{requestPayload}
+             , #{responsePayload}
+             , #{timestamp}
+        )
+    </insert>
+
+    <select id="selectById" resultMap="PaymentInterfaceRequestLogResultMap">
+        SELECT /* PaymentInterfaceRequestLogMapper.selectById */
+               LOG_ID
+             , PAYMENT_ID
+             , REQUEST_TYPE
+             , REQUEST_PAYLOAD
+             , RESPONSE_PAYLOAD
+             , TIMESTAMP
+          FROM PAYMENT_INTERFACE_REQUEST_LOG
+         WHERE LOG_ID = #{logId}
+    </select>
+
+    <select id="selectByPaymentId" resultMap="PaymentInterfaceRequestLogResultMap">
+        SELECT /* PaymentInterfaceRequestLogMapper.selectByPaymentId */
+               LOG_ID
+             , PAYMENT_ID
+             , REQUEST_TYPE
+             , REQUEST_PAYLOAD
+             , RESPONSE_PAYLOAD
+             , TIMESTAMP
+          FROM PAYMENT_INTERFACE_REQUEST_LOG
+         WHERE PAYMENT_ID = #{paymentId}
+         ORDER BY TIMESTAMP DESC
+    </select>
+
+    <select id="selectAll" resultMap="PaymentInterfaceRequestLogResultMap">
+        SELECT /* PaymentInterfaceRequestLogMapper.selectAll */
+               LOG_ID
+             , PAYMENT_ID
+             , REQUEST_TYPE
+             , REQUEST_PAYLOAD
+             , RESPONSE_PAYLOAD
+             , TIMESTAMP
+          FROM PAYMENT_INTERFACE_REQUEST_LOG
+         ORDER BY TIMESTAMP DESC
+    </select>
+
+</mapper>

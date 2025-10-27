@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.vibe.pay.backend.rewardpoints.RewardPointsMapper">
+
+    <resultMap id="RewardPointsResultMap" type="com.vibe.pay.backend.rewardpoints.RewardPoints">
+        <id property="rewardPointsId" column="REWARD_POINTS_ID"/>
+        <result property="memberId" column="MEMBER_ID"/>
+        <result property="points" column="POINTS"/>
+        <result property="lastUpdated" column="LAST_UPDATED"/>
+    </resultMap>
+
+    <insert id="insert">
+        /* RewardPointsMapper.insert */
+        INSERT INTO REWARD_POINTS (
+               REWARD_POINTS_ID
+             , MEMBER_ID
+             , POINTS
+             , LAST_UPDATED
+        )
+        VALUES (
+               NEXTVAL('REWARD_POINTS_ID_SEQ')
+             , #{memberId}
+             , #{points}
+             , #{lastUpdated}
+        )
+    </insert>
+
+    <select id="selectById" resultMap="RewardPointsResultMap">
+        SELECT /* RewardPointsMapper.selectById */
+               REWARD_POINTS_ID
+             , MEMBER_ID
+             , POINTS
+             , LAST_UPDATED
+          FROM REWARD_POINTS
+         WHERE REWARD_POINTS_ID = #{rewardPointsId}
+    </select>
+
+    <select id="selectByMemberId" resultMap="RewardPointsResultMap">
+        SELECT /* RewardPointsMapper.selectByMemberId */
+               REWARD_POINTS_ID
+             , MEMBER_ID
+             , POINTS
+             , LAST_UPDATED
+          FROM REWARD_POINTS
+         WHERE MEMBER_ID = #{memberId}
+    </select>
+
+    <select id="selectAll" resultMap="RewardPointsResultMap">
+        SELECT /* RewardPointsMapper.selectAll */
+               REWARD_POINTS_ID
+             , MEMBER_ID
+             , POINTS
+             , LAST_UPDATED
+          FROM REWARD_POINTS
+         ORDER BY REWARD_POINTS_ID
+    </select>
+
+    <update id="update">
+        /* RewardPointsMapper.update */
+        UPDATE REWARD_POINTS
+           SET POINTS = #{points}
+             , LAST_UPDATED = #{lastUpdated}
+         WHERE REWARD_POINTS_ID = #{rewardPointsId}
+    </update>
+
+    <delete id="delete">
+        /* RewardPointsMapper.delete */
+        DELETE
+          FROM REWARD_POINTS
+         WHERE REWARD_POINTS_ID = #{rewardPointsId}
+    </delete>
+
+</mapper>

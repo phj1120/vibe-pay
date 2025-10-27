@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.vibe.pay.backend.product.ProductMapper">
+
+    <resultMap id="ProductResultMap" type="com.vibe.pay.backend.product.Product">
+        <id property="productId" column="PRODUCT_ID"/>
+        <result property="name" column="NAME"/>
+        <result property="price" column="PRICE"/>
+    </resultMap>
+
+    <insert id="insert">
+        /* ProductMapper.insert */
+        INSERT INTO PRODUCT (
+               PRODUCT_ID
+             , NAME
+             , PRICE
+        )
+        VALUES (
+               NEXTVAL('PRODUCT_ID_SEQ')
+             , #{name}
+             , #{price}
+        )
+    </insert>
+
+    <select id="selectById" resultMap="ProductResultMap">
+        SELECT /* ProductMapper.selectById */
+               PRODUCT_ID
+             , NAME
+             , PRICE
+          FROM PRODUCT
+         WHERE PRODUCT_ID = #{productId}
+    </select>
+
+    <select id="selectAll" resultMap="ProductResultMap">
+        SELECT /* ProductMapper.selectAll */
+               PRODUCT_ID
+             , NAME
+             , PRICE
+          FROM PRODUCT
+         ORDER BY PRODUCT_ID
+    </select>
+
+    <update id="update">
+        /* ProductMapper.update */
+        UPDATE PRODUCT
+           SET NAME = #{name}
+             , PRICE = #{price}
+         WHERE PRODUCT_ID = #{productId}
+    </update>
+
+    <delete id="delete">
+        /* ProductMapper.delete */
+        DELETE
+          FROM PRODUCT
+         WHERE PRODUCT_ID = #{productId}
+    </delete>
+
+</mapper>

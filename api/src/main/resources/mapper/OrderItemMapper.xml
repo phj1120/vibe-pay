@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.vibe.pay.backend.order.OrderItemMapper">
+
+    <resultMap id="OrderItemResultMap" type="com.vibe.pay.backend.order.OrderItem">
+        <id property="orderItemId" column="ORDER_ITEM_ID"/>
+        <result property="orderId" column="ORDER_ID"/>
+        <result property="ordSeq" column="ORD_SEQ"/>
+        <result property="ordProcSeq" column="ORD_PROC_SEQ"/>
+        <result property="productId" column="PRODUCT_ID"/>
+        <result property="quantity" column="QUANTITY"/>
+        <result property="priceAtOrder" column="PRICE_AT_ORDER"/>
+    </resultMap>
+
+    <insert id="insert">
+        /* OrderItemMapper.insert */
+        INSERT INTO ORDER_ITEM (
+               ORDER_ITEM_ID
+             , ORDER_ID
+             , ORD_SEQ
+             , ORD_PROC_SEQ
+             , PRODUCT_ID
+             , QUANTITY
+             , PRICE_AT_ORDER
+        )
+        VALUES (
+               NEXTVAL('ORDER_ITEM_ID_SEQ')
+             , #{orderId}
+             , #{ordSeq}
+             , #{ordProcSeq}
+             , #{productId}
+             , #{quantity}
+             , #{priceAtOrder}
+        )
+    </insert>
+
+    <select id="selectById" resultMap="OrderItemResultMap">
+        SELECT /* OrderItemMapper.selectById */
+               ORDER_ITEM_ID
+             , ORDER_ID
+             , ORD_SEQ
+             , ORD_PROC_SEQ
+             , PRODUCT_ID
+             , QUANTITY
+             , PRICE_AT_ORDER
+          FROM ORDER_ITEM
+         WHERE ORDER_ITEM_ID = #{orderItemId}
+    </select>
+
+    <select id="selectByOrderId" resultMap="OrderItemResultMap">
+        SELECT /* OrderItemMapper.selectByOrderId */
+               ORDER_ITEM_ID
+             , ORDER_ID
+             , ORD_SEQ
+             , ORD_PROC_SEQ
+             , PRODUCT_ID
+             , QUANTITY
+             , PRICE_AT_ORDER
+          FROM ORDER_ITEM
+         WHERE ORDER_ID = #{orderId}
+         ORDER BY ORD_SEQ
+    </select>
+
+    <select id="selectByOrderIdAndOrdProcSeq" resultMap="OrderItemResultMap">
+        SELECT /* OrderItemMapper.selectByOrderIdAndOrdProcSeq */
+               ORDER_ITEM_ID
+             , ORDER_ID
+             , ORD_SEQ
+             , ORD_PROC_SEQ
+             , PRODUCT_ID
+             , QUANTITY
+             , PRICE_AT_ORDER
+          FROM ORDER_ITEM
+         WHERE ORDER_ID = #{orderId}
+           AND ORD_PROC_SEQ = #{ordProcSeq}
+         ORDER BY ORD_SEQ
+    </select>
+
+    <select id="selectAll" resultMap="OrderItemResultMap">
+        SELECT /* OrderItemMapper.selectAll */
+               ORDER_ITEM_ID
+             , ORDER_ID
+             , ORD_SEQ
+             , ORD_PROC_SEQ
+             , PRODUCT_ID
+             , QUANTITY
+             , PRICE_AT_ORDER
+          FROM ORDER_ITEM
+         ORDER BY ORDER_ITEM_ID
+    </select>
+
+    <update id="update">
+        /* OrderItemMapper.update */
+        UPDATE ORDER_ITEM
+           SET QUANTITY = #{quantity}
+             , PRICE_AT_ORDER = #{priceAtOrder}
+         WHERE ORDER_ITEM_ID = #{orderItemId}
+    </update>
+
+    <delete id="delete">
+        /* OrderItemMapper.delete */
+        DELETE
+          FROM ORDER_ITEM
+         WHERE ORDER_ITEM_ID = #{orderItemId}
+    </delete>
+
+</mapper>
