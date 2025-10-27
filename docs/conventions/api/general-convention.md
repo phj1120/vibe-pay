@@ -23,11 +23,11 @@
 
 각 개발 도구에 내장된 포매터를 사용하여 소스를 포매팅합니다.
 
-| IDE | 포매팅 방법 |
-|-----|-----------|
+| IDE           | 포매팅 방법                       |
+| ------------- | --------------------------------- |
 | IntelliJ IDEA | Code > Reformat Code (Ctrl+Alt+L) |
-| Eclipse | Source > Format (Ctrl+Shift+F) |
-| VS Code | Format Document (Shift+Alt+F) |
+| Eclipse       | Source > Format (Ctrl+Shift+F)    |
+| VS Code       | Format Document (Shift+Alt+F)     |
 
 ---
 
@@ -65,11 +65,11 @@ public class CategoryController {
 - 개발 도구에서 제공하는 기능을 활용하여 import문을 정렬합니다.
 - **static import는 금지되며, 반드시 최종 클래스까지 명시해야 합니다.**
 
-| IDE | Import 정리 방법 |
-|-----|-----------------|
-| IntelliJ IDEA | Code > Optimize Imports |
-| Eclipse | Source > Organize Imports |
-| VS Code | settings.json에 `"source.organizeImports": true` 추가 |
+| IDE           | Import 정리 방법                                      |
+| ------------- | ----------------------------------------------------- |
+| IntelliJ IDEA | Code > Optimize Imports                               |
+| Eclipse       | Source > Organize Imports                             |
+| VS Code       | settings.json에 `"source.organizeImports": true` 추가 |
 
 ❌ **잘못된 예시**:
 
@@ -164,12 +164,12 @@ com.x2bee.<프로젝트>.<레이어>.<도메인>
 
 **프로젝트별 패키지 구조**:
 
-| 프로젝트 | 패키지 예시 |
-|---------|-----------|
-| BO (Back Office) | `com.x2bee.bo.app.controller.category` |
-| API - Display | `com.x2bee.api.display.app.controller.category` |
-| API - Order | `com.x2bee.api.order.app.controller.order` |
-| API - Event | `com.x2bee.api.event.app.controller.event` |
+| 프로젝트         | 패키지 예시                                     |
+| ---------------- | ----------------------------------------------- |
+| BO (Back Office) | `com.x2bee.bo.app.controller.category`          |
+| API - Display    | `com.x2bee.api.display.app.controller.category` |
+| API - Order      | `com.x2bee.api.order.app.controller.order`      |
+| API - Event      | `com.x2bee.api.event.app.controller.event`      |
 
 **레이어별 패키지**:
 
@@ -190,6 +190,7 @@ com.x2bee.api.display.app
 **규칙**: 명사, 대문자로 시작하는 카멜케이스 (PascalCase)
 
 **원칙**:
+
 - 단순하고 이해하기 쉽게 작성
 - 약어가 아닌 전체 단어 사용
 - 적은 단어로 구성
@@ -234,7 +235,8 @@ public void Get_Category() { }     // 언더스코어 사용
 **규칙**: 소문자로 시작하는 카멜케이스 (camelCase)
 
 **금지사항**:
-- 밑줄(_)과 달러기호($)로 시작하는 변수명 금지
+
+- 밑줄(\_)과 달러기호(\$)로 시작하는 변수명 금지
 - 한 글자 변수명은 가급적 사용하지 않음 (단, for 루프의 제어 변수는 예외)
 
 ✅ **좋은 예시**:
@@ -259,7 +261,7 @@ String n;               // 의미 불명확한 한 글자
 
 ### 4.5 상수명
 
-**규칙**: 모두 대문자, 단어 구분은 언더스코어(_)
+**규칙**: 모두 대문자, 단어 구분은 언더스코어(\_)
 
 **정의**: 모든 상수는 `static final` 필드로 처리 (모든 `static final` 필드가 상수는 아님)
 
@@ -277,33 +279,34 @@ public static final long CACHE_TIMEOUT_MS = 60000L;
 
 ### 클래스 네이밍
 
-| 소스 구분 | 명명 규칙 | 예시 |
-|----------|----------|------|
-| Controller | 대상개체명 + Controller | `CategoryController` |
-| Service 인터페이스 | 대상개체명 + Service | `CategoryService` |
-| Service 구현 | 대상개체명 + ServiceImpl | `CategoryServiceImpl` |
-| Mapper (조회) | DB테이블명 + Mapper | `PrDispCtgBaseMapper` |
-| Mapper (등록/수정/삭제) | DB테이블명 + TrxMapper | `PrDispCtgBaseTrxMapper` |
-| Request DTO | 대상개체명 + Request | `CategoryRequest` |
-| Response DTO | 대상개체명 + Response | `CategoryResponse` |
-| Entity | DB테이블명 (카멜케이스) | `PrDispCtgBase` |
+| 소스 구분               | 명명 규칙                | 예시                     |
+| ----------------------- | ------------------------ | ------------------------ |
+| Controller              | 대상개체명 + Controller  | `CategoryController`     |
+| Service 인터페이스      | 대상개체명 + Service     | `CategoryService`        |
+| Service 구현            | 대상개체명 + ServiceImpl | `CategoryServiceImpl`    |
+| Mapper (조회)           | DB테이블명 + Mapper      | `PrDispCtgBaseMapper`    |
+| Mapper (등록/수정/삭제) | DB테이블명 + TrxMapper   | `PrDispCtgBaseTrxMapper` |
+| Request DTO             | 대상개체명 + Request     | `CategoryRequest`        |
+| Response DTO            | 대상개체명 + Response    | `CategoryResponse`       |
+| Entity                  | DB테이블명 (카멜케이스)  | `PrDispCtgBase`          |
 
 ### 메소드 네이밍
 
-| 레이어 | 동작 | 명명 규칙 | 예시 |
-|--------|------|----------|------|
-| **Controller / Service** | 단건 조회 | `get***` | `getCategory()` |
-| | 목록 조회 | `get***List` | `getCategoryList()` |
-| | 등록 | `register***` | `registerCategory()` |
-| | 수정 | `modify***` | `modifyCategory()` |
-| | 삭제 | `delete***` | `deleteCategory()` |
-| | 등록+수정+삭제 | `save***` | `saveCategory()` |
-| **Mapper** | 조회 | `select***` | `selectPrDispCtgBase()` |
-| | 등록 | `insert***` | `insertPrDispCtgBase()` |
-| | 수정 | `update***` | `updatePrDispCtgBase()` |
-| | 삭제 | `delete***` | `deletePrDispCtgBase()` |
+| 레이어                   | 동작           | 명명 규칙     | 예시                    |
+| ------------------------ | -------------- | ------------- | ----------------------- |
+| **Controller / Service** | 단건 조회      | `get***`      | `getCategory()`         |
+|                          | 목록 조회      | `get***List`  | `getCategoryList()`     |
+|                          | 등록           | `register***` | `registerCategory()`    |
+|                          | 수정           | `modify***`   | `modifyCategory()`      |
+|                          | 삭제           | `delete***`   | `deleteCategory()`      |
+|                          | 등록+수정+삭제 | `save***`     | `saveCategory()`        |
+| **Mapper**               | 조회           | `select***`   | `selectPrDispCtgBase()` |
+|                          | 등록           | `insert***`   | `insertPrDispCtgBase()` |
+|                          | 수정           | `update***`   | `updatePrDispCtgBase()` |
+|                          | 삭제           | `delete***`   | `deletePrDispCtgBase()` |
 
 **참고**:
+
 - 대상개체명은 가능한 Full Name을 사용합니다.
 - 기타 명명 규칙은 필요에 따라 추가 작성합니다.
 
@@ -432,13 +435,6 @@ categoryId++;
 - [ ] 클래스 주석 (author, version, since)
 - [ ] 복잡한 로직에 대한 설명 추가
 - [ ] "무엇을"이 아닌 "왜"를 설명
-
----
-
-## 참고
-
-이 문서는 **기본 코딩 규칙**을 다룹니다.
-실제 구현 방법은 **X2BEE API 개발 컨벤션 가이드**를 참조하세요.
 
 ---
 

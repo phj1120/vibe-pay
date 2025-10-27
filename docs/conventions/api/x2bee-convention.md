@@ -1,6 +1,7 @@
 # X2BEE API 개발 컨벤션 가이드
 
 > ⚠️ **주의사항**
+>
 > - 본 문서는 원본 개발 가이드를 기반으로 작성되었습니다.
 > - 일부 내용은 실제 프로젝트 환경에 따라 다를 수 있으므로, 기존 코드를 참고하시기 바랍니다.
 > - 특히 **URI 매핑**, **Response DTO 상속 여부**는 프로젝트별로 확인이 필요합니다.
@@ -106,13 +107,13 @@ public class CategoryController {
 }
 ```
 
-| 어노테이션 | 설명 |
-|-----------|------|
-| `@RestController` | REST 컨트롤러 선언 (@Controller + @ResponseBody) |
-| `@RequestMapping` | 클래스 레벨 URI 매핑 |
-| `@RequiredArgsConstructor` | 생성자 주입 (Lombok) |
-| `@Slf4j` | 로깅을 위한 Lombok 어노테이션 |
-| `@Tag` | Swagger API 그룹 설정 |
+| 어노테이션                 | 설명                                             |
+| -------------------------- | ------------------------------------------------ |
+| `@RestController`          | REST 컨트롤러 선언 (@Controller + @ResponseBody) |
+| `@RequestMapping`          | 클래스 레벨 URI 매핑                             |
+| `@RequiredArgsConstructor` | 생성자 주입 (Lombok)                             |
+| `@Slf4j`                   | 로깅을 위한 Lombok 어노테이션                    |
+| `@Tag`                     | Swagger API 그룹 설정                            |
 
 ### 3.3 메소드 레벨 어노테이션
 
@@ -136,13 +137,13 @@ public Response<List<Category>> getCategoryTreeList(CategoryRequest request) thr
 
 ### 3.4 HTTP 메소드 매핑
 
-| 메소드 | 어노테이션 | 용도 |
-|--------|-----------|------|
-| GET | `@GetMapping` | 조회/검색 |
-| POST | `@PostMapping` | 등록 |
-| PUT | `@PutMapping` | 전체 수정 |
-| PATCH | `@PatchMapping` | 일부 수정 |
-| DELETE | `@DeleteMapping` | 삭제 |
+| 메소드 | 어노테이션       | 용도      |
+| ------ | ---------------- | --------- |
+| GET    | `@GetMapping`    | 조회/검색 |
+| POST   | `@PostMapping`   | 등록      |
+| PUT    | `@PutMapping`    | 전체 수정 |
+| PATCH  | `@PatchMapping`  | 일부 수정 |
+| DELETE | `@DeleteMapping` | 삭제      |
 
 ### 3.5 URI 매핑 규칙
 
@@ -219,7 +220,9 @@ public Response<List<String>> getList() throws Exception {
   "timestamp": "2024-10-14T10:30:00.000",
   "code": "0000",
   "message": "성공",
-  "payload": { /* 실제 데이터 */ }
+  "payload": {
+    /* 실제 데이터 */
+  }
 }
 ```
 
@@ -274,15 +277,16 @@ public class CategoryServiceImpl implements CategoryService {
 
 ### 4.3 서비스 어노테이션
 
-| 어노테이션 | 설명 |
-|-----------|------|
-| `@Service` | 서비스 클래스 선언 |
-| `@Slf4j` | 로깅 (Lombok) |
+| 어노테이션                 | 설명                 |
+| -------------------------- | -------------------- |
+| `@Service`                 | 서비스 클래스 선언   |
+| `@Slf4j`                   | 로깅 (Lombok)        |
 | `@RequiredArgsConstructor` | 생성자 주입 (Lombok) |
 
 ### 4.4 트랜잭션 처리
 
 **원칙**:
+
 - `@Transactional` 어노테이션이 **있는** 경우 → **ReadWrite DB** 연결
 - `@Transactional` 어노테이션이 **없는** 경우 → **ReadOnly DB** 연결
 
@@ -300,6 +304,7 @@ public void save(Category category) {
 ```
 
 **트랜잭션 매니저 종류**:
+
 - `displayRwdbTxManager`
 - `orderRwdbTxManager`
 - `eventRwdbTxManager`
@@ -314,9 +319,9 @@ public void save(Category category) {
 
 **테이블당 2개의 Mapper를 작성합니다.**
 
-| Mapper | SQL 타입 | 데이터소스 |
-|--------|----------|-----------|
-| `***Mapper` | SELECT | ReadOnly |
+| Mapper         | SQL 타입             | 데이터소스 |
+| -------------- | -------------------- | ---------- |
+| `***Mapper`    | SELECT               | ReadOnly   |
 | `***TrxMapper` | INSERT/UPDATE/DELETE | Read/Write |
 
 ⚠️ **중요**: ReadOnly Mapper에 DML 작성 시 오류가 발생합니다.
@@ -344,6 +349,7 @@ public interface CategoryTrxMapper {
 ### 5.3 Mapper XML
 
 **파일 위치**:
+
 - ReadOnly: `src/main/resources/mapper/rodb/<domain>/`
 - Read/Write: `src/main/resources/mapper/rwdb/<domain>/`
 
@@ -406,11 +412,11 @@ src/main/resources/mapper/
 
 ### 6.1 DTO vs Entity
 
-| 구분 | 용도 | 상속 | Alias |
-|------|------|------|-------|
-| **Request DTO** | 조회/검색 요청 파라미터 | BaseCommonEntity 상속 | ✅ |
-| **Response DTO** | 조회/검색 결과 | 상속 여부는 프로젝트 정책에 따름* | ✅ |
-| **Entity** | 등록/수정/삭제 데이터 | BaseCommonEntity 상속 | ✅ |
+| 구분             | 용도                    | 상속                               | Alias |
+| ---------------- | ----------------------- | ---------------------------------- | ----- |
+| **Request DTO**  | 조회/검색 요청 파라미터 | BaseCommonEntity 상속              | ✅    |
+| **Response DTO** | 조회/검색 결과          | 상속 여부는 프로젝트 정책에 따름\* | ✅    |
+| **Entity**       | 등록/수정/삭제 데이터   | BaseCommonEntity 상속              | ✅    |
 
 \* 페이징 정보가 필요하면 상속, 단순 조회만 필요하면 상속 안함
 
@@ -435,6 +441,7 @@ public class CategoryRequest extends BaseCommonEntity {
 ```
 
 **특징**:
+
 - `BaseCommonEntity` 상속 (생성자/수정자/페이징 정보 포함)
 - `@Alias` 사용 (MyBatis 타입 축약)
 - `serialVersionUID` 필수 (UUID 생성)
@@ -464,6 +471,7 @@ public class CategoryResponse {
 ```
 
 **특징**:
+
 - `BaseCommonEntity` 상속 여부는 **프로젝트 정책에 따라 다름**
   - 페이징 정보가 필요한 경우: 상속 O
   - 단순 조회 결과만 필요한 경우: 상속 X
@@ -499,6 +507,7 @@ public class Category extends BaseCommonEntity {
 ```
 
 **특징**:
+
 - DB 테이블 컬럼과 1:1 매칭
 - `BaseCommonEntity` 상속
 - Validation 어노테이션 사용 가능
@@ -515,6 +524,7 @@ public Response<String> save(@RequestBody @Valid Category category) throws Excep
 ```
 
 **주요 Validation 어노테이션**:
+
 - `@NotNull`: null 불가
 - `@NotBlank`: null, 빈 문자열, 공백만 있는 문자열 불가
 - `@Size(min=, max=)`: 문자열 길이 제한
@@ -590,6 +600,7 @@ public Category getById(Long id) {
 ### 8.1 프로퍼티 관리
 
 **파일 구조**:
+
 - `application.yml`: Spring 및 공통 설정
 - `config/application-<profile>.properties`: 업무별 설정
 
@@ -617,12 +628,12 @@ String value = env.getProperty("app.apiUrl.system");
 
 ### 9.1 로깅 레벨
 
-| 레벨 | 용도 |
-|------|------|
-| ERROR | 오류 |
-| WARN | 경고 |
-| INFO | 정보 |
-| DEBUG | 디버그 |
+| 레벨  | 용도      |
+| ----- | --------- |
+| ERROR | 오류      |
+| WARN  | 경고      |
+| INFO  | 정보      |
+| DEBUG | 디버그    |
 | TRACE | 상세 추적 |
 
 ### 9.2 로깅 사용
@@ -660,10 +671,10 @@ private String idNumber;
 
 ### 10.2 마스킹 타입
 
-- `NAME`: 이름 (홍*동)
-- `PHONE`: 전화번호 (010-****-5678)
-- `EMAIL`: 이메일 (abc***@example.com)
-- `ID_NUMBER`: 주민번호 (123456-*******)
+- `NAME`: 이름 (홍\*동)
+- `PHONE`: 전화번호 (010-\*\*\*\*-5678)
+- `EMAIL`: 이메일 (abc\*\*\*@example.com)
+- `ID_NUMBER`: 주민번호 (123456-**\*\*\***)
 
 ---
 
@@ -714,12 +725,14 @@ public void deleteCategory(Long id) {
 ### 13.1 Swagger 어노테이션
 
 **컨트롤러**:
+
 - `@Tag`: API 그룹
 - `@Operation`: API 메소드 설명
 - `@Parameter`: 파라미터 설명
 - `@ApiResponse`: 응답 설명
 
 **DTO/Entity**:
+
 - `@Schema`: 필드 설명
 
 ### 13.2 Swagger UI 접근
@@ -734,53 +747,57 @@ http://localhost:8080/swagger-ui/index.html
 
 ### 클래스 네이밍
 
-| 소스 구분 | 명명 규칙 | 예시 |
-|----------|----------|------|
-| Controller | 대상개체명 + Controller | `CategoryController` |
-| Service 인터페이스 | 대상개체명 + Service | `CategoryService` |
-| Service 구현 | 대상개체명 + ServiceImpl | `CategoryServiceImpl` |
-| Mapper (조회) | DB테이블명 + Mapper | `PrDispCtgBaseMapper` |
-| Mapper (등록/수정/삭제) | DB테이블명 + TrxMapper | `PrDispCtgBaseTrxMapper` |
-| Request DTO | 대상개체명 + Request | `CategoryRequest` |
-| Response DTO | 대상개체명 + Response | `CategoryResponse` |
-| Entity | DB테이블명 (카멜케이스) | `PrDispCtgBase` |
+| 소스 구분               | 명명 규칙                | 예시                     |
+| ----------------------- | ------------------------ | ------------------------ |
+| Controller              | 대상개체명 + Controller  | `CategoryController`     |
+| Service 인터페이스      | 대상개체명 + Service     | `CategoryService`        |
+| Service 구현            | 대상개체명 + ServiceImpl | `CategoryServiceImpl`    |
+| Mapper (조회)           | DB테이블명 + Mapper      | `PrDispCtgBaseMapper`    |
+| Mapper (등록/수정/삭제) | DB테이블명 + TrxMapper   | `PrDispCtgBaseTrxMapper` |
+| Request DTO             | 대상개체명 + Request     | `CategoryRequest`        |
+| Response DTO            | 대상개체명 + Response    | `CategoryResponse`       |
+| Entity                  | DB테이블명 (카멜케이스)  | `PrDispCtgBase`          |
 
 ### 메소드 네이밍
 
-| 레이어 | 동작 | 명명 규칙 | 예시 |
-|--------|------|----------|------|
-| **Controller / Service** | 단건 조회 | `get***` | `getCategory()` |
-| | 목록 조회 | `get***List` | `getCategoryList()` |
-| | 등록 | `register***` | `registerCategory()` |
-| | 수정 | `modify***` | `modifyCategory()` |
-| | 삭제 | `delete***` | `deleteCategory()` |
-| | 등록+수정+삭제 | `save***` | `saveCategory()` |
-| **Mapper** | 조회 | `select***` | `selectPrDispCtgBase()` |
-| | 등록 | `insert***` | `insertPrDispCtgBase()` |
-| | 수정 | `update***` | `updatePrDispCtgBase()` |
-| | 삭제 | `delete***` | `deletePrDispCtgBase()` |
+| 레이어                   | 동작           | 명명 규칙     | 예시                    |
+| ------------------------ | -------------- | ------------- | ----------------------- |
+| **Controller / Service** | 단건 조회      | `get***`      | `getCategory()`         |
+|                          | 목록 조회      | `get***List`  | `getCategoryList()`     |
+|                          | 등록           | `register***` | `registerCategory()`    |
+|                          | 수정           | `modify***`   | `modifyCategory()`      |
+|                          | 삭제           | `delete***`   | `deleteCategory()`      |
+|                          | 등록+수정+삭제 | `save***`     | `saveCategory()`        |
+| **Mapper**               | 조회           | `select***`   | `selectPrDispCtgBase()` |
+|                          | 등록           | `insert***`   | `insertPrDispCtgBase()` |
+|                          | 수정           | `update***`   | `updatePrDispCtgBase()` |
+|                          | 삭제           | `delete***`   | `deletePrDispCtgBase()` |
 
 ---
 
 ## 체크리스트
 
 ### ✅ 컨트롤러 작성 시
+
 - [ ] 필수 어노테이션 (@RestController, @RequestMapping, @Slf4j, @RequiredArgsConstructor, @Tag)
 - [ ] URI 매핑 (context-path 제외)
 - [ ] Swagger 어노테이션 (@Operation, @Parameters, @ApiResponses)
 - [ ] Response<T> 객체 반환
 
 ### ✅ 서비스 작성 시
+
 - [ ] 인터페이스/구현 클래스 분리
 - [ ] 트랜잭션 어노테이션 (CUD 작업 시)
 - [ ] 트랜잭션 매니저 이름 정확히 지정
 
 ### ✅ Mapper 작성 시
+
 - [ ] 조회용 Mapper / TrxMapper 분리
 - [ ] Mapper XML 파일 위치 (rodb/rwdb)
 - [ ] 메소드명 규칙 준수
 
 ### ✅ DTO/Entity 작성 시
+
 - [ ] @Alias 어노테이션
 - [ ] serialVersionUID 생성
 - [ ] BaseCommonEntity 상속 (필요 시)
@@ -788,6 +805,7 @@ http://localhost:8080/swagger-ui/index.html
 - [ ] Validation 어노테이션 (필요 시)
 
 ### ✅ 예외 처리
+
 - [ ] ApiException 사용
 - [ ] 적절한 ApiError Enum 선택
 

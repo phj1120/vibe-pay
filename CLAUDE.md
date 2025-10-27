@@ -1,85 +1,48 @@
 # 프로젝트 개발 가이드
 
-## 에이전트 우선 개발 원칙
-이 프로젝트는 **에이전트 기반 개발**을 원칙으로 합니다. 모든 코드 작성 및 수정은 해당 영역의 전문 에이전트를 통해 진행되어야 합니다.
+## 기술 스택 및 버전
 
-## 필수 규칙
-
-### 1. API 개발 (Java Spring)
-- **에이전트**: `api-agent`
-
-### 2. FO 개발 (Next.js)
-- **에이전트**: `fo-agent`
-
-### 3. SQL 쿼리 개발
-- **에이전트**: `sql-agent`
-
-### 4. 아키텍트
-- **에이전트**: `architect-agent`
-
-## 에이전트 사용 워크플로우
-
-### 사용자가 개발 요청 시
-1. 요청 내용 분석
-2. 적절한 에이전트 선택
-3. 에이전트에게 작업 위임
-4. 결과 확인 및 사용자에게 보고
-
-## 예외 사항
-
-다음의 경우에는 에이전트 없이 직접 수정 가능:
-
-### 1. 단순 수정
-- 오타 수정 (typo)
-- import 구문 추가/제거
-- 주석 추가/수정
-
-### 2. 명시적 요청
-- 사용자가 "에이전트 없이", "직접" 등을 명시적으로 요청한 경우
-- 단, 이 경우에도 프로젝트 컨벤션은 반드시 준수해야 함
-
-## 프로젝트 구조
-
-```
-vibe-pay/
-├── api/          # Spring Boot API 프로젝트
-├── fo/           # Next.js 프론트엔드 프로젝트
-├── docs/
-│   ├── conventions/     # 컨벤션 문서
-│   │   ├── api/*.md
-│   │   ├── fo/*.md
-│   │   ├── sql/*.md
-│   └── requirements/    # 요구사항 문서
-└── .claude/
-    └── agents/          # 에이전트 정의
-        ├── fo-agent.md
-        ├── api-agent.md
-        └── sql-agent.md
-        └── architect-agent.md
-```
-
-## 기술 스택
-
-### Backend (API)
-- Java 17+
-- Spring Boot 3.x
-- MyBatis
-- PostgreSQL
-
-### Frontend (FO)
-- Next.js 15
-- React 19
-- TypeScript
-- Tailwind CSS
-
-## 개발 시 유의사항
-
-1. **컨벤션 우선**: 개인의 코딩 스타일보다 프로젝트 컨벤션을 우선
-2. **에이전트 신뢰**: 에이전트는 컨벤션 문서를 철저히 준수하도록 설계됨
-3. **일관성 유지**: 모든 코드는 동일한 스타일과 패턴을 따라야 함
-4. **문서화**: 중요한 로직은 반드시 주석으로 설명
-5. **테스트**: 새로운 기능 추가 시 테스트 코드 작성 권장
+- **Frontend**: Next.js 14.2.x, React 18.3.x
+- **Backend**: Spring Boot 3.3.1, Java 21
+- **Database**: PostgreSQL
+- **ORM**: MyBatis
 
 ---
 
-**이 문서는 Vibe Pay 프로젝트의 핵심 개발 원칙입니다. 모든 개발자와 AI 어시스턴트는 이 가이드를 준수해야 합니다.**
+## 개발 가이드 문서
+
+각 영역별 상세 가이드는 아래 파일을 참조하세요. 
+**해당 영역의 작업이 처음 언급될 때 한 번만 읽고, 이후에는 처음 읽은 내용을 기반으로 작업합니다.**
+
+### Frontend (FO)
+- 경로: `/docs/fo-guide.md`
+- Next.js, React 개발 시 반드시 준수
+
+### Backend (API)
+- 경로: `/docs/api-guide.md`
+- Spring Boot API 개발 시 반드시 준수
+- **MyBatis XML 매퍼에서 SQL 작성 시에는 Database 가이드도 함께 참조**
+
+### Database (SQL)
+- 경로: `/docs/sql-guide.md`
+- PostgreSQL 쿼리 작성 시 반드시 준수
+- **MyBatis XML 매퍼의 SQL 작성 시에도 반드시 준수**
+
+---
+
+## 작업 방식
+
+1. **Frontend 작업**이 언급되면 → `/docs/fo-guide.md` 읽기 (최초 1회)
+2. **Backend 작업**이 언급되면 → `/docs/api-guide.md` 읽기 (최초 1회)
+3. **Database 작업 또는 MyBatis 쿼리 작성**이 언급되면 → `/docs/sql-guide.md` 읽기 (최초 1회)
+4. **Backend 작업 중 MyBatis XML 작성 시** → 두 가이드 모두 참조 (API 가이드 + Database 가이드)
+5. 이후 동일 영역 작업은 처음 읽은 가이드를 기반으로 진행
+
+---
+
+## 주의사항
+
+- 각 가이드는 해당 영역의 코딩 컨벤션과 필수 규칙을 담고 있으므로 반드시 준수
+- **MyBatis XML 매퍼 작성 시**: Java 코드는 API 가이드, SQL 쿼리는 Database 가이드 준수
+- 가이드에 없는 내용은 일반적인 Best Practice 적용
+- 가이드 내용과 충돌 시 가이드 우선
