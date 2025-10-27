@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.repository.order.OrderDetailTrxMapper">
+
+    <!-- 주문상세 등록 -->
+    <insert id="insertOrderDetail" parameterType="OrderDetail">
+        INSERT INTO ORDER_DETAIL ( /* OrderDetailTrxMapper.insertOrderDetail */
+               ORDER_NO
+             , ORDER_SEQUENCE
+             , ORDER_PROCESS_SEQUENCE
+             , UPPER_ORDER_PROCESS_SEQUENCE
+             , CLAIM_NO
+             , GOODS_NO
+             , ITEM_NO
+             , QUANTITY
+             , ORDER_STATUS_CODE
+             , DELIVERY_TYPE_CODE
+             , ORDER_TYPE_CODE
+             , ORDER_ACCEPT_DTM
+             , ORDER_FINISH_DTM
+        )
+        VALUES (
+               #{orderNo}
+             , #{orderSequence}
+             , #{orderProcessSequence}
+             , #{upperOrderProcessSequence}
+             , #{claimNo}
+             , #{goodsNo}
+             , #{itemNo}
+             , #{quantity}
+             , #{orderStatusCode}
+             , #{deliveryTypeCode}
+             , #{orderTypeCode}
+             , #{orderAcceptDtm}
+             , #{orderFinishDtm}
+        )
+    </insert>
+
+    <!-- 주문상세 수정 -->
+    <update id="updateOrderDetail" parameterType="OrderDetail">
+        UPDATE ORDER_DETAIL /* OrderDetailTrxMapper.updateOrderDetail */
+           SET UPPER_ORDER_PROCESS_SEQUENCE = #{upperOrderProcessSequence}
+             , CLAIM_NO = #{claimNo}
+             , GOODS_NO = #{goodsNo}
+             , ITEM_NO = #{itemNo}
+             , QUANTITY = #{quantity}
+             , ORDER_STATUS_CODE = #{orderStatusCode}
+             , DELIVERY_TYPE_CODE = #{deliveryTypeCode}
+             , ORDER_TYPE_CODE = #{orderTypeCode}
+             , ORDER_ACCEPT_DTM = #{orderAcceptDtm}
+             , ORDER_FINISH_DTM = #{orderFinishDtm}
+         WHERE ORDER_NO = #{orderNo}
+           AND ORDER_SEQUENCE = #{orderSequence}
+           AND ORDER_PROCESS_SEQUENCE = #{orderProcessSequence}
+    </update>
+
+    <!-- 주문상세 삭제 (복합키) -->
+    <delete id="deleteOrderDetail">
+        DELETE /* OrderDetailTrxMapper.deleteOrderDetail */
+          FROM ORDER_DETAIL
+         WHERE ORDER_NO = #{orderNo}
+           AND ORDER_SEQUENCE = #{orderSequence}
+           AND ORDER_PROCESS_SEQUENCE = #{orderProcessSequence}
+    </delete>
+
+</mapper>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.repository.basket.BasketBaseMapper">
+
+    <!-- 장바구니 전체 조회 -->
+    <select id="selectAllBasketBase" resultType="BasketBase">
+        SELECT /* BasketBaseMapper.selectAllBasketBase */
+               BASKET_NO
+             , MEMBER_NO
+             , GOODS_NO
+             , ITEM_NO
+             , QUANTITY
+             , IS_ORDER
+          FROM BASKET_BASE
+         ORDER BY BASKET_NO
+    </select>
+
+    <!-- 장바구니번호로 조회 -->
+    <select id="selectBasketBaseByBasketNo" parameterType="string" resultType="BasketBase">
+        SELECT /* BasketBaseMapper.selectBasketBaseByBasketNo */
+               BASKET_NO
+             , MEMBER_NO
+             , GOODS_NO
+             , ITEM_NO
+             , QUANTITY
+             , IS_ORDER
+          FROM BASKET_BASE
+         WHERE BASKET_NO = #{basketNo}
+    </select>
+
+    <!-- 회원번호로 조회 -->
+    <select id="selectBasketBaseByMemberNo" parameterType="string" resultType="BasketBase">
+        SELECT /* BasketBaseMapper.selectBasketBaseByMemberNo */
+               BASKET_NO
+             , MEMBER_NO
+             , GOODS_NO
+             , ITEM_NO
+             , QUANTITY
+             , IS_ORDER
+          FROM BASKET_BASE
+         WHERE MEMBER_NO = #{memberNo}
+         ORDER BY BASKET_NO
+    </select>
+
+</mapper>

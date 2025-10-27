@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.repository.member.MemberBaseTrxMapper">
+
+    <!-- 회원번호 시퀀스 생성 -->
+    <select id="generateMemberNo" resultType="string">
+        SELECT /* MemberBaseTrxMapper.generateMemberNo */
+               LPAD(NEXTVAL('SEQ_MEMBER_NO')::TEXT, 15, '0') AS MEMBER_NO
+    </select>
+
+    <!-- 회원 등록 -->
+    <insert id="insertMemberBase" parameterType="MemberBase">
+        INSERT INTO MEMBER_BASE ( /* MemberBaseTrxMapper.insertMemberBase */
+               MEMBER_NO
+             , MEMBER_NAME
+             , PHONE
+             , EMAIL
+             , PASSWORD
+             , MEMBER_STATUS_CODE
+        )
+        VALUES (
+               #{memberNo}
+             , #{memberName}
+             , #{phone}
+             , #{email}
+             , #{password}
+             , #{memberStatusCode}
+        )
+    </insert>
+
+    <!-- 회원 수정 -->
+    <update id="updateMemberBase" parameterType="MemberBase">
+        UPDATE MEMBER_BASE /* MemberBaseTrxMapper.updateMemberBase */
+           SET MEMBER_NAME = #{memberName}
+             , PHONE = #{phone}
+             , EMAIL = #{email}
+             , PASSWORD = #{password}
+             , MEMBER_STATUS_CODE = #{memberStatusCode}
+         WHERE MEMBER_NO = #{memberNo}
+    </update>
+
+    <!-- 회원 삭제 -->
+    <delete id="deleteMemberBase" parameterType="string">
+        DELETE /* MemberBaseTrxMapper.deleteMemberBase */
+          FROM MEMBER_BASE
+         WHERE MEMBER_NO = #{memberNo}
+    </delete>
+
+</mapper>

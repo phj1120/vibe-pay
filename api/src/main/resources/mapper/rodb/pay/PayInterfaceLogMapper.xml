@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.repository.pay.PayInterfaceLogMapper">
+
+    <!-- 결제인터페이스로그 전체 조회 -->
+    <select id="selectAllPayInterfaceLog" resultType="PayInterfaceLog">
+        SELECT /* PayInterfaceLogMapper.selectAllPayInterfaceLog */
+               PAY_INTERFACE_NO
+             , MEMBER_NO
+             , PAY_NO
+             , PAY_LOG_CODE
+             , REQUEST_JSON
+             , RESPONSE_JSON
+          FROM PAY_INTERFACE_LOG
+         ORDER BY PAY_INTERFACE_NO
+    </select>
+
+    <!-- 결제인터페이스번호로 조회 -->
+    <select id="selectPayInterfaceLogByPayInterfaceNo" parameterType="string" resultType="PayInterfaceLog">
+        SELECT /* PayInterfaceLogMapper.selectPayInterfaceLogByPayInterfaceNo */
+               PAY_INTERFACE_NO
+             , MEMBER_NO
+             , PAY_NO
+             , PAY_LOG_CODE
+             , REQUEST_JSON
+             , RESPONSE_JSON
+          FROM PAY_INTERFACE_LOG
+         WHERE PAY_INTERFACE_NO = #{payInterfaceNo}
+    </select>
+
+    <!-- 결제번호로 조회 -->
+    <select id="selectPayInterfaceLogByPayNo" parameterType="string" resultType="PayInterfaceLog">
+        SELECT /* PayInterfaceLogMapper.selectPayInterfaceLogByPayNo */
+               PAY_INTERFACE_NO
+             , MEMBER_NO
+             , PAY_NO
+             , PAY_LOG_CODE
+             , REQUEST_JSON
+             , RESPONSE_JSON
+          FROM PAY_INTERFACE_LOG
+         WHERE PAY_NO = #{payNo}
+         ORDER BY PAY_INTERFACE_NO
+    </select>
+
+    <!-- 회원번호로 조회 -->
+    <select id="selectPayInterfaceLogByMemberNo" parameterType="string" resultType="PayInterfaceLog">
+        SELECT /* PayInterfaceLogMapper.selectPayInterfaceLogByMemberNo */
+               PAY_INTERFACE_NO
+             , MEMBER_NO
+             , PAY_NO
+             , PAY_LOG_CODE
+             , REQUEST_JSON
+             , RESPONSE_JSON
+          FROM PAY_INTERFACE_LOG
+         WHERE MEMBER_NO = #{memberNo}
+         ORDER BY PAY_INTERFACE_NO
+    </select>
+
+</mapper>

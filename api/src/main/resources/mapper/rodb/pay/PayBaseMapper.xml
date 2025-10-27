@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.repository.pay.PayBaseMapper">
+
+    <!-- 결제 전체 조회 -->
+    <select id="selectAllPayBase" resultType="PayBase">
+        SELECT /* PayBaseMapper.selectAllPayBase */
+               PAY_NO
+             , PAY_TYPE_CODE
+             , PAY_WAY_CODE
+             , PAY_STATUS_CODE
+             , APPROVE_NO
+             , ORDER_NO
+             , CLAIM_NO
+             , UPPER_PAY_NO
+             , TRD_NO
+             , PAY_FINISH_DATE_TIME
+             , MEMBER_NO
+             , AMOUNT
+             , CANCELABLE_AMOUNT
+          FROM PAY_BASE
+         ORDER BY PAY_NO
+    </select>
+
+    <!-- 결제번호로 조회 -->
+    <select id="selectPayBaseByPayNo" parameterType="string" resultType="PayBase">
+        SELECT /* PayBaseMapper.selectPayBaseByPayNo */
+               PAY_NO
+             , PAY_TYPE_CODE
+             , PAY_WAY_CODE
+             , PAY_STATUS_CODE
+             , APPROVE_NO
+             , ORDER_NO
+             , CLAIM_NO
+             , UPPER_PAY_NO
+             , TRD_NO
+             , PAY_FINISH_DATE_TIME
+             , MEMBER_NO
+             , AMOUNT
+             , CANCELABLE_AMOUNT
+          FROM PAY_BASE
+         WHERE PAY_NO = #{payNo}
+    </select>
+
+    <!-- 주문번호로 조회 -->
+    <select id="selectPayBaseByOrderNo" parameterType="string" resultType="PayBase">
+        SELECT /* PayBaseMapper.selectPayBaseByOrderNo */
+               PAY_NO
+             , PAY_TYPE_CODE
+             , PAY_WAY_CODE
+             , PAY_STATUS_CODE
+             , APPROVE_NO
+             , ORDER_NO
+             , CLAIM_NO
+             , UPPER_PAY_NO
+             , TRD_NO
+             , PAY_FINISH_DATE_TIME
+             , MEMBER_NO
+             , AMOUNT
+             , CANCELABLE_AMOUNT
+          FROM PAY_BASE
+         WHERE ORDER_NO = #{orderNo}
+         ORDER BY PAY_NO
+    </select>
+
+    <!-- 회원번호로 조회 -->
+    <select id="selectPayBaseByMemberNo" parameterType="string" resultType="PayBase">
+        SELECT /* PayBaseMapper.selectPayBaseByMemberNo */
+               PAY_NO
+             , PAY_TYPE_CODE
+             , PAY_WAY_CODE
+             , PAY_STATUS_CODE
+             , APPROVE_NO
+             , ORDER_NO
+             , CLAIM_NO
+             , UPPER_PAY_NO
+             , TRD_NO
+             , PAY_FINISH_DATE_TIME
+             , MEMBER_NO
+             , AMOUNT
+             , CANCELABLE_AMOUNT
+          FROM PAY_BASE
+         WHERE MEMBER_NO = #{memberNo}
+         ORDER BY PAY_NO
+    </select>
+
+    <!-- 승인번호로 조회 -->
+    <select id="selectPayBaseByApproveNo" parameterType="string" resultType="PayBase">
+        SELECT /* PayBaseMapper.selectPayBaseByApproveNo */
+               PAY_NO
+             , PAY_TYPE_CODE
+             , PAY_WAY_CODE
+             , PAY_STATUS_CODE
+             , APPROVE_NO
+             , ORDER_NO
+             , CLAIM_NO
+             , UPPER_PAY_NO
+             , TRD_NO
+             , PAY_FINISH_DATE_TIME
+             , MEMBER_NO
+             , AMOUNT
+             , CANCELABLE_AMOUNT
+          FROM PAY_BASE
+         WHERE APPROVE_NO = #{approveNo}
+    </select>
+
+</mapper>

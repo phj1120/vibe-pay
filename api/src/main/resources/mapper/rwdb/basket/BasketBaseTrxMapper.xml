@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.repository.basket.BasketBaseTrxMapper">
+
+    <!-- 장바구니번호 시퀀스 생성 -->
+    <select id="generateBasketNo" resultType="string">
+        SELECT /* BasketBaseTrxMapper.generateBasketNo */
+               LPAD(NEXTVAL('SEQ_BASKET_NO')::TEXT, 15, '0') AS BASKET_NO
+    </select>
+
+    <!-- 장바구니 등록 -->
+    <insert id="insertBasketBase" parameterType="BasketBase">
+        INSERT INTO BASKET_BASE ( /* BasketBaseTrxMapper.insertBasketBase */
+               BASKET_NO
+             , MEMBER_NO
+             , GOODS_NO
+             , ITEM_NO
+             , QUANTITY
+             , IS_ORDER
+        )
+        VALUES (
+               #{basketNo}
+             , #{memberNo}
+             , #{goodsNo}
+             , #{itemNo}
+             , #{quantity}
+             , #{isOrder}
+        )
+    </insert>
+
+    <!-- 장바구니 수정 -->
+    <update id="updateBasketBase" parameterType="BasketBase">
+        UPDATE BASKET_BASE /* BasketBaseTrxMapper.updateBasketBase */
+           SET MEMBER_NO = #{memberNo}
+             , GOODS_NO = #{goodsNo}
+             , ITEM_NO = #{itemNo}
+             , QUANTITY = #{quantity}
+             , IS_ORDER = #{isOrder}
+         WHERE BASKET_NO = #{basketNo}
+    </update>
+
+    <!-- 장바구니 삭제 -->
+    <delete id="deleteBasketBase" parameterType="string">
+        DELETE /* BasketBaseTrxMapper.deleteBasketBase */
+          FROM BASKET_BASE
+         WHERE BASKET_NO = #{basketNo}
+    </delete>
+
+</mapper>

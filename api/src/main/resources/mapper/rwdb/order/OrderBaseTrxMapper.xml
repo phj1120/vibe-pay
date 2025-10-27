@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.repository.order.OrderBaseTrxMapper">
+
+    <!-- 주문번호 시퀀스 생성 -->
+    <select id="generateOrderNo" resultType="string">
+        SELECT /* OrderBaseTrxMapper.generateOrderNo */
+               TO_CHAR(CURRENT_DATE, 'YYYYMMDD') || 'O' || LPAD(NEXTVAL('SEQ_ORDER_NO')::TEXT, 6, '0') AS ORDER_NO
+    </select>
+
+    <!-- 클레임번호 시퀀스 생성 -->
+    <select id="generateClaimNo" resultType="string">
+        SELECT /* OrderBaseTrxMapper.generateClaimNo */
+               TO_CHAR(CURRENT_DATE, 'YYYYMMDD') || 'C' || LPAD(NEXTVAL('SEQ_CLAIM_NO')::TEXT, 6, '0') AS CLAIM_NO
+    </select>
+
+    <!-- 주문 등록 -->
+    <insert id="insertOrderBase" parameterType="OrderBase">
+        INSERT INTO ORDER_BASE ( /* OrderBaseTrxMapper.insertOrderBase */
+               ORDER_NO
+             , MEMBER_NO
+        )
+        VALUES (
+               #{orderNo}
+             , #{memberNo}
+        )
+    </insert>
+
+    <!-- 주문 수정 -->
+    <update id="updateOrderBase" parameterType="OrderBase">
+        UPDATE ORDER_BASE /* OrderBaseTrxMapper.updateOrderBase */
+           SET MEMBER_NO = #{memberNo}
+         WHERE ORDER_NO = #{orderNo}
+    </update>
+
+    <!-- 주문 삭제 -->
+    <delete id="deleteOrderBase" parameterType="string">
+        DELETE /* OrderBaseTrxMapper.deleteOrderBase */
+          FROM ORDER_BASE
+         WHERE ORDER_NO = #{orderNo}
+    </delete>
+
+</mapper>

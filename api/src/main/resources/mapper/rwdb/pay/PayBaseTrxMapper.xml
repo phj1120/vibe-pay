@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.repository.pay.PayBaseTrxMapper">
+
+    <!-- 결제번호 시퀀스 생성 -->
+    <select id="generatePayNo" resultType="string">
+        SELECT /* PayBaseTrxMapper.generatePayNo */
+               LPAD(NEXTVAL('SEQ_PAY_NO')::TEXT, 15, '0') AS PAY_NO
+    </select>
+
+    <!-- 결제 등록 -->
+    <insert id="insertPayBase" parameterType="PayBase">
+        INSERT INTO PAY_BASE ( /* PayBaseTrxMapper.insertPayBase */
+               PAY_NO
+             , PAY_TYPE_CODE
+             , PAY_WAY_CODE
+             , PAY_STATUS_CODE
+             , APPROVE_NO
+             , ORDER_NO
+             , CLAIM_NO
+             , UPPER_PAY_NO
+             , TRD_NO
+             , PAY_FINISH_DATE_TIME
+             , MEMBER_NO
+             , AMOUNT
+             , CANCELABLE_AMOUNT
+        )
+        VALUES (
+               #{payNo}
+             , #{payTypeCode}
+             , #{payWayCode}
+             , #{payStatusCode}
+             , #{approveNo}
+             , #{orderNo}
+             , #{claimNo}
+             , #{upperPayNo}
+             , #{trdNo}
+             , #{payFinishDateTime}
+             , #{memberNo}
+             , #{amount}
+             , #{cancelableAmount}
+        )
+    </insert>
+
+    <!-- 결제 수정 -->
+    <update id="updatePayBase" parameterType="PayBase">
+        UPDATE PAY_BASE /* PayBaseTrxMapper.updatePayBase */
+           SET PAY_TYPE_CODE = #{payTypeCode}
+             , PAY_WAY_CODE = #{payWayCode}
+             , PAY_STATUS_CODE = #{payStatusCode}
+             , APPROVE_NO = #{approveNo}
+             , ORDER_NO = #{orderNo}
+             , CLAIM_NO = #{claimNo}
+             , UPPER_PAY_NO = #{upperPayNo}
+             , TRD_NO = #{trdNo}
+             , PAY_FINISH_DATE_TIME = #{payFinishDateTime}
+             , MEMBER_NO = #{memberNo}
+             , AMOUNT = #{amount}
+             , CANCELABLE_AMOUNT = #{cancelableAmount}
+         WHERE PAY_NO = #{payNo}
+    </update>
+
+    <!-- 결제 삭제 -->
+    <delete id="deletePayBase" parameterType="string">
+        DELETE /* PayBaseTrxMapper.deletePayBase */
+          FROM PAY_BASE
+         WHERE PAY_NO = #{payNo}
+    </delete>
+
+</mapper>

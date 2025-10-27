@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.repository.member.MemberBaseMapper">
+
+    <!-- 회원 전체 조회 -->
+    <select id="selectAllMemberBase" resultType="MemberBase">
+        SELECT /* MemberBaseMapper.selectAllMemberBase */
+               MEMBER_NO
+             , MEMBER_NAME
+             , PHONE
+             , EMAIL
+             , PASSWORD
+             , MEMBER_STATUS_CODE
+          FROM MEMBER_BASE
+         ORDER BY MEMBER_NO
+    </select>
+
+    <!-- 회원번호로 조회 -->
+    <select id="selectMemberBaseByMemberNo" parameterType="string" resultType="MemberBase">
+        SELECT /* MemberBaseMapper.selectMemberBaseByMemberNo */
+               MEMBER_NO
+             , MEMBER_NAME
+             , PHONE
+             , EMAIL
+             , PASSWORD
+             , MEMBER_STATUS_CODE
+          FROM MEMBER_BASE
+         WHERE MEMBER_NO = #{memberNo}
+    </select>
+
+    <!-- 이메일로 조회 -->
+    <select id="selectMemberBaseByEmail" parameterType="string" resultType="MemberBase">
+        SELECT /* MemberBaseMapper.selectMemberBaseByEmail */
+               MEMBER_NO
+             , MEMBER_NAME
+             , PHONE
+             , EMAIL
+             , PASSWORD
+             , MEMBER_STATUS_CODE
+          FROM MEMBER_BASE
+         WHERE EMAIL = #{email}
+    </select>
+
+</mapper>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.repository.code.CodeDetailMapper">
+
+    <!-- 공통코드상세 전체 조회 -->
+    <select id="selectAllCodeDetail" resultType="CodeDetail">
+        SELECT /* CodeDetailMapper.selectAllCodeDetail */
+               GROUP_CODE
+             , CODE
+             , CODE_NAME
+             , REFERENCE_VALUE_1
+             , REFERENCE_VALUE_2
+             , DISPLAY_SEQUENCE
+          FROM CODE_DETAIL
+         ORDER BY GROUP_CODE, DISPLAY_SEQUENCE, CODE
+    </select>
+
+    <!-- 그룹코드로 조회 -->
+    <select id="selectCodeDetailByGroupCode" parameterType="string" resultType="CodeDetail">
+        SELECT /* CodeDetailMapper.selectCodeDetailByGroupCode */
+               GROUP_CODE
+             , CODE
+             , CODE_NAME
+             , REFERENCE_VALUE_1
+             , REFERENCE_VALUE_2
+             , DISPLAY_SEQUENCE
+          FROM CODE_DETAIL
+         WHERE GROUP_CODE = #{groupCode}
+         ORDER BY DISPLAY_SEQUENCE, CODE
+    </select>
+
+    <!-- 복합키로 단건 조회 -->
+    <select id="selectCodeDetailByPk" resultType="CodeDetail">
+        SELECT /* CodeDetailMapper.selectCodeDetailByPk */
+               GROUP_CODE
+             , CODE
+             , CODE_NAME
+             , REFERENCE_VALUE_1
+             , REFERENCE_VALUE_2
+             , DISPLAY_SEQUENCE
+          FROM CODE_DETAIL
+         WHERE GROUP_CODE = #{groupCode}
+           AND CODE = #{code}
+    </select>
+
+</mapper>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.repository.order.OrderGoodsTrxMapper">
+
+    <!-- 주문상품 등록 -->
+    <insert id="insertOrderGoods" parameterType="OrderGoods">
+        INSERT INTO ORDER_GOODS ( /* OrderGoodsTrxMapper.insertOrderGoods */
+               ORDER_NO
+             , GOODS_NO
+             , ITEM_NO
+             , SALE_PRICE
+             , SUPPLY_PRICE
+             , GOODS_NAME
+             , ITEM_NAME
+        )
+        VALUES (
+               #{orderNo}
+             , #{goodsNo}
+             , #{itemNo}
+             , #{salePrice}
+             , #{supplyPrice}
+             , #{goodsName}
+             , #{itemName}
+        )
+    </insert>
+
+    <!-- 주문상품 수정 -->
+    <update id="updateOrderGoods" parameterType="OrderGoods">
+        UPDATE ORDER_GOODS /* OrderGoodsTrxMapper.updateOrderGoods */
+           SET SALE_PRICE = #{salePrice}
+             , SUPPLY_PRICE = #{supplyPrice}
+             , GOODS_NAME = #{goodsName}
+             , ITEM_NAME = #{itemName}
+         WHERE ORDER_NO = #{orderNo}
+           AND GOODS_NO = #{goodsNo}
+           AND ITEM_NO = #{itemNo}
+    </update>
+
+    <!-- 주문상품 삭제 (복합키) -->
+    <delete id="deleteOrderGoods">
+        DELETE /* OrderGoodsTrxMapper.deleteOrderGoods */
+          FROM ORDER_GOODS
+         WHERE ORDER_NO = #{orderNo}
+           AND GOODS_NO = #{goodsNo}
+           AND ITEM_NO = #{itemNo}
+    </delete>
+
+</mapper>

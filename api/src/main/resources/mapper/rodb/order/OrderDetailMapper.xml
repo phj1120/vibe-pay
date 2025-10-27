@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.repository.order.OrderDetailMapper">
+
+    <!-- 주문상세 전체 조회 -->
+    <select id="selectAllOrderDetail" resultType="OrderDetail">
+        SELECT /* OrderDetailMapper.selectAllOrderDetail */
+               ORDER_NO
+             , ORDER_SEQUENCE
+             , ORDER_PROCESS_SEQUENCE
+             , UPPER_ORDER_PROCESS_SEQUENCE
+             , CLAIM_NO
+             , GOODS_NO
+             , ITEM_NO
+             , QUANTITY
+             , ORDER_STATUS_CODE
+             , DELIVERY_TYPE_CODE
+             , ORDER_TYPE_CODE
+             , ORDER_ACCEPT_DTM
+             , ORDER_FINISH_DTM
+          FROM ORDER_DETAIL
+         ORDER BY ORDER_NO, ORDER_SEQUENCE, ORDER_PROCESS_SEQUENCE
+    </select>
+
+    <!-- 주문번호로 조회 -->
+    <select id="selectOrderDetailByOrderNo" parameterType="string" resultType="OrderDetail">
+        SELECT /* OrderDetailMapper.selectOrderDetailByOrderNo */
+               ORDER_NO
+             , ORDER_SEQUENCE
+             , ORDER_PROCESS_SEQUENCE
+             , UPPER_ORDER_PROCESS_SEQUENCE
+             , CLAIM_NO
+             , GOODS_NO
+             , ITEM_NO
+             , QUANTITY
+             , ORDER_STATUS_CODE
+             , DELIVERY_TYPE_CODE
+             , ORDER_TYPE_CODE
+             , ORDER_ACCEPT_DTM
+             , ORDER_FINISH_DTM
+          FROM ORDER_DETAIL
+         WHERE ORDER_NO = #{orderNo}
+         ORDER BY ORDER_SEQUENCE, ORDER_PROCESS_SEQUENCE
+    </select>
+
+    <!-- 주문번호와 주문순번으로 조회 -->
+    <select id="selectOrderDetailByOrderNoAndSequence" resultType="OrderDetail">
+        SELECT /* OrderDetailMapper.selectOrderDetailByOrderNoAndSequence */
+               ORDER_NO
+             , ORDER_SEQUENCE
+             , ORDER_PROCESS_SEQUENCE
+             , UPPER_ORDER_PROCESS_SEQUENCE
+             , CLAIM_NO
+             , GOODS_NO
+             , ITEM_NO
+             , QUANTITY
+             , ORDER_STATUS_CODE
+             , DELIVERY_TYPE_CODE
+             , ORDER_TYPE_CODE
+             , ORDER_ACCEPT_DTM
+             , ORDER_FINISH_DTM
+          FROM ORDER_DETAIL
+         WHERE ORDER_NO = #{orderNo}
+           AND ORDER_SEQUENCE = #{orderSequence}
+         ORDER BY ORDER_PROCESS_SEQUENCE
+    </select>
+
+    <!-- 복합키로 단건 조회 -->
+    <select id="selectOrderDetailByPk" resultType="OrderDetail">
+        SELECT /* OrderDetailMapper.selectOrderDetailByPk */
+               ORDER_NO
+             , ORDER_SEQUENCE
+             , ORDER_PROCESS_SEQUENCE
+             , UPPER_ORDER_PROCESS_SEQUENCE
+             , CLAIM_NO
+             , GOODS_NO
+             , ITEM_NO
+             , QUANTITY
+             , ORDER_STATUS_CODE
+             , DELIVERY_TYPE_CODE
+             , ORDER_TYPE_CODE
+             , ORDER_ACCEPT_DTM
+             , ORDER_FINISH_DTM
+          FROM ORDER_DETAIL
+         WHERE ORDER_NO = #{orderNo}
+           AND ORDER_SEQUENCE = #{orderSequence}
+           AND ORDER_PROCESS_SEQUENCE = #{orderProcessSequence}
+    </select>
+
+</mapper>

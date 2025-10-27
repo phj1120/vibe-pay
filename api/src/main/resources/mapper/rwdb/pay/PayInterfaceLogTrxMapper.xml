@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.repository.pay.PayInterfaceLogTrxMapper">
+
+    <!-- 결제인터페이스번호 시퀀스 생성 -->
+    <select id="generatePayInterfaceNo" resultType="string">
+        SELECT /* PayInterfaceLogTrxMapper.generatePayInterfaceNo */
+               LPAD(NEXTVAL('SEQ_PAY_INTERFACE_NO')::TEXT, 15, '0') AS PAY_INTERFACE_NO
+    </select>
+
+    <!-- 결제인터페이스로그 등록 -->
+    <insert id="insertPayInterfaceLog" parameterType="PayInterfaceLog">
+        INSERT INTO PAY_INTERFACE_LOG ( /* PayInterfaceLogTrxMapper.insertPayInterfaceLog */
+               PAY_INTERFACE_NO
+             , MEMBER_NO
+             , PAY_NO
+             , PAY_LOG_CODE
+             , REQUEST_JSON
+             , RESPONSE_JSON
+        )
+        VALUES (
+               #{payInterfaceNo}
+             , #{memberNo}
+             , #{payNo}
+             , #{payLogCode}
+             , #{requestJson}
+             , #{responseJson}
+        )
+    </insert>
+
+    <!-- 결제인터페이스로그 수정 -->
+    <update id="updatePayInterfaceLog" parameterType="PayInterfaceLog">
+        UPDATE PAY_INTERFACE_LOG /* PayInterfaceLogTrxMapper.updatePayInterfaceLog */
+           SET MEMBER_NO = #{memberNo}
+             , PAY_NO = #{payNo}
+             , PAY_LOG_CODE = #{payLogCode}
+             , REQUEST_JSON = #{requestJson}
+             , RESPONSE_JSON = #{responseJson}
+         WHERE PAY_INTERFACE_NO = #{payInterfaceNo}
+    </update>
+
+    <!-- 결제인터페이스로그 삭제 -->
+    <delete id="deletePayInterfaceLog" parameterType="string">
+        DELETE /* PayInterfaceLogTrxMapper.deletePayInterfaceLog */
+          FROM PAY_INTERFACE_LOG
+         WHERE PAY_INTERFACE_NO = #{payInterfaceNo}
+    </delete>
+
+</mapper>

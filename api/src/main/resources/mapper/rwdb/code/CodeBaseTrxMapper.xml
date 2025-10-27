@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.repository.code.CodeBaseTrxMapper">
+
+    <!-- 공통코드 등록 -->
+    <insert id="insertCodeBase" parameterType="CodeBase">
+        INSERT INTO CODE_BASE ( /* CodeBaseTrxMapper.insertCodeBase */
+               GROUP_CODE
+             , GROUP_CODE_NAME
+        )
+        VALUES (
+               #{groupCode}
+             , #{groupCodeName}
+        )
+    </insert>
+
+    <!-- 공통코드 수정 -->
+    <update id="updateCodeBase" parameterType="CodeBase">
+        UPDATE CODE_BASE /* CodeBaseTrxMapper.updateCodeBase */
+           SET GROUP_CODE_NAME = #{groupCodeName}
+         WHERE GROUP_CODE = #{groupCode}
+    </update>
+
+    <!-- 공통코드 삭제 -->
+    <delete id="deleteCodeBase" parameterType="string">
+        DELETE /* CodeBaseTrxMapper.deleteCodeBase */
+          FROM CODE_BASE
+         WHERE GROUP_CODE = #{groupCode}
+    </delete>
+
+</mapper>

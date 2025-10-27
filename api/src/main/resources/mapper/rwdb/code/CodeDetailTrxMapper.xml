@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.repository.code.CodeDetailTrxMapper">
+
+    <!-- 공통코드상세 등록 -->
+    <insert id="insertCodeDetail" parameterType="CodeDetail">
+        INSERT INTO CODE_DETAIL ( /* CodeDetailTrxMapper.insertCodeDetail */
+               GROUP_CODE
+             , CODE
+             , CODE_NAME
+             , REFERENCE_VALUE_1
+             , REFERENCE_VALUE_2
+             , DISPLAY_SEQUENCE
+        )
+        VALUES (
+               #{groupCode}
+             , #{code}
+             , #{codeName}
+             , #{referenceValue1}
+             , #{referenceValue2}
+             , #{displaySequence}
+        )
+    </insert>
+
+    <!-- 공통코드상세 수정 -->
+    <update id="updateCodeDetail" parameterType="CodeDetail">
+        UPDATE CODE_DETAIL /* CodeDetailTrxMapper.updateCodeDetail */
+           SET CODE_NAME = #{codeName}
+             , REFERENCE_VALUE_1 = #{referenceValue1}
+             , REFERENCE_VALUE_2 = #{referenceValue2}
+             , DISPLAY_SEQUENCE = #{displaySequence}
+         WHERE GROUP_CODE = #{groupCode}
+           AND CODE = #{code}
+    </update>
+
+    <!-- 공통코드상세 삭제 (복합키) -->
+    <delete id="deleteCodeDetail">
+        DELETE /* CodeDetailTrxMapper.deleteCodeDetail */
+          FROM CODE_DETAIL
+         WHERE GROUP_CODE = #{groupCode}
+           AND CODE = #{code}
+    </delete>
+
+</mapper>

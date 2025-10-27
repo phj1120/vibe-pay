@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.repository.order.OrderGoodsMapper">
+
+    <!-- 주문상품 전체 조회 -->
+    <select id="selectAllOrderGoods" resultType="OrderGoods">
+        SELECT /* OrderGoodsMapper.selectAllOrderGoods */
+               ORDER_NO
+             , GOODS_NO
+             , ITEM_NO
+             , SALE_PRICE
+             , SUPPLY_PRICE
+             , GOODS_NAME
+             , ITEM_NAME
+          FROM ORDER_GOODS
+         ORDER BY ORDER_NO, GOODS_NO, ITEM_NO
+    </select>
+
+    <!-- 주문번호로 조회 -->
+    <select id="selectOrderGoodsByOrderNo" parameterType="string" resultType="OrderGoods">
+        SELECT /* OrderGoodsMapper.selectOrderGoodsByOrderNo */
+               ORDER_NO
+             , GOODS_NO
+             , ITEM_NO
+             , SALE_PRICE
+             , SUPPLY_PRICE
+             , GOODS_NAME
+             , ITEM_NAME
+          FROM ORDER_GOODS
+         WHERE ORDER_NO = #{orderNo}
+         ORDER BY GOODS_NO, ITEM_NO
+    </select>
+
+    <!-- 복합키로 단건 조회 -->
+    <select id="selectOrderGoodsByPk" resultType="OrderGoods">
+        SELECT /* OrderGoodsMapper.selectOrderGoodsByPk */
+               ORDER_NO
+             , GOODS_NO
+             , ITEM_NO
+             , SALE_PRICE
+             , SUPPLY_PRICE
+             , GOODS_NAME
+             , ITEM_NAME
+          FROM ORDER_GOODS
+         WHERE ORDER_NO = #{orderNo}
+           AND GOODS_NO = #{goodsNo}
+           AND ITEM_NO = #{itemNo}
+    </select>
+
+</mapper>
