@@ -41,4 +41,10 @@ public class PointHistory extends SystemEntity {
 
     @Schema(description = "종료일시")
     private LocalDateTime endDateTime;
+
+    @Schema(description = "원포인트기록번호")
+    private String upperPointHistoryNo;
+
+    @Schema(description = "잔여유효포인트")
+    private Long remainPoint;
 }

@@ -152,6 +152,8 @@
 | point_transaction_reson_no | 포인트적립사용번호 | varchar(50) |  |  |
 | start_date_time | 시작일시 | date |  |  |
 | end_date_time | 종료일시 | date |  |  |
+| upper_point_history_no | 원포인트기록번호 | varchar(15) |  |  |
+| remain_point | 잔여유효포인트 | long |  |  |
 | regist_id | 등록자 | varchar(15) |  |  |
 | regist_date_time | 등록일시 | timestamp |  |  |
 | modify_id | 수정자 | varchar(15) |  |  |
@@ -159,21 +161,22 @@
 
 ### goods_base /  상품 정보
 
-| goods_no | 상품번호 | varchar(15) | PK | G+시퀀스 |
-| --- | --- | --- | --- | --- |
-| goods_name | 상품명 | varchar(50) |  |  |
-| goods_status_code | 상품상태코드 | varchar(3) |  | PRD001 / 001: 판매중, 002: 판매중단, 003: 판매중단 |
-| regist_id | 등록자 | varchar(15) |  |  |
-| regist_date_time | 등록일시 | timestamp |  |  |
-| modify_id | 수정자 | varchar(15) |  |  |
-| modify_date_time | 수정일시 | timestamp |  |  |
+| goods_no | 상품번호 | varchar(15)  | PK | G+시퀀스 |
+| --- | --- |--------------| --- | --- |
+| goods_name | 상품명 | varchar(50)  |  |  |
+| goods_status_code | 상품상태코드 | varchar(3)   |  | PRD001 / 001: 판매중, 002: 판매중단, 003: 판매중단 |
+| goods_main_image_url | 상품대표이미지주소 | varchar(200) |  |  |
+| regist_id | 등록자 | varchar(15)  |  |  |
+| regist_date_time | 등록일시 | timestamp    |  |  |
+| modify_id | 수정자 | varchar(15)  |  |  |
+| modify_date_time | 수정일시 | timestamp    |  |  |
 
 ### goods_item /  단품 정보
 
 | goods_no | 상품번호 | varchar(15) | PK |  |
 | --- | --- | --- | --- | --- |
 | item_no | 단품번호 | varchar(3) | PK |  |
-| goods_name | 상품명 | varchar(50) |  |  |
+| item_name | 단품명 | varchar(50) |  |  |
 | item_price | 단품금액 | numeric |  |  |
 | stock | 재고수량 | numeric |  |  |
 | goods_status_code | 단품상태코드 | varchar(3) |  | PRD001 |

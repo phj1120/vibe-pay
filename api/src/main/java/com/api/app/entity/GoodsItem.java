@@ -22,8 +22,8 @@ public class GoodsItem extends SystemEntity {
     @Schema(description = "단품번호")
     private String itemNo;
 
-    @Schema(description = "상품명")
-    private String goodsName;
+    @Schema(description = "단품명")
+    private String itemName;
 
     @Schema(description = "단품금액")
     private Long itemPrice;

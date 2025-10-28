@@ -24,4 +24,7 @@ public class GoodsBase extends SystemEntity {
 
     @Schema(description = "상품상태코드")
     private String goodsStatusCode;
+
+    @Schema(description = "상품대표이미지주소")
+    private String goodsMainImageUrl;
 }
