@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.ibatis.type.Alias;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
@@ -16,7 +15,7 @@ import java.time.LocalDateTime;
 @Alias("PointHistory")
 @Getter
 @Setter
-public class PointHistory implements Serializable {
+public class PointHistory extends SystemEntity {
     private static final long serialVersionUID = 1123456789012345678L;
 
     @Schema(description = "포인트기록번호")

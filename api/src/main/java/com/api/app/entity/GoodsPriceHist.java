@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.ibatis.type.Alias;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
@@ -16,7 +15,7 @@ import java.time.LocalDateTime;
 @Alias("GoodsPriceHist")
 @Getter
 @Setter
-public class GoodsPriceHist implements Serializable {
+public class GoodsPriceHist extends SystemEntity {
     private static final long serialVersionUID = 4456789012345678901L;
 
     @Schema(description = "상품번호")

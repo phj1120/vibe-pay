@@ -5,8 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.ibatis.type.Alias;
 
-import java.io.Serializable;
-
 /**
  * @author system
  * @version 1.0
@@ -15,7 +13,7 @@ import java.io.Serializable;
 @Alias("OrderGoods")
 @Getter
 @Setter
-public class OrderGoods implements Serializable {
+public class OrderGoods extends SystemEntity {
     private static final long serialVersionUID = 4567890123456789012L;
 
     @Schema(description = "주문번호")

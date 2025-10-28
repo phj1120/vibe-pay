@@ -5,8 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.ibatis.type.Alias;
 
-import java.io.Serializable;
-
 /**
  * @author system
  * @version 1.0
@@ -15,7 +13,7 @@ import java.io.Serializable;
 @Alias("PayInterfaceLog")
 @Getter
 @Setter
-public class PayInterfaceLog implements Serializable {
+public class PayInterfaceLog extends SystemEntity {
     private static final long serialVersionUID = 6789012345678901234L;
 
     @Schema(description = "결제인터페이스번호")

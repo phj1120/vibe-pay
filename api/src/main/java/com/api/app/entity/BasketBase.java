@@ -5,8 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.ibatis.type.Alias;
 
-import java.io.Serializable;
-
 /**
  * @author system
  * @version 1.0
@@ -15,7 +13,7 @@ import java.io.Serializable;
 @Alias("BasketBase")
 @Getter
 @Setter
-public class BasketBase implements Serializable {
+public class BasketBase extends SystemEntity {
     private static final long serialVersionUID = 1234567890123456789L;
 
     @Schema(description = "장바구니번호")

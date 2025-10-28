@@ -18,6 +18,10 @@
              , EMAIL
              , PASSWORD
              , MEMBER_STATUS_CODE
+             , REGIST_ID
+             , REGIST_DATE_TIME
+             , MODIFY_ID
+             , MODIFY_DATE_TIME
         )
         VALUES (
                #{memberNo}
@@ -26,6 +30,10 @@
              , #{email}
              , #{password}
              , #{memberStatusCode}
+             , #{registId}
+             , #{registDateTime}
+             , #{modifyId}
+             , #{modifyDateTime}
         )
     </insert>
 
@@ -37,6 +45,8 @@
              , EMAIL = #{email}
              , PASSWORD = #{password}
              , MEMBER_STATUS_CODE = #{memberStatusCode}
+             , MODIFY_ID = #{modifyId}
+             , MODIFY_DATE_TIME = #{modifyDateTime}
          WHERE MEMBER_NO = #{memberNo}
     </update>
 

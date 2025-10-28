@@ -7,12 +7,20 @@
 | item_no | 단품번호 | varchar(3) |  |  |
 | quantity | 수량 | numeric |  |  |
 | is_order | 주문여부 | boolean |  |  |
+| regist_id | 등록자 | varchar(15) |  |  |
+| regist_date_time | 등록일시 | timestamp |  |  |
+| modify_id | 수정자 | varchar(15) |  |  |
+| modify_date_time | 수정일시 | timestamp |  |  |
 
 ### order_base / 주문 기본 정보
 
 | order_no | 주문번호 | varchar(15) | PK | 날짜+O+시퀀스 / ex.20251027O000001 |
 | --- | --- | --- | --- | --- |
 | member_no | 회원번호 | varchar(15) |  |  |
+| regist_id | 등록자 | varchar(15) |  |  |
+| regist_date_time | 등록일시 | timestamp |  |  |
+| modify_id | 수정자 | varchar(15) |  |  |
+| modify_date_time | 수정일시 | timestamp |  |  |
 
 ### order_detail /  주문 상세 정보
 
@@ -30,6 +38,10 @@
 | order_type_code | 주문유형코드 | varchar(3) |  | ORD001 / 001: 주문 / 002: 주문취소 / 101: 반품 / 102: 반품취소 / 201: 교환 / 202: 교환취소 |
 | order_accept_dtm | 주문접수일시 | Date |  |  |
 | order_finish_dtm | 주문완료일시 | Date |  |  |
+| regist_id | 등록자 | varchar(15) |  |  |
+| regist_date_time | 등록일시 | timestamp |  |  |
+| modify_id | 수정자 | varchar(15) |  |  |
+| modify_date_time | 수정일시 | timestamp |  |  |
 
 상위주문처리순번
 
@@ -51,6 +63,10 @@
 | supply_price | 공급원가 | numeric |  |  |
 | goods_name | 상품명 | varchar |  |  |
 | item_name | 단품명 | varchar |  |  |
+| regist_id | 등록자 | varchar(15) |  |  |
+| regist_date_time | 등록일시 | timestamp |  |  |
+| modify_id | 수정자 | varchar(15) |  |  |
+| modify_date_time | 수정일시 | timestamp |  |  |
 
 ### pay_base /  결제 기본 정보
 
@@ -68,6 +84,10 @@
 | member_no | 회원번호 | varchar(15) |  |  |
 | amount | 결제금액 | numeric |  |  |
 | cancelable_amount | 취소가능금액 | numeric |  |  |
+| regist_id | 등록자 | varchar(15) |  |  |
+| regist_date_time | 등록일시 | timestamp |  |  |
+| modify_id | 수정자 | varchar(15) |  |  |
+| modify_date_time | 수정일시 | timestamp |  |  |
 
 ### pay_interface_log /  결제 인터페이스 로그
 
@@ -78,12 +98,20 @@
 | pay_log_code | 로그 유형 코드 | varchar(3) |  | PAY004 / 001: 결제 / 002: 승인 / 003: 망취소 |
 | request_json | 요청 JSON | JSON |  |  |
 | response_json | 응답 JSON | JSON |  |  |
+| regist_id | 등록자 | varchar(15) |  |  |
+| regist_date_time | 등록일시 | timestamp |  |  |
+| modify_id | 수정자 | varchar(15) |  |  |
+| modify_date_time | 수정일시 | timestamp |  |  |
 
 ### code_base /  공통 코드 정보
 
 | group_code | 그룹코드 | varchar(6) | PK |  |
 | --- | --- | --- | --- | --- |
 | group_code_name | 그룹코드명 | varchar(15) |  |  |
+| regist_id | 등록자 | varchar(15) |  |  |
+| regist_date_time | 등록일시 | timestamp |  |  |
+| modify_id | 수정자 | varchar(15) |  |  |
+| modify_date_time | 수정일시 | timestamp |  |  |
 
 ### code_detail /  공통 코드 상세 정보
 
@@ -94,6 +122,10 @@
 | reference_value_1 | 참조값1 | varchar |  |  |
 | reference_value_2 | 참조값2 | varchar |  |  |
 | display_sequence | 정렬순서 | numeric |  |  |
+| regist_id | 등록자 | varchar(15) |  |  |
+| regist_date_time | 등록일시 | timestamp |  |  |
+| modify_id | 수정자 | varchar(15) |  |  |
+| modify_date_time | 수정일시 | timestamp |  |  |
 
 ### member_base /  회원 정보
 
@@ -104,6 +136,10 @@
 | email | 이메일 | varchar(50) |  |  |
 | password | 비밀번호 | varchar(255) |  |  |
 | member_status_code | 회원상태코드 | varchar(3) |  | MEM001 / 001: 정상회원 / 002: 탈퇴회원 |
+| regist_id | 등록자 | varchar(15) |  |  |
+| regist_date_time | 등록일시 | timestamp |  |  |
+| modify_id | 수정자 | varchar(15) |  |  |
+| modify_date_time | 수정일시 | timestamp |  |  |
 
 ### point_history /  포인트 기록
 
@@ -116,6 +152,10 @@
 | point_transaction_reson_no | 포인트적립사용번호 | varchar(50) |  |  |
 | start_date_time | 시작일시 | date |  |  |
 | end_date_time | 종료일시 | date |  |  |
+| regist_id | 등록자 | varchar(15) |  |  |
+| regist_date_time | 등록일시 | timestamp |  |  |
+| modify_id | 수정자 | varchar(15) |  |  |
+| modify_date_time | 수정일시 | timestamp |  |  |
 
 ### goods_base /  상품 정보
 
@@ -123,6 +163,10 @@
 | --- | --- | --- | --- | --- |
 | goods_name | 상품명 | varchar(50) |  |  |
 | goods_status_code | 상품상태코드 | varchar(3) |  | PRD001 / 001: 판매중, 002: 판매중단, 003: 판매중단 |
+| regist_id | 등록자 | varchar(15) |  |  |
+| regist_date_time | 등록일시 | timestamp |  |  |
+| modify_id | 수정자 | varchar(15) |  |  |
+| modify_date_time | 수정일시 | timestamp |  |  |
 
 ### goods_item /  단품 정보
 
@@ -133,6 +177,10 @@
 | item_price | 단품금액 | numeric |  |  |
 | stock | 재고수량 | numeric |  |  |
 | goods_status_code | 단품상태코드 | varchar(3) |  | PRD001 |
+| regist_id | 등록자 | varchar(15) |  |  |
+| regist_date_time | 등록일시 | timestamp |  |  |
+| modify_id | 수정자 | varchar(15) |  |  |
+| modify_date_time | 수정일시 | timestamp |  |  |
 
 ### goods_price_hist /  상품 가격 정보
 
@@ -142,3 +190,7 @@
 | end_date_time | 종료일 | date | PK |  |
 | sale_price | 판매가 | numeric |  |  |
 | supply_price | 공급원가 | numeric |  |  |
+| regist_id | 등록자 | varchar(15) |  |  |
+| regist_date_time | 등록일시 | timestamp |  |  |
+| modify_id | 수정자 | varchar(15) |  |  |
+| modify_date_time | 수정일시 | timestamp |  |  |

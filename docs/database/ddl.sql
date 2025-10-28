@@ -98,12 +98,16 @@ COMMENT ON SEQUENCE SEQ_GOODS_NO IS '상품번호 시퀀스';
 -- 1. basket_base (장바구니 정보)
 -- =============================================
 CREATE TABLE BASKET_BASE (
-    BASKET_NO       VARCHAR(15)     NOT NULL,   -- 장바구니번호 (PK, 시퀀스)
-    MEMBER_NO       VARCHAR(15)     NOT NULL,   -- 회원번호
-    GOODS_NO        VARCHAR(15)     NOT NULL,   -- 상품번호
-    ITEM_NO         VARCHAR(3)      NOT NULL,   -- 단품번호
-    QUANTITY        NUMERIC         NOT NULL,   -- 수량
-    IS_ORDER        BOOLEAN         NOT NULL DEFAULT FALSE,   -- 주문여부
+    BASKET_NO           VARCHAR(15)     NOT NULL,   -- 장바구니번호 (PK, 시퀀스)
+    MEMBER_NO           VARCHAR(15)     NOT NULL,   -- 회원번호
+    GOODS_NO            VARCHAR(15)     NOT NULL,   -- 상품번호
+    ITEM_NO             VARCHAR(3)      NOT NULL,   -- 단품번호
+    QUANTITY            NUMERIC         NOT NULL,   -- 수량
+    IS_ORDER            BOOLEAN         NOT NULL DEFAULT FALSE,   -- 주문여부
+    REGIST_ID           VARCHAR(15)     NOT NULL,   -- 등록자
+    REGIST_DATE_TIME    TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 등록일시
+    MODIFY_ID           VARCHAR(15)     NOT NULL,   -- 수정자
+    MODIFY_DATE_TIME    TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 수정일시
     CONSTRAINT PK_BASKET_BASE PRIMARY KEY (BASKET_NO)
 );
 
@@ -114,19 +118,31 @@ COMMENT ON COLUMN BASKET_BASE.GOODS_NO IS '상품번호';
 COMMENT ON COLUMN BASKET_BASE.ITEM_NO IS '단품번호';
 COMMENT ON COLUMN BASKET_BASE.QUANTITY IS '수량';
 COMMENT ON COLUMN BASKET_BASE.IS_ORDER IS '주문여부';
+COMMENT ON COLUMN BASKET_BASE.REGIST_ID IS '등록자';
+COMMENT ON COLUMN BASKET_BASE.REGIST_DATE_TIME IS '등록일시';
+COMMENT ON COLUMN BASKET_BASE.MODIFY_ID IS '수정자';
+COMMENT ON COLUMN BASKET_BASE.MODIFY_DATE_TIME IS '수정일시';
 
 -- =============================================
 -- 2. order_base (주문 기본 정보)
 -- =============================================
 CREATE TABLE ORDER_BASE (
-    ORDER_NO        VARCHAR(15)     NOT NULL,   -- 주문번호 (PK, 날짜+O+시퀀스 ex.20251027O000001)
-    MEMBER_NO       VARCHAR(15)     NOT NULL,   -- 회원번호
+    ORDER_NO            VARCHAR(15)     NOT NULL,   -- 주문번호 (PK, 날짜+O+시퀀스 ex.20251027O000001)
+    MEMBER_NO           VARCHAR(15)     NOT NULL,   -- 회원번호
+    REGIST_ID           VARCHAR(15)     NOT NULL,   -- 등록자
+    REGIST_DATE_TIME    TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 등록일시
+    MODIFY_ID           VARCHAR(15)     NOT NULL,   -- 수정자
+    MODIFY_DATE_TIME    TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 수정일시
     CONSTRAINT PK_ORDER_BASE PRIMARY KEY (ORDER_NO)
 );
 
 COMMENT ON TABLE ORDER_BASE IS '주문 기본 정보';
 COMMENT ON COLUMN ORDER_BASE.ORDER_NO IS '주문번호';
 COMMENT ON COLUMN ORDER_BASE.MEMBER_NO IS '회원번호';
+COMMENT ON COLUMN ORDER_BASE.REGIST_ID IS '등록자';
+COMMENT ON COLUMN ORDER_BASE.REGIST_DATE_TIME IS '등록일시';
+COMMENT ON COLUMN ORDER_BASE.MODIFY_ID IS '수정자';
+COMMENT ON COLUMN ORDER_BASE.MODIFY_DATE_TIME IS '수정일시';
 
 -- =============================================
 -- 3. order_detail (주문 상세 정보)
@@ -145,6 +161,10 @@ CREATE TABLE ORDER_DETAIL (
     ORDER_TYPE_CODE                 VARCHAR(3)      NOT NULL,   -- 주문유형코드 (ORD001)
     ORDER_ACCEPT_DTM                TIMESTAMP,                  -- 주문접수일시
     ORDER_FINISH_DTM                TIMESTAMP,                  -- 주문완료일시
+    REGIST_ID                       VARCHAR(15)     NOT NULL,   -- 등록자
+    REGIST_DATE_TIME                TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 등록일시
+    MODIFY_ID                       VARCHAR(15)     NOT NULL,   -- 수정자
+    MODIFY_DATE_TIME                TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 수정일시
     CONSTRAINT PK_ORDER_DETAIL PRIMARY KEY (ORDER_NO, ORDER_SEQUENCE, ORDER_PROCESS_SEQUENCE)
 );
 
@@ -162,18 +182,26 @@ COMMENT ON COLUMN ORDER_DETAIL.DELIVERY_TYPE_CODE IS '배송구분코드 (DLV001
 COMMENT ON COLUMN ORDER_DETAIL.ORDER_TYPE_CODE IS '주문유형코드 (ORD001: 001-주문/002-주문취소/101-반품/102-반품취소/201-교환/202-교환취소)';
 COMMENT ON COLUMN ORDER_DETAIL.ORDER_ACCEPT_DTM IS '주문접수일시';
 COMMENT ON COLUMN ORDER_DETAIL.ORDER_FINISH_DTM IS '주문완료일시';
+COMMENT ON COLUMN ORDER_DETAIL.REGIST_ID IS '등록자';
+COMMENT ON COLUMN ORDER_DETAIL.REGIST_DATE_TIME IS '등록일시';
+COMMENT ON COLUMN ORDER_DETAIL.MODIFY_ID IS '수정자';
+COMMENT ON COLUMN ORDER_DETAIL.MODIFY_DATE_TIME IS '수정일시';
 
 -- =============================================
 -- 4. order_goods (주문 상품 정보)
 -- =============================================
 CREATE TABLE ORDER_GOODS (
-    ORDER_NO        VARCHAR(15)     NOT NULL,   -- 주문번호 (PK)
-    GOODS_NO        VARCHAR(15)     NOT NULL,   -- 상품번호 (PK)
-    ITEM_NO         VARCHAR(3)      NOT NULL,   -- 단품번호 (PK)
-    SALE_PRICE      NUMERIC         NOT NULL,   -- 판매가
-    SUPPLY_PRICE    NUMERIC         NOT NULL,   -- 공급원가
-    GOODS_NAME      VARCHAR(200)    NOT NULL,   -- 상품명
-    ITEM_NAME       VARCHAR(200)    NOT NULL,   -- 단품명
+    ORDER_NO            VARCHAR(15)     NOT NULL,   -- 주문번호 (PK)
+    GOODS_NO            VARCHAR(15)     NOT NULL,   -- 상품번호 (PK)
+    ITEM_NO             VARCHAR(3)      NOT NULL,   -- 단품번호 (PK)
+    SALE_PRICE          NUMERIC         NOT NULL,   -- 판매가
+    SUPPLY_PRICE        NUMERIC         NOT NULL,   -- 공급원가
+    GOODS_NAME          VARCHAR(200)    NOT NULL,   -- 상품명
+    ITEM_NAME           VARCHAR(200)    NOT NULL,   -- 단품명
+    REGIST_ID           VARCHAR(15)     NOT NULL,   -- 등록자
+    REGIST_DATE_TIME    TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 등록일시
+    MODIFY_ID           VARCHAR(15)     NOT NULL,   -- 수정자
+    MODIFY_DATE_TIME    TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 수정일시
     CONSTRAINT PK_ORDER_GOODS PRIMARY KEY (ORDER_NO, GOODS_NO, ITEM_NO)
 );
 
@@ -185,24 +213,32 @@ COMMENT ON COLUMN ORDER_GOODS.SALE_PRICE IS '판매가';
 COMMENT ON COLUMN ORDER_GOODS.SUPPLY_PRICE IS '공급원가';
 COMMENT ON COLUMN ORDER_GOODS.GOODS_NAME IS '상품명';
 COMMENT ON COLUMN ORDER_GOODS.ITEM_NAME IS '단품명';
+COMMENT ON COLUMN ORDER_GOODS.REGIST_ID IS '등록자';
+COMMENT ON COLUMN ORDER_GOODS.REGIST_DATE_TIME IS '등록일시';
+COMMENT ON COLUMN ORDER_GOODS.MODIFY_ID IS '수정자';
+COMMENT ON COLUMN ORDER_GOODS.MODIFY_DATE_TIME IS '수정일시';
 
 -- =============================================
 -- 5. pay_base (결제 기본 정보)
 -- =============================================
 CREATE TABLE PAY_BASE (
-    PAY_NO              VARCHAR(15)     NOT NULL,   -- 결제번호 (PK, 시퀀스)
-    PAY_TYPE_CODE       VARCHAR(3)      NOT NULL,   -- 결제유형코드 (PAY001: 001-결제/002-환불)
-    PAY_WAY_CODE        VARCHAR(3)      NOT NULL,   -- 결제방식코드 (PAY002: 001-신용카드/002-포인트)
-    PAY_STATUS_CODE     VARCHAR(3)      NOT NULL,   -- 결제상태코드 (PAY003)
-    APPROVE_NO          VARCHAR(15),                -- 승인번호
-    ORDER_NO            VARCHAR(15),                -- 주문번호
-    CLAIM_NO            VARCHAR(15),                -- 클레임번호
-    UPPER_PAY_NO        VARCHAR(15),                -- 상위결제번호
-    TRD_NO              VARCHAR(15),                -- 거래번호
-    PAY_FINISH_DATE_TIME TIMESTAMP,                 -- 결제완료일시
-    MEMBER_NO           VARCHAR(15)     NOT NULL,   -- 회원번호
-    AMOUNT              NUMERIC         NOT NULL,   -- 결제금액
-    CANCELABLE_AMOUNT   NUMERIC         NOT NULL,   -- 취소가능금액
+    PAY_NO                  VARCHAR(15)     NOT NULL,   -- 결제번호 (PK, 시퀀스)
+    PAY_TYPE_CODE           VARCHAR(3)      NOT NULL,   -- 결제유형코드 (PAY001: 001-결제/002-환불)
+    PAY_WAY_CODE            VARCHAR(3)      NOT NULL,   -- 결제방식코드 (PAY002: 001-신용카드/002-포인트)
+    PAY_STATUS_CODE         VARCHAR(3)      NOT NULL,   -- 결제상태코드 (PAY003)
+    APPROVE_NO              VARCHAR(15),                -- 승인번호
+    ORDER_NO                VARCHAR(15),                -- 주문번호
+    CLAIM_NO                VARCHAR(15),                -- 클레임번호
+    UPPER_PAY_NO            VARCHAR(15),                -- 상위결제번호
+    TRD_NO                  VARCHAR(15),                -- 거래번호
+    PAY_FINISH_DATE_TIME    TIMESTAMP,                  -- 결제완료일시
+    MEMBER_NO               VARCHAR(15)     NOT NULL,   -- 회원번호
+    AMOUNT                  NUMERIC         NOT NULL,   -- 결제금액
+    CANCELABLE_AMOUNT       NUMERIC         NOT NULL,   -- 취소가능금액
+    REGIST_ID               VARCHAR(15)     NOT NULL,   -- 등록자
+    REGIST_DATE_TIME        TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 등록일시
+    MODIFY_ID               VARCHAR(15)     NOT NULL,   -- 수정자
+    MODIFY_DATE_TIME        TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 수정일시
     CONSTRAINT PK_PAY_BASE PRIMARY KEY (PAY_NO)
 );
 
@@ -220,6 +256,10 @@ COMMENT ON COLUMN PAY_BASE.PAY_FINISH_DATE_TIME IS '결제완료일시';
 COMMENT ON COLUMN PAY_BASE.MEMBER_NO IS '회원번호';
 COMMENT ON COLUMN PAY_BASE.AMOUNT IS '결제금액';
 COMMENT ON COLUMN PAY_BASE.CANCELABLE_AMOUNT IS '취소가능금액';
+COMMENT ON COLUMN PAY_BASE.REGIST_ID IS '등록자';
+COMMENT ON COLUMN PAY_BASE.REGIST_DATE_TIME IS '등록일시';
+COMMENT ON COLUMN PAY_BASE.MODIFY_ID IS '수정자';
+COMMENT ON COLUMN PAY_BASE.MODIFY_DATE_TIME IS '수정일시';
 
 -- =============================================
 -- 6. pay_interface_log (결제 인터페이스 로그)
@@ -231,6 +271,10 @@ CREATE TABLE PAY_INTERFACE_LOG (
     PAY_LOG_CODE        VARCHAR(3)      NOT NULL,   -- 로그유형코드 (PAY_004: 001-결제/002-승인/003-망취소)
     REQUEST_JSON        TEXT,                       -- 요청JSON
     RESPONSE_JSON       TEXT,                       -- 응답JSON
+    REGIST_ID           VARCHAR(15)     NOT NULL,   -- 등록자
+    REGIST_DATE_TIME    TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 등록일시
+    MODIFY_ID           VARCHAR(15)     NOT NULL,   -- 수정자
+    MODIFY_DATE_TIME    TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 수정일시
     CONSTRAINT PK_PAY_INTERFACE_LOG PRIMARY KEY (PAY_INTERFACE_NO)
 );
 
@@ -241,19 +285,31 @@ COMMENT ON COLUMN PAY_INTERFACE_LOG.PAY_NO IS '결제번호';
 COMMENT ON COLUMN PAY_INTERFACE_LOG.PAY_LOG_CODE IS '로그유형코드 (PAY_004: 001-결제/002-승인/003-망취소)';
 COMMENT ON COLUMN PAY_INTERFACE_LOG.REQUEST_JSON IS '요청JSON';
 COMMENT ON COLUMN PAY_INTERFACE_LOG.RESPONSE_JSON IS '응답JSON';
+COMMENT ON COLUMN PAY_INTERFACE_LOG.REGIST_ID IS '등록자';
+COMMENT ON COLUMN PAY_INTERFACE_LOG.REGIST_DATE_TIME IS '등록일시';
+COMMENT ON COLUMN PAY_INTERFACE_LOG.MODIFY_ID IS '수정자';
+COMMENT ON COLUMN PAY_INTERFACE_LOG.MODIFY_DATE_TIME IS '수정일시';
 
 -- =============================================
 -- 7. code_base (공통 코드 정보)
 -- =============================================
 CREATE TABLE CODE_BASE (
-    GROUP_CODE      VARCHAR(6)      NOT NULL,   -- 그룹코드 (PK)
-    GROUP_CODE_NAME VARCHAR(15)     NOT NULL,   -- 그룹코드명
+    GROUP_CODE          VARCHAR(6)      NOT NULL,   -- 그룹코드 (PK)
+    GROUP_CODE_NAME     VARCHAR(15)     NOT NULL,   -- 그룹코드명
+    REGIST_ID           VARCHAR(15)     NOT NULL,   -- 등록자
+    REGIST_DATE_TIME    TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 등록일시
+    MODIFY_ID           VARCHAR(15)     NOT NULL,   -- 수정자
+    MODIFY_DATE_TIME    TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 수정일시
     CONSTRAINT PK_CODE_BASE PRIMARY KEY (GROUP_CODE)
 );
 
 COMMENT ON TABLE CODE_BASE IS '공통 코드 정보';
 COMMENT ON COLUMN CODE_BASE.GROUP_CODE IS '그룹코드';
 COMMENT ON COLUMN CODE_BASE.GROUP_CODE_NAME IS '그룹코드명';
+COMMENT ON COLUMN CODE_BASE.REGIST_ID IS '등록자';
+COMMENT ON COLUMN CODE_BASE.REGIST_DATE_TIME IS '등록일시';
+COMMENT ON COLUMN CODE_BASE.MODIFY_ID IS '수정자';
+COMMENT ON COLUMN CODE_BASE.MODIFY_DATE_TIME IS '수정일시';
 
 -- =============================================
 -- 8. code_detail (공통 코드 상세 정보)
@@ -265,6 +321,10 @@ CREATE TABLE CODE_DETAIL (
     REFERENCE_VALUE_1   VARCHAR(255),               -- 참조값1
     REFERENCE_VALUE_2   VARCHAR(255),               -- 참조값2
     DISPLAY_SEQUENCE    NUMERIC         NOT NULL DEFAULT 0,   -- 정렬순서
+    REGIST_ID           VARCHAR(15)     NOT NULL,   -- 등록자
+    REGIST_DATE_TIME    TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 등록일시
+    MODIFY_ID           VARCHAR(15)     NOT NULL,   -- 수정자
+    MODIFY_DATE_TIME    TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 수정일시
     CONSTRAINT PK_CODE_DETAIL PRIMARY KEY (GROUP_CODE, CODE)
 );
 
@@ -275,6 +335,10 @@ COMMENT ON COLUMN CODE_DETAIL.CODE_NAME IS '코드명';
 COMMENT ON COLUMN CODE_DETAIL.REFERENCE_VALUE_1 IS '참조값1';
 COMMENT ON COLUMN CODE_DETAIL.REFERENCE_VALUE_2 IS '참조값2';
 COMMENT ON COLUMN CODE_DETAIL.DISPLAY_SEQUENCE IS '정렬순서';
+COMMENT ON COLUMN CODE_DETAIL.REGIST_ID IS '등록자';
+COMMENT ON COLUMN CODE_DETAIL.REGIST_DATE_TIME IS '등록일시';
+COMMENT ON COLUMN CODE_DETAIL.MODIFY_ID IS '수정자';
+COMMENT ON COLUMN CODE_DETAIL.MODIFY_DATE_TIME IS '수정일시';
 
 -- =============================================
 -- 9. member_base (회원 정보)
@@ -286,6 +350,10 @@ CREATE TABLE MEMBER_BASE (
     EMAIL               VARCHAR(50)     NOT NULL,   -- 이메일
     PASSWORD            VARCHAR(255)    NOT NULL,   -- 비밀번호
     MEMBER_STATUS_CODE  VARCHAR(3)      NOT NULL,   -- 회원상태코드 (MEM001)
+    REGIST_ID           VARCHAR(15)     NOT NULL,   -- 등록자
+    REGIST_DATE_TIME    TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 등록일시
+    MODIFY_ID           VARCHAR(15)     NOT NULL,   -- 수정자
+    MODIFY_DATE_TIME    TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 수정일시
     CONSTRAINT PK_MEMBER_BASE PRIMARY KEY (MEMBER_NO)
 );
 
@@ -296,19 +364,27 @@ COMMENT ON COLUMN MEMBER_BASE.PHONE IS '전화번호';
 COMMENT ON COLUMN MEMBER_BASE.EMAIL IS '이메일';
 COMMENT ON COLUMN MEMBER_BASE.PASSWORD IS '비밀번호';
 COMMENT ON COLUMN MEMBER_BASE.MEMBER_STATUS_CODE IS '회원상태코드 (MEM001: 001-정상회원/002-탈퇴회원)';
+COMMENT ON COLUMN MEMBER_BASE.REGIST_ID IS '등록자';
+COMMENT ON COLUMN MEMBER_BASE.REGIST_DATE_TIME IS '등록일시';
+COMMENT ON COLUMN MEMBER_BASE.MODIFY_ID IS '수정자';
+COMMENT ON COLUMN MEMBER_BASE.MODIFY_DATE_TIME IS '수정일시';
 
 -- =============================================
 -- 10. point_history (포인트 기록)
 -- =============================================
 CREATE TABLE POINT_HISTORY (
-    POINT_HISTORY_NO            VARCHAR(15)     NOT NULL,   -- 포인트기록번호 (PK, 시퀀스)
-    MEMBER_NO                   VARCHAR(50)     NOT NULL,   -- 회원번호
-    AMOUNT                      NUMERIC         NOT NULL,   -- 금액
-    POINT_TRANSACTION_CODE      VARCHAR(3)      NOT NULL,   -- 포인트적립사용코드 (MEM002)
-    POINT_TRANSACTION_REASON_CODE VARCHAR(3)    NOT NULL,   -- 포인트적립사용사유코드 (MEM003)
-    POINT_TRANSACTION_REASON_NO VARCHAR(50),                -- 포인트적립사용번호
-    START_DATE_TIME             TIMESTAMP       NOT NULL,   -- 시작일시
-    END_DATE_TIME               TIMESTAMP,                  -- 종료일시
+    POINT_HISTORY_NO                VARCHAR(15)     NOT NULL,   -- 포인트기록번호 (PK, 시퀀스)
+    MEMBER_NO                       VARCHAR(50)     NOT NULL,   -- 회원번호
+    AMOUNT                          NUMERIC         NOT NULL,   -- 금액
+    POINT_TRANSACTION_CODE          VARCHAR(3)      NOT NULL,   -- 포인트적립사용코드 (MEM002)
+    POINT_TRANSACTION_REASON_CODE   VARCHAR(3)      NOT NULL,   -- 포인트적립사용사유코드 (MEM003)
+    POINT_TRANSACTION_REASON_NO     VARCHAR(50),                -- 포인트적립사용번호
+    START_DATE_TIME                 TIMESTAMP       NOT NULL,   -- 시작일시
+    END_DATE_TIME                   TIMESTAMP,                  -- 종료일시
+    REGIST_ID                       VARCHAR(15)     NOT NULL,   -- 등록자
+    REGIST_DATE_TIME                TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 등록일시
+    MODIFY_ID                       VARCHAR(15)     NOT NULL,   -- 수정자
+    MODIFY_DATE_TIME                TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 수정일시
     CONSTRAINT PK_POINT_HISTORY PRIMARY KEY (POINT_HISTORY_NO)
 );
 
@@ -321,6 +397,10 @@ COMMENT ON COLUMN POINT_HISTORY.POINT_TRANSACTION_REASON_CODE IS '포인트적�
 COMMENT ON COLUMN POINT_HISTORY.POINT_TRANSACTION_REASON_NO IS '포인트적립사용번호';
 COMMENT ON COLUMN POINT_HISTORY.START_DATE_TIME IS '시작일시';
 COMMENT ON COLUMN POINT_HISTORY.END_DATE_TIME IS '종료일시';
+COMMENT ON COLUMN POINT_HISTORY.REGIST_ID IS '등록자';
+COMMENT ON COLUMN POINT_HISTORY.REGIST_DATE_TIME IS '등록일시';
+COMMENT ON COLUMN POINT_HISTORY.MODIFY_ID IS '수정자';
+COMMENT ON COLUMN POINT_HISTORY.MODIFY_DATE_TIME IS '수정일시';
 
 -- =============================================
 -- 11. goods_base (상품 정보)
@@ -329,6 +409,10 @@ CREATE TABLE GOODS_BASE (
     GOODS_NO            VARCHAR(15)     NOT NULL,   -- 상품번호 (PK, G+시퀀스)
     GOODS_NAME          VARCHAR(50)     NOT NULL,   -- 상품명
     GOODS_STATUS_CODE   VARCHAR(3)      NOT NULL,   -- 상품상태코드 (PRD001)
+    REGIST_ID           VARCHAR(15)     NOT NULL,   -- 등록자
+    REGIST_DATE_TIME    TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 등록일시
+    MODIFY_ID           VARCHAR(15)     NOT NULL,   -- 수정자
+    MODIFY_DATE_TIME    TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 수정일시
     CONSTRAINT PK_GOODS_BASE PRIMARY KEY (GOODS_NO)
 );
 
@@ -336,6 +420,10 @@ COMMENT ON TABLE GOODS_BASE IS '상품 정보';
 COMMENT ON COLUMN GOODS_BASE.GOODS_NO IS '상품번호';
 COMMENT ON COLUMN GOODS_BASE.GOODS_NAME IS '상품명';
 COMMENT ON COLUMN GOODS_BASE.GOODS_STATUS_CODE IS '상품상태코드 (PRD001: 001-판매중/002-판매중단/003-판매중단)';
+COMMENT ON COLUMN GOODS_BASE.REGIST_ID IS '등록자';
+COMMENT ON COLUMN GOODS_BASE.REGIST_DATE_TIME IS '등록일시';
+COMMENT ON COLUMN GOODS_BASE.MODIFY_ID IS '수정자';
+COMMENT ON COLUMN GOODS_BASE.MODIFY_DATE_TIME IS '수정일시';
 
 -- =============================================
 -- 12. goods_item (단품 정보)
@@ -347,6 +435,10 @@ CREATE TABLE GOODS_ITEM (
     ITEM_PRICE          NUMERIC         NOT NULL,   -- 단품금액
     STOCK               NUMERIC         NOT NULL DEFAULT 0,   -- 재고수량
     GOODS_STATUS_CODE   VARCHAR(3)      NOT NULL,   -- 단품상태코드 (PRD001)
+    REGIST_ID           VARCHAR(15)     NOT NULL,   -- 등록자
+    REGIST_DATE_TIME    TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 등록일시
+    MODIFY_ID           VARCHAR(15)     NOT NULL,   -- 수정자
+    MODIFY_DATE_TIME    TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 수정일시
     CONSTRAINT PK_GOODS_ITEM PRIMARY KEY (GOODS_NO, ITEM_NO)
 );
 
@@ -357,6 +449,10 @@ COMMENT ON COLUMN GOODS_ITEM.GOODS_NAME IS '상품명';
 COMMENT ON COLUMN GOODS_ITEM.ITEM_PRICE IS '단품금액';
 COMMENT ON COLUMN GOODS_ITEM.STOCK IS '재고수량';
 COMMENT ON COLUMN GOODS_ITEM.GOODS_STATUS_CODE IS '단품상태코드 (PRD001)';
+COMMENT ON COLUMN GOODS_ITEM.REGIST_ID IS '등록자';
+COMMENT ON COLUMN GOODS_ITEM.REGIST_DATE_TIME IS '등록일시';
+COMMENT ON COLUMN GOODS_ITEM.MODIFY_ID IS '수정자';
+COMMENT ON COLUMN GOODS_ITEM.MODIFY_DATE_TIME IS '수정일시';
 
 -- =============================================
 -- 13. goods_price_hist (상품 가격 정보)
@@ -367,6 +463,10 @@ CREATE TABLE GOODS_PRICE_HIST (
     END_DATE_TIME       TIMESTAMP       NOT NULL,   -- 종료일 (PK)
     SALE_PRICE          NUMERIC         NOT NULL,   -- 판매가
     SUPPLY_PRICE        NUMERIC         NOT NULL,   -- 공급원가
+    REGIST_ID           VARCHAR(15)     NOT NULL,   -- 등록자
+    REGIST_DATE_TIME    TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 등록일시
+    MODIFY_ID           VARCHAR(15)     NOT NULL,   -- 수정자
+    MODIFY_DATE_TIME    TIMESTAMP       NOT NULL DEFAULT NOW(),   -- 수정일시
     CONSTRAINT PK_GOODS_PRICE_HIST PRIMARY KEY (GOODS_NO, START_DATE_TIME, END_DATE_TIME)
 );
 
@@ -376,6 +476,10 @@ COMMENT ON COLUMN GOODS_PRICE_HIST.START_DATE_TIME IS '시작일';
 COMMENT ON COLUMN GOODS_PRICE_HIST.END_DATE_TIME IS '종료일';
 COMMENT ON COLUMN GOODS_PRICE_HIST.SALE_PRICE IS '판매가';
 COMMENT ON COLUMN GOODS_PRICE_HIST.SUPPLY_PRICE IS '공급원가';
+COMMENT ON COLUMN GOODS_PRICE_HIST.REGIST_ID IS '등록자';
+COMMENT ON COLUMN GOODS_PRICE_HIST.REGIST_DATE_TIME IS '등록일시';
+COMMENT ON COLUMN GOODS_PRICE_HIST.MODIFY_ID IS '수정자';
+COMMENT ON COLUMN GOODS_PRICE_HIST.MODIFY_DATE_TIME IS '수정일시';
 
 -- =============================================
 -- 인덱스 생성

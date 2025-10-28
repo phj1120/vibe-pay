@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.ibatis.type.Alias;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
@@ -16,7 +15,7 @@ import java.time.LocalDateTime;
 @Alias("PayBase")
 @Getter
 @Setter
-public class PayBase implements Serializable {
+public class PayBase extends SystemEntity {
     private static final long serialVersionUID = 5678901234567890123L;
 
     @Schema(description = "결제번호")
