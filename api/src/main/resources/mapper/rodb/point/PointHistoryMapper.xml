@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.repository.point.PointHistoryMapper">
+
+    <!-- 회원의 보유 포인트 조회 -->
+    <select id="selectPointBalance" parameterType="string" resultType="PointBalanceResponse">
+        SELECT /* PointHistoryMapper.selectPointBalance */
+               COALESCE(SUM(REMAIN_POINT), 0) AS TOTAL_POINT
+          FROM POINT_HISTORY
+         WHERE MEMBER_NO = #{memberNo}
+           AND POINT_TRANSACTION_CODE = '001'
+           AND REMAIN_POINT > 0
+           AND END_DATE_TIME > NOW()
+    </select>
+
+    <!-- 회원의 포인트 내역 목록 조회 -->
+    <select id="selectPointHistoryList" parameterType="PointHistoryRequest" resultType="PointHistoryResponse">
+        SELECT /* PointHistoryMapper.selectPointHistoryList */
+               POINT_HISTORY_NO
+             , AMOUNT
+             , POINT_TRANSACTION_CODE
+             , POINT_TRANSACTION_REASON_CODE
+             , POINT_TRANSACTION_REASON_NO
+             , START_DATE_TIME
+             , END_DATE_TIME
+             , REMAIN_POINT
+             , REGIST_DATE_TIME AS CREATED_DATE
+          FROM POINT_HISTORY
+         WHERE MEMBER_NO = #{memberNo}
+           AND UPPER_POINT_HISTORY_NO IS NULL
+         ORDER BY REGIST_DATE_TIME DESC
+         LIMIT #{size} OFFSET #{page} * #{size}
+    </select>
+
+    <!-- 회원의 포인트 내역 총 개수 조회 -->
+    <select id="countPointHistory" parameterType="PointHistoryRequest" resultType="long">
+        SELECT /* PointHistoryMapper.countPointHistory */
+               COUNT(*)
+          FROM POINT_HISTORY
+         WHERE MEMBER_NO = #{memberNo}
+           AND UPPER_POINT_HISTORY_NO IS NULL
+    </select>
+
+    <!-- 사용 가능한 포인트 내역 조회 (종료일시 기준 정렬) -->
+    <select id="selectAvailablePointHistory" parameterType="string" resultType="PointHistory">
+        SELECT /* PointHistoryMapper.selectAvailablePointHistory */
+               POINT_HISTORY_NO
+             , MEMBER_NO
+             , AMOUNT
+             , POINT_TRANSACTION_CODE
+             , POINT_TRANSACTION_REASON_CODE
+             , POINT_TRANSACTION_REASON_NO
+             , START_DATE_TIME
+             , END_DATE_TIME
+             , UPPER_POINT_HISTORY_NO
+             , REMAIN_POINT
+          FROM POINT_HISTORY
+         WHERE MEMBER_NO = #{memberNo}
+           AND POINT_TRANSACTION_CODE = '001'
+           AND REMAIN_POINT > 0
+           AND END_DATE_TIME > NOW()
+         ORDER BY END_DATE_TIME ASC
+    </select>
+
+</mapper>

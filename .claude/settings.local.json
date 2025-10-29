@@ -1,18 +1,6 @@
 {
   "permissions": {
     "allow": [
-      "mcp__jetbrains__list_directory_tree",
-      "Bash(cat:*)",
-      "Read(//Users/parkh/.config/**)",
-      "mcp__jetbrains__create_new_file",
-      "Bash(npm run lint)",
-      "Bash(npm install:*)",
-      "mcp__jetbrains__search_in_files_by_text",
-      "mcp__jetbrains__find_files_by_name_keyword",
-      "mcp__jetbrains__find_files_by_glob",
-      "mcp__jetbrains__reformat_file",
-      "mcp__jetbrains__get_file_text_by_path",
-      "mcp__jetbrains__replace_text_in_file"
     ],
     "deny": [],
     "ask": []
