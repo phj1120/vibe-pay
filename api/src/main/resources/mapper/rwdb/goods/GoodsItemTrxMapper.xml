@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.repository.goods.GoodsItemTrxMapper">
+
+    <!-- 단품 등록 -->
+    <insert id="insertGoodsItem" parameterType="GoodsItem">
+        INSERT INTO GOODS_ITEM ( /* GoodsItemTrxMapper.insertGoodsItem */
+               GOODS_NO
+             , ITEM_NO
+             , ITEM_NAME
+             , ITEM_PRICE
+             , STOCK
+             , GOODS_STATUS_CODE
+             , REGIST_ID
+             , REGIST_DATE_TIME
+             , MODIFY_ID
+             , MODIFY_DATE_TIME
+        )
+        VALUES (
+               #{goodsNo}
+             , #{itemNo}
+             , #{itemName}
+             , #{itemPrice}
+             , #{stock}
+             , #{goodsStatusCode}
+             , #{registId}
+             , #{registDateTime}
+             , #{modifyId}
+             , #{modifyDateTime}
+        )
+    </insert>
+
+    <!-- 단품 수정 -->
+    <update id="updateGoodsItem" parameterType="GoodsItem">
+        UPDATE GOODS_ITEM /* GoodsItemTrxMapper.updateGoodsItem */
+           SET ITEM_NAME = #{itemName}
+             , ITEM_PRICE = #{itemPrice}
+             , STOCK = #{stock}
+             , GOODS_STATUS_CODE = #{goodsStatusCode}
+             , MODIFY_ID = #{modifyId}
+             , MODIFY_DATE_TIME = #{modifyDateTime}
+         WHERE GOODS_NO = #{goodsNo}
+           AND ITEM_NO = #{itemNo}
+    </update>
+
+    <!-- 상품의 모든 단품 삭제 -->
+    <delete id="deleteGoodsItemsByGoodsNo" parameterType="string">
+        DELETE /* GoodsItemTrxMapper.deleteGoodsItemsByGoodsNo */
+          FROM GOODS_ITEM
+         WHERE GOODS_NO = #{goodsNo}
+    </delete>
+
+    <!-- 특정 단품 삭제 -->
+    <delete id="deleteGoodsItem">
+        DELETE /* GoodsItemTrxMapper.deleteGoodsItem */
+          FROM GOODS_ITEM
+         WHERE GOODS_NO = #{goodsNo}
+           AND ITEM_NO = #{itemNo}
+    </delete>
+
+    <!-- 단품번호 최대값 조회 -->
+    <select id="selectMaxItemNo" parameterType="string" resultType="string">
+        SELECT /* GoodsItemTrxMapper.selectMaxItemNo */
+               COALESCE(MAX(ITEM_NO), '000') AS MAX_ITEM_NO
+          FROM GOODS_ITEM
+         WHERE GOODS_NO = #{goodsNo}
+    </select>
+
+</mapper>

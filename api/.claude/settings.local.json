@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/parkh/Dev/git/Project/vibe-pay/docs/**)",
+      "Read(//Users/parkh/Dev/git/Project/vibe-pay/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.repository.goods.GoodsPriceHistTrxMapper">
+
+    <!-- 상품 가격 이력 등록 -->
+    <insert id="insertGoodsPriceHist" parameterType="GoodsPriceHist">
+        INSERT INTO GOODS_PRICE_HIST ( /* GoodsPriceHistTrxMapper.insertGoodsPriceHist */
+               GOODS_NO
+             , START_DATE_TIME
+             , END_DATE_TIME
+             , SALE_PRICE
+             , SUPPLY_PRICE
+             , REGIST_ID
+             , REGIST_DATE_TIME
+             , MODIFY_ID
+             , MODIFY_DATE_TIME
+        )
+        VALUES (
+               #{goodsNo}
+             , #{startDateTime}
+             , #{endDateTime}
+             , #{salePrice}
+             , #{supplyPrice}
+             , #{registId}
+             , #{registDateTime}
+             , #{modifyId}
+             , #{modifyDateTime}
+        )
+    </insert>
+
+    <!-- 이전 가격 이력 종료일 업데이트 -->
+    <update id="updatePreviousPriceEndDateTime" parameterType="string">
+        UPDATE GOODS_PRICE_HIST /* GoodsPriceHistTrxMapper.updatePreviousPriceEndDateTime */
+           SET END_DATE_TIME = CURRENT_TIMESTAMP
+             , MODIFY_ID = '999999999999999'
+             , MODIFY_DATE_TIME = CURRENT_TIMESTAMP
+         WHERE GOODS_NO = #{goodsNo}
+           AND END_DATE_TIME > CURRENT_TIMESTAMP
+    </update>
+
+</mapper>

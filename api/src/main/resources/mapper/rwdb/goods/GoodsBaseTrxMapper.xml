@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.repository.goods.GoodsBaseTrxMapper">
+
+    <!-- 상품번호 시퀀스 생성 -->
+    <select id="generateGoodsNo" resultType="string">
+        SELECT /* GoodsBaseTrxMapper.generateGoodsNo */
+               'G' || LPAD(NEXTVAL('SEQ_GOODS_NO')::TEXT, 14, '0') AS GOODS_NO
+    </select>
+
+    <!-- 상품 등록 -->
+    <insert id="insertGoodsBase" parameterType="GoodsBase">
+        INSERT INTO GOODS_BASE ( /* GoodsBaseTrxMapper.insertGoodsBase */
+               GOODS_NO
+             , GOODS_NAME
+             , GOODS_STATUS_CODE
+             , GOODS_MAIN_IMAGE_URL
+             , REGIST_ID
+             , REGIST_DATE_TIME
+             , MODIFY_ID
+             , MODIFY_DATE_TIME
+        )
+        VALUES (
+               #{goodsNo}
+             , #{goodsName}
+             , #{goodsStatusCode}
+             , #{goodsMainImageUrl}
+             , #{registId}
+             , #{registDateTime}
+             , #{modifyId}
+             , #{modifyDateTime}
+        )
+    </insert>
+
+    <!-- 상품 수정 -->
+    <update id="updateGoodsBase" parameterType="GoodsBase">
+        UPDATE GOODS_BASE /* GoodsBaseTrxMapper.updateGoodsBase */
+           SET GOODS_NAME = #{goodsName}
+             , GOODS_STATUS_CODE = #{goodsStatusCode}
+             , GOODS_MAIN_IMAGE_URL = #{goodsMainImageUrl}
+             , MODIFY_ID = #{modifyId}
+             , MODIFY_DATE_TIME = #{modifyDateTime}
+         WHERE GOODS_NO = #{goodsNo}
+    </update>
+
+    <!-- 상품 삭제 -->
+    <delete id="deleteGoodsBase" parameterType="string">
+        DELETE /* GoodsBaseTrxMapper.deleteGoodsBase */
+          FROM GOODS_BASE
+         WHERE GOODS_NO = #{goodsNo}
+    </delete>
+
+</mapper>

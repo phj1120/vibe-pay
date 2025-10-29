@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.repository.goods.GoodsPriceHistMapper">
+
+    <!-- 상품의 현재 유효한 가격 조회 -->
+    <select id="selectCurrentPrice" parameterType="string" resultType="GoodsPriceHist">
+        SELECT /* GoodsPriceHistMapper.selectCurrentPrice */
+               GOODS_NO
+             , START_DATE_TIME
+             , END_DATE_TIME
+             , SALE_PRICE
+             , SUPPLY_PRICE
+          FROM GOODS_PRICE_HIST
+         WHERE GOODS_NO = #{goodsNo}
+           AND CURRENT_TIMESTAMP BETWEEN START_DATE_TIME AND END_DATE_TIME
+         LIMIT 1
+    </select>
+
+</mapper>

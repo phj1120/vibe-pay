@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.repository.goods.GoodsBaseMapper">
+
+    <!-- 상품 목록 조회 (페이징) -->
+    <select id="selectGoodsList" parameterType="GoodsSearchRequest" resultType="GoodsListResponse">
+        SELECT /* GoodsBaseMapper.selectGoodsList */
+               G.GOODS_NO
+             , G.GOODS_NAME
+             , G.GOODS_STATUS_CODE
+             , C.CODE_NAME AS GOODS_STATUS_NAME
+             , G.GOODS_MAIN_IMAGE_URL
+             , P.SALE_PRICE
+             , P.SUPPLY_PRICE
+             , COALESCE(MIN(I.ITEM_PRICE), 0) AS MIN_ITEM_PRICE
+             , COALESCE(MAX(I.ITEM_PRICE), 0) AS MAX_ITEM_PRICE
+             , COALESCE(SUM(I.STOCK), 0) AS TOTAL_STOCK
+             , CASE
+                   WHEN G.GOODS_STATUS_CODE = '001'
+                    AND EXISTS (
+                        SELECT 1
+                          FROM GOODS_ITEM I2
+                         WHERE I2.GOODS_NO = G.GOODS_NO
+                           AND I2.GOODS_STATUS_CODE = '001'
+                           AND I2.STOCK > 0
+                    )
+                   THEN TRUE
+                   ELSE FALSE
+               END AS IS_AVAILABLE
+             , G.REGIST_DATE_TIME
+          FROM GOODS_BASE G
+         INNER JOIN GOODS_PRICE_HIST P
+            ON G.GOODS_NO = P.GOODS_NO
+           AND CURRENT_TIMESTAMP BETWEEN P.START_DATE_TIME AND P.END_DATE_TIME
+          LEFT JOIN CODE_DETAIL C
+            ON C.GROUP_CODE = 'PRD001'
+           AND C.CODE = G.GOODS_STATUS_CODE
+          LEFT JOIN GOODS_ITEM I
+            ON G.GOODS_NO = I.GOODS_NO
+         WHERE 1=1
+        <if test="goodsStatusCode != null and goodsStatusCode != ''">
+           AND G.GOODS_STATUS_CODE = #{goodsStatusCode}
+        </if>
+        <if test="goodsName != null and goodsName != ''">
+           AND G.GOODS_NAME LIKE '%' || #{goodsName} || '%'
+        </if>
+         GROUP BY G.GOODS_NO
+                , G.GOODS_NAME
+                , G.GOODS_STATUS_CODE
+                , C.CODE_NAME
+                , G.GOODS_MAIN_IMAGE_URL
+                , P.SALE_PRICE
+                , P.SUPPLY_PRICE
+                , G.REGIST_DATE_TIME
+         ORDER BY G.REGIST_DATE_TIME DESC
+         LIMIT #{size}
+        OFFSET #{page} * #{size}
+    </select>
+
+    <!-- 상품 목록 전체 개수 조회 -->
+    <select id="countGoodsList" parameterType="GoodsSearchRequest" resultType="long">
+        SELECT /* GoodsBaseMapper.countGoodsList */
+               COUNT(*)
+          FROM GOODS_BASE G
+         WHERE 1=1
+        <if test="goodsStatusCode != null and goodsStatusCode != ''">
+           AND G.GOODS_STATUS_CODE = #{goodsStatusCode}
+        </if>
+        <if test="goodsName != null and goodsName != ''">
+           AND G.GOODS_NAME LIKE '%' || #{goodsName} || '%'
+        </if>
+    </select>
+
+    <!-- 상품 상세 조회 -->
+    <select id="selectGoodsDetail" parameterType="string" resultType="GoodsDetailResponse">
+        SELECT /* GoodsBaseMapper.selectGoodsDetail */
+               G.GOODS_NO
+             , G.GOODS_NAME
+             , G.GOODS_STATUS_CODE
+             , C.CODE_NAME AS GOODS_STATUS_NAME
+             , G.GOODS_MAIN_IMAGE_URL
+             , P.SALE_PRICE
+             , P.SUPPLY_PRICE
+             , G.REGIST_DATE_TIME
+             , G.MODIFY_DATE_TIME
+          FROM GOODS_BASE G
+         INNER JOIN GOODS_PRICE_HIST P
+            ON G.GOODS_NO = P.GOODS_NO
+           AND CURRENT_TIMESTAMP BETWEEN P.START_DATE_TIME AND P.END_DATE_TIME
+          LEFT JOIN CODE_DETAIL C
+            ON C.GROUP_CODE = 'PRD001'
+           AND C.CODE = G.GOODS_STATUS_CODE
+         WHERE G.GOODS_NO = #{goodsNo}
+    </select>
+
+    <!-- 상품 존재 여부 확인 -->
+    <select id="existsGoodsByGoodsNo" parameterType="string" resultType="int">
+        SELECT /* GoodsBaseMapper.existsGoodsByGoodsNo */
+               COUNT(*)
+          FROM GOODS_BASE
+         WHERE GOODS_NO = #{goodsNo}
+    </select>
+
+</mapper>

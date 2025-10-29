@@ -2,11 +2,10 @@
 -- drop schema model_claude_v6;
 -- drop user model_claude_v6;
 
-
--- 2. 사용자 생성 및 비밀번호 설정
+-- 1. 사용자 생성 및 비밀번호 설정
 CREATE USER model_claude_v6 PASSWORD 'password';
 
--- 1. 데이터베이스 생성 (슈퍼유저 권한 필요)
+-- 2. 데이터베이스 생성 (슈퍼유저 권한 필요)
 CREATE DATABASE model_claude_v6
     WITH
     OWNER = model_claude_v6   ;
@@ -33,9 +32,5 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA model_claude_v6
 ALTER DEFAULT PRIVILEGES IN SCHEMA model_claude_v6
     GRANT ALL ON FUNCTIONS TO model_claude_v6;
 
-CREATE SEQUENCE model_claude_v6.SEQ_BASKET_NO
-    START WITH 1
-    INCREMENT BY 1
-    MINVALUE 1
-    MAXVALUE 999999999999999
-    CACHE 20;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA model_claude_v6 TO model_claude_v6;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA model_claude_v6 TO model_claude_v6;
