@@ -13,6 +13,10 @@
              , SUPPLY_PRICE
              , GOODS_NAME
              , ITEM_NAME
+             , REGIST_ID
+             , REGIST_DATE_TIME
+             , MODIFY_ID
+             , MODIFY_DATE_TIME
         )
         VALUES (
                #{orderNo}
@@ -22,6 +26,10 @@
              , #{supplyPrice}
              , #{goodsName}
              , #{itemName}
+             , #{registId}
+             , #{registDateTime}
+             , #{modifyId}
+             , #{modifyDateTime}
         )
     </insert>
 
@@ -32,6 +40,8 @@
              , SUPPLY_PRICE = #{supplyPrice}
              , GOODS_NAME = #{goodsName}
              , ITEM_NAME = #{itemName}
+             , MODIFY_ID = #{modifyId}
+             , MODIFY_DATE_TIME = #{modifyDateTime}
          WHERE ORDER_NO = #{orderNo}
            AND GOODS_NO = #{goodsNo}
            AND ITEM_NO = #{itemNo}

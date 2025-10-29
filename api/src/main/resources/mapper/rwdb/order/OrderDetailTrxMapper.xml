@@ -19,6 +19,10 @@
              , ORDER_TYPE_CODE
              , ORDER_ACCEPT_DTM
              , ORDER_FINISH_DTM
+             , REGIST_ID
+             , REGIST_DATE_TIME
+             , MODIFY_ID
+             , MODIFY_DATE_TIME
         )
         VALUES (
                #{orderNo}
@@ -34,6 +38,10 @@
              , #{orderTypeCode}
              , #{orderAcceptDtm}
              , #{orderFinishDtm}
+             , #{registId}
+             , #{registDateTime}
+             , #{modifyId}
+             , #{modifyDateTime}
         )
     </insert>
 
@@ -50,6 +58,8 @@
              , ORDER_TYPE_CODE = #{orderTypeCode}
              , ORDER_ACCEPT_DTM = #{orderAcceptDtm}
              , ORDER_FINISH_DTM = #{orderFinishDtm}
+             , MODIFY_ID = #{modifyId}
+             , MODIFY_DATE_TIME = #{modifyDateTime}
          WHERE ORDER_NO = #{orderNo}
            AND ORDER_SEQUENCE = #{orderSequence}
            AND ORDER_PROCESS_SEQUENCE = #{orderProcessSequence}

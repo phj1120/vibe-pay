@@ -20,10 +20,18 @@
         INSERT INTO ORDER_BASE ( /* OrderBaseTrxMapper.insertOrderBase */
                ORDER_NO
              , MEMBER_NO
+             , REGIST_ID
+             , REGIST_DATE_TIME
+             , MODIFY_ID
+             , MODIFY_DATE_TIME
         )
         VALUES (
                #{orderNo}
              , #{memberNo}
+             , #{registId}
+             , #{registDateTime}
+             , #{modifyId}
+             , #{modifyDateTime}
         )
     </insert>
 
@@ -31,6 +39,8 @@
     <update id="updateOrderBase" parameterType="OrderBase">
         UPDATE ORDER_BASE /* OrderBaseTrxMapper.updateOrderBase */
            SET MEMBER_NO = #{memberNo}
+             , MODIFY_ID = #{modifyId}
+             , MODIFY_DATE_TIME = #{modifyDateTime}
          WHERE ORDER_NO = #{orderNo}
     </update>
 

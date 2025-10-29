@@ -18,6 +18,10 @@
              , PAY_LOG_CODE
              , REQUEST_JSON
              , RESPONSE_JSON
+             , REGIST_ID
+             , REGIST_DATE_TIME
+             , MODIFY_ID
+             , MODIFY_DATE_TIME
         )
         VALUES (
                #{payInterfaceNo}
@@ -26,6 +30,10 @@
              , #{payLogCode}
              , #{requestJson}
              , #{responseJson}
+             , #{registId}
+             , #{registDateTime}
+             , #{modifyId}
+             , #{modifyDateTime}
         )
     </insert>
 
@@ -37,6 +45,8 @@
              , PAY_LOG_CODE = #{payLogCode}
              , REQUEST_JSON = #{requestJson}
              , RESPONSE_JSON = #{responseJson}
+             , MODIFY_ID = #{modifyId}
+             , MODIFY_DATE_TIME = #{modifyDateTime}
          WHERE PAY_INTERFACE_NO = #{payInterfaceNo}
     </update>
 

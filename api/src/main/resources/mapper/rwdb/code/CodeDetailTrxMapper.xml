@@ -12,6 +12,10 @@
              , REFERENCE_VALUE_1
              , REFERENCE_VALUE_2
              , DISPLAY_SEQUENCE
+             , REGIST_ID
+             , REGIST_DATE_TIME
+             , MODIFY_ID
+             , MODIFY_DATE_TIME
         )
         VALUES (
                #{groupCode}
@@ -20,6 +24,10 @@
              , #{referenceValue1}
              , #{referenceValue2}
              , #{displaySequence}
+             , #{registId}
+             , #{registDateTime}
+             , #{modifyId}
+             , #{modifyDateTime}
         )
     </insert>
 
@@ -30,6 +38,8 @@
              , REFERENCE_VALUE_1 = #{referenceValue1}
              , REFERENCE_VALUE_2 = #{referenceValue2}
              , DISPLAY_SEQUENCE = #{displaySequence}
+             , MODIFY_ID = #{modifyId}
+             , MODIFY_DATE_TIME = #{modifyDateTime}
          WHERE GROUP_CODE = #{groupCode}
            AND CODE = #{code}
     </update>

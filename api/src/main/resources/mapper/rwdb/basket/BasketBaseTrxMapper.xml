@@ -18,6 +18,10 @@
              , ITEM_NO
              , QUANTITY
              , IS_ORDER
+             , REGIST_ID
+             , REGIST_DATE_TIME
+             , MODIFY_ID
+             , MODIFY_DATE_TIME
         )
         VALUES (
                #{basketNo}
@@ -26,6 +30,10 @@
              , #{itemNo}
              , #{quantity}
              , #{isOrder}
+             , #{registId}
+             , #{registDateTime}
+             , #{modifyId}
+             , #{modifyDateTime}
         )
     </insert>
 
@@ -37,6 +45,8 @@
              , ITEM_NO = #{itemNo}
              , QUANTITY = #{quantity}
              , IS_ORDER = #{isOrder}
+             , MODIFY_ID = #{modifyId}
+             , MODIFY_DATE_TIME = #{modifyDateTime}
          WHERE BASKET_NO = #{basketNo}
     </update>
 

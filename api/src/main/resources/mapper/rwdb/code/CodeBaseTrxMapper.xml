@@ -8,10 +8,18 @@
         INSERT INTO CODE_BASE ( /* CodeBaseTrxMapper.insertCodeBase */
                GROUP_CODE
              , GROUP_CODE_NAME
+             , REGIST_ID
+             , REGIST_DATE_TIME
+             , MODIFY_ID
+             , MODIFY_DATE_TIME
         )
         VALUES (
                #{groupCode}
              , #{groupCodeName}
+             , #{registId}
+             , #{registDateTime}
+             , #{modifyId}
+             , #{modifyDateTime}
         )
     </insert>
 
@@ -19,6 +27,8 @@
     <update id="updateCodeBase" parameterType="CodeBase">
         UPDATE CODE_BASE /* CodeBaseTrxMapper.updateCodeBase */
            SET GROUP_CODE_NAME = #{groupCodeName}
+             , MODIFY_ID = #{modifyId}
+             , MODIFY_DATE_TIME = #{modifyDateTime}
          WHERE GROUP_CODE = #{groupCode}
     </update>
 
