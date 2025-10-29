@@ -47,4 +47,21 @@
          WHERE BASKET_NO = #{basketNo}
     </delete>
 
+    <!-- 장바구니 여러 개 삭제 -->
+    <delete id="deleteBasketBaseByNos">
+        DELETE /* BasketBaseTrxMapper.deleteBasketBaseByNos */
+          FROM BASKET_BASE
+         WHERE BASKET_NO IN
+        <foreach collection="basketNos" item="basketNo" separator="," open="(" close=")">
+            #{basketNo}
+        </foreach>
+    </delete>
+
+    <!-- 회원의 모든 장바구니 삭제 -->
+    <delete id="deleteBasketBaseByMemberNo" parameterType="string">
+        DELETE /* BasketBaseTrxMapper.deleteBasketBaseByMemberNo */
+          FROM BASKET_BASE
+         WHERE MEMBER_NO = #{memberNo}
+    </delete>
+
 </mapper>

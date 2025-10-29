@@ -1,6 +1,10 @@
 {
   "permissions": {
     "allow": [
+      "Bash(npm install:*)",
+      "Bash(sed:*)",
+      "Bash(cat:*)",
+      "Bash(mv:*)"
     ],
     "deny": [],
     "ask": []

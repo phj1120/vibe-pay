@@ -1,6 +1,9 @@
 package com.api.app.repository.basket;
 
 import com.api.app.entity.BasketBase;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
  * @author system
@@ -39,4 +42,20 @@ public interface BasketBaseTrxMapper {
      * @return 삭제된 건수
      */
     int deleteBasketBase(String basketNo);
+
+    /**
+     * 장바구니 여러 개 삭제
+     *
+     * @param basketNos 장바구니번호 목록
+     * @return 삭제된 건수
+     */
+    int deleteBasketBaseByNos(@Param("basketNos") List<String> basketNos);
+
+    /**
+     * 회원의 모든 장바구니 삭제
+     *
+     * @param memberNo 회원번호
+     * @return 삭제된 건수
+     */
+    int deleteBasketBaseByMemberNo(String memberNo);
 }

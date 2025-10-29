@@ -1,6 +1,8 @@
 package com.api.app.repository.basket;
 
+import com.api.app.dto.response.basket.BasketResponse;
 import com.api.app.entity.BasketBase;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -33,4 +35,26 @@ public interface BasketBaseMapper {
      * @return 장바구니 목록
      */
     List<BasketBase> selectBasketBaseByMemberNo(String memberNo);
+
+    /**
+     * 회원번호로 장바구니 목록 조회 (상품/단품 정보 포함)
+     *
+     * @param memberNo 회원번호
+     * @return 장바구니 목록
+     */
+    List<BasketResponse> selectBasketListByMemberNo(String memberNo);
+
+    /**
+     * 회원번호 + 상품번호 + 단품번호로 장바구니 조회
+     *
+     * @param memberNo 회원번호
+     * @param goodsNo  상품번호
+     * @param itemNo   단품번호
+     * @return 장바구니 정보
+     */
+    BasketBase selectBasketBaseByMemberAndItem(
+            @Param("memberNo") String memberNo,
+            @Param("goodsNo") String goodsNo,
+            @Param("itemNo") String itemNo
+    );
 }
