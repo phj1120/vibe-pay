@@ -31,3 +31,8 @@ export const pointApi = {
     );
   },
 };
+
+// Named exports for convenience
+export async function getPointBalance(): Promise<PointBalanceResponse> {
+  return pointApi.getBalance();
+}

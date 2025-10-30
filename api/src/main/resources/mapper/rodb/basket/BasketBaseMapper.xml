@@ -95,4 +95,38 @@
            AND IS_ORDER = FALSE
     </select>
 
+    <!-- 장바구니번호 목록으로 장바구니 목록 조회 (상품/단품 정보 포함) -->
+    <select id="selectBasketListByBasketNos" resultType="BasketResponse">
+        SELECT /* BasketBaseMapper.selectBasketListByBasketNos */
+               B.BASKET_NO
+             , B.MEMBER_NO
+             , B.GOODS_NO
+             , G.GOODS_NAME
+             , G.GOODS_STATUS_CODE
+             , G.GOODS_MAIN_IMAGE_URL
+             , (COALESCE(P.SALE_PRICE, 0) + I.ITEM_PRICE) AS SALE_PRICE
+             , B.ITEM_NO
+             , I.ITEM_NAME
+             , I.ITEM_PRICE
+             , I.GOODS_STATUS_CODE AS ITEM_STATUS_CODE
+             , I.STOCK
+             , B.QUANTITY
+             , B.IS_ORDER
+             , B.REGIST_DATE_TIME
+          FROM BASKET_BASE B
+         INNER JOIN GOODS_BASE G
+            ON B.GOODS_NO = G.GOODS_NO
+         INNER JOIN GOODS_ITEM I
+            ON B.GOODS_NO = I.GOODS_NO
+           AND B.ITEM_NO = I.ITEM_NO
+          LEFT JOIN GOODS_PRICE_HIST P
+            ON B.GOODS_NO = P.GOODS_NO
+           AND CURRENT_TIMESTAMP BETWEEN P.START_DATE_TIME AND P.END_DATE_TIME
+         WHERE B.BASKET_NO IN
+        <foreach collection="basketNos" item="basketNo" open="(" separator="," close=")">
+            #{basketNo}
+        </foreach>
+         ORDER BY B.REGIST_DATE_TIME DESC
+    </select>
+
 </mapper>

@@ -57,4 +57,12 @@ public interface BasketBaseMapper {
             @Param("goodsNo") String goodsNo,
             @Param("itemNo") String itemNo
     );
+
+    /**
+     * 장바구니번호 목록으로 장바구니 목록 조회 (상품/단품 정보 포함)
+     *
+     * @param basketNos 장바구니번호 목록
+     * @return 장바구니 목록
+     */
+    List<BasketResponse> selectBasketListByBasketNos(@Param("basketNos") List<String> basketNos);
 }

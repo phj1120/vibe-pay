@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Cookies from "js-cookie";
 import {
   getBasketList,
   modifyBasket,
@@ -157,7 +158,8 @@ export default function BasketPage() {
     }
 
     const selectedBasketNos = Array.from(selectedItems).join(",");
-    router.push(`/order?basketNos=${selectedBasketNos}`);
+    Cookies.set("basket_no_list", selectedBasketNos);
+    router.push("/order/sheet");
   }
 
   const totalPrice = basketItems
