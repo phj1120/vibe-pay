@@ -7,9 +7,10 @@ export interface BasketItem {
   goodsName: string;
   goodsStatusCode: string;
   goodsMainImageUrl: string;
+  salePrice: number; // 최종 판매가 (상품 판매가 + 단품 가격)
   itemNo: string;
   itemName: string;
-  itemPrice: number;
+  itemPrice: number; // 단품 가격
   itemStatusCode: string;
   stock: number;
   quantity: number;

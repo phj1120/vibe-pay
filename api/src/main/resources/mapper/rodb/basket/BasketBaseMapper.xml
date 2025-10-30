@@ -52,6 +52,7 @@
              , G.GOODS_NAME
              , G.GOODS_STATUS_CODE
              , G.GOODS_MAIN_IMAGE_URL
+             , (COALESCE(P.SALE_PRICE, 0) + I.ITEM_PRICE) AS SALE_PRICE
              , B.ITEM_NO
              , I.ITEM_NAME
              , I.ITEM_PRICE
@@ -66,6 +67,9 @@
          INNER JOIN GOODS_ITEM I
             ON B.GOODS_NO = I.GOODS_NO
            AND B.ITEM_NO = I.ITEM_NO
+          LEFT JOIN GOODS_PRICE_HIST P
+            ON B.GOODS_NO = P.GOODS_NO
+           AND CURRENT_TIMESTAMP BETWEEN P.START_DATE_TIME AND P.END_DATE_TIME
          WHERE B.MEMBER_NO = #{memberNo}
            AND B.IS_ORDER = FALSE
          ORDER BY B.REGIST_DATE_TIME DESC

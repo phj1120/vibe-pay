@@ -162,37 +162,35 @@ export default function BasketPage() {
 
   const totalPrice = basketItems
     .filter((item) => selectedItems.has(item.basketNo))
-    .reduce((sum, item) => sum + item.itemPrice * item.quantity, 0);
+    .reduce((sum, item) => sum + item.salePrice * item.quantity, 0);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
-        <div className="text-lg">로딩 중...</div>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-sm text-gray-400">로딩 중...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
-          {error}
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-sm text-gray-900">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-50 min-h-[calc(100vh-200px)]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold mb-6">장바구니</h1>
+    <div className="bg-white min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h1 className="text-2xl font-medium mb-12">장바구니</h1>
 
         {basketItems.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <p className="text-gray-500 mb-6">장바구니가 비어있습니다</p>
+          <div className="text-center py-20">
+            <p className="text-gray-400 mb-8">장바구니가 비어있습니다</p>
             <button
               onClick={() => router.push("/")}
-              className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="px-8 py-3 bg-black text-white text-sm hover:bg-gray-800"
             >
               쇼핑 계속하기
             </button>
@@ -200,115 +198,108 @@ export default function BasketPage() {
         ) : (
           <>
             {/* 상단 컨트롤 */}
-            <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedItems.size === basketItems.length}
-                      onChange={handleSelectAll}
-                      className="w-5 h-5 text-blue-600"
-                    />
-                    <span>전체선택 ({selectedItems.size}/{basketItems.length})</span>
-                  </label>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleDeleteSelected}
-                    className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-                  >
-                    선택삭제
-                  </button>
-                  <button
-                    onClick={handleDeleteAll}
-                    className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-                  >
-                    전체삭제
-                  </button>
-                </div>
+            <div className="flex items-center justify-between border-b pb-4 mb-8">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedItems.size === basketItems.length}
+                  onChange={handleSelectAll}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm">전체선택 ({selectedItems.size}/{basketItems.length})</span>
+              </label>
+              <div className="flex gap-4">
+                <button
+                  onClick={handleDeleteSelected}
+                  className="text-sm text-gray-600 hover:text-black"
+                >
+                  선택삭제
+                </button>
+                <button
+                  onClick={handleDeleteAll}
+                  className="text-sm text-gray-600 hover:text-black"
+                >
+                  전체삭제
+                </button>
               </div>
             </div>
 
             {/* 장바구니 아이템 목록 */}
-            <div className="space-y-4 mb-6">
+            <div className="space-y-6 mb-12">
               {basketItems.map((item) => (
                 <div
                   key={item.basketNo}
-                  className="bg-white rounded-lg shadow-sm p-6"
+                  className="flex items-center gap-6 py-6 border-b"
                 >
-                  <div className="flex items-center gap-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedItems.has(item.basketNo)}
-                      onChange={() => handleSelectItem(item.basketNo)}
-                      className="w-5 h-5 text-blue-600"
+                  <input
+                    type="checkbox"
+                    checked={selectedItems.has(item.basketNo)}
+                    onChange={() => handleSelectItem(item.basketNo)}
+                    className="w-4 h-4"
+                  />
+
+                  <div className="relative w-24 h-24 flex-shrink-0 bg-gray-100">
+                    <Image
+                      src={item.goodsMainImageUrl}
+                      alt={item.goodsName}
+                      fill
+                      className="object-cover"
                     />
+                  </div>
 
-                    <div className="relative w-24 h-24 flex-shrink-0">
-                      <Image
-                        src={item.goodsMainImageUrl}
-                        alt={item.goodsName}
-                        fill
-                        className="object-cover rounded-md"
-                      />
-                    </div>
+                  <div className="flex-1">
+                    <h3 className="font-medium mb-1">{item.goodsName}</h3>
+                    <p className="text-sm text-gray-600">{item.itemName}</p>
+                    <p className="text-sm text-gray-900 mt-1">{formatPrice(item.salePrice)}</p>
+                  </div>
 
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-1">{item.goodsName}</h3>
-                      <p className="text-sm text-gray-600 mb-2">{item.itemName}</p>
-                      <p className="text-lg font-bold text-blue-600">
-                        {formatPrice(item.itemPrice)}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => handleQuantityChange(item.basketNo, item.quantity - 1)}
-                        className="w-8 h-8 border border-gray-300 rounded-md hover:bg-gray-50"
-                      >
-                        -
-                      </button>
-                      <span className="w-12 text-center">{item.quantity}</span>
-                      <button
-                        onClick={() => handleQuantityChange(item.basketNo, item.quantity + 1)}
-                        className="w-8 h-8 border border-gray-300 rounded-md hover:bg-gray-50"
-                      >
-                        +
-                      </button>
-                    </div>
-
-                    <div className="text-right">
-                      <p className="text-lg font-bold">
-                        {formatPrice(item.itemPrice * item.quantity)}
-                      </p>
-                      <p className="text-sm text-gray-500">재고: {item.stock}</p>
-                    </div>
-
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => handleDeleteItem(item.basketNo)}
-                      className="px-3 py-2 text-gray-500 hover:text-red-600"
+                      onClick={() => handleQuantityChange(item.basketNo, item.quantity - 1)}
+                      className="w-8 h-8 border border-gray-300 hover:bg-gray-50"
                     >
-                      ✕
+                      -
+                    </button>
+                    <span className="w-12 text-center text-sm">{item.quantity}</span>
+                    <button
+                      onClick={() => handleQuantityChange(item.basketNo, item.quantity + 1)}
+                      className="w-8 h-8 border border-gray-300 hover:bg-gray-50"
+                    >
+                      +
                     </button>
                   </div>
+
+                  <div className="text-right w-32">
+                    <p className="font-medium mt-1">
+                      {formatPrice(item.salePrice * item.quantity)}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => handleDeleteItem(item.basketNo)}
+                    className="text-gray-400 hover:text-black text-xl"
+                  >
+                    ×
+                  </button>
                 </div>
               ))}
             </div>
 
             {/* 주문 요약 */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-lg font-semibold">선택상품 총액</span>
-                <span className="text-2xl font-bold text-blue-600">
-                  {formatPrice(totalPrice)}
-                </span>
+            <div className="border-t pt-8">
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between items-center">
+                  <span className="text-base">총 금액</span>
+                  <span className="text-2xl font-medium">
+                    {formatPrice(totalPrice)}
+                  </span>
+                </div>
               </div>
               <button
                 onClick={handleOrder}
-                className="w-full py-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-lg font-semibold"
+                className="w-full py-4 bg-black text-white text-sm hover:bg-gray-800"
               >
-                주문하기 ({selectedItems.size}개)
+                주문하기
               </button>
             </div>
           </>

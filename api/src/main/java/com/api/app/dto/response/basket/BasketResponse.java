@@ -39,6 +39,9 @@ public class BasketResponse implements Serializable {
     @Schema(description = "상품대표이미지주소")
     private String goodsMainImageUrl;
 
+    @Schema(description = "상품판매가")
+    private Long salePrice;
+
     @Schema(description = "단품번호")
     private String itemNo;
 

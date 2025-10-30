@@ -115,19 +115,19 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
-        <div className="text-lg">로딩 중...</div>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-sm text-gray-400">로딩 중...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-[calc(100vh-200px)] gap-4">
-        <div className="text-lg text-red-600">오류: {error}</div>
+      <div className="flex flex-col justify-center items-center min-h-screen gap-4">
+        <div className="text-sm text-gray-900">{error}</div>
         <button
           onClick={() => fetchGoods()}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          className="px-6 py-2 bg-black text-white text-sm hover:bg-gray-800"
         >
           다시 시도
         </button>
@@ -137,33 +137,27 @@ export default function Home() {
 
   return (
     <>
-      <div className="bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* 상단 배너 */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg p-8 mb-8 text-white">
-          <h1 className="text-3xl font-bold mb-2">Vibe Pay 쇼핑몰에 오신 것을 환영합니다</h1>
-          <p className="text-blue-100">간편하고 안전한 쇼핑 경험을 제공합니다</p>
-        </div>
-
+      <div className="bg-white min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* 검색 폼 */}
-        <div className="mb-6">
+        <div className="mb-12">
           <form
             onSubmit={(e) => {
               e.preventDefault();
               const formData = new FormData(e.currentTarget);
               handleSearch(formData.get("goodsName") as string);
             }}
-            className="flex gap-2"
+            className="flex gap-2 max-w-xl"
           >
             <input
               type="text"
               name="goodsName"
-              placeholder="상품명 검색"
-              className="flex-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="상품 검색"
+              className="flex-1 px-4 py-3 border border-gray-300 focus:outline-none focus:border-black transition"
             />
             <button
               type="submit"
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="px-8 py-3 bg-black text-white hover:bg-gray-800 transition"
             >
               검색
             </button>
@@ -172,90 +166,73 @@ export default function Home() {
 
         {/* 상품 그리드 */}
         {goods.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-20 text-gray-400">
             등록된 상품이 없습니다
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
               {goods.map((item) => (
                 <div
                   key={item.goodsNo}
-                  className="bg-white border rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+                  className="group"
                 >
                   <div
                     className="cursor-pointer"
                     onClick={() => router.push(`/goods/${item.goodsNo}`)}
                   >
-                    <div className="relative w-full h-48 bg-gray-200">
+                    <div className="relative w-full aspect-square bg-gray-100 mb-4 overflow-hidden">
                       <Image
                         src={item.goodsMainImageUrl}
                         alt={item.goodsName}
                         fill
-                        className="object-cover"
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       {!item.isAvailable && (
-                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                          <span className="text-white text-xl font-bold">품절</span>
+                        <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
+                          <span className="text-white text-sm font-medium">SOLD OUT</span>
                         </div>
                       )}
                     </div>
-                    <div className="p-4">
-                      <h3 className="font-semibold text-lg mb-2">{item.goodsName}</h3>
-                      <div className="text-sm text-gray-600 mb-2">
-                        {item.goodsStatusName}
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <div className="text-xl font-bold text-blue-600">
-                            {formatPrice(item.salePrice + item.minItemPrice)}
-                          </div>
-                          {item.minItemPrice !== item.maxItemPrice && (
-                            <div className="text-sm text-gray-500">
-                              ~ {formatPrice(item.salePrice + item.maxItemPrice)}
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          재고: {item.totalStock}
-                        </div>
+                    <div>
+                      <h3 className="font-medium text-base mb-2 text-gray-900">{item.goodsName}</h3>
+                      <div className="text-sm text-gray-900 font-medium">
+                        {formatPrice(item.salePrice + item.minItemPrice)}
                       </div>
                     </div>
                   </div>
-                  <div className="px-4 pb-4">
-                    <button
-                      onClick={(e) =>
-                        handleAddToBasket(e, item.goodsNo, item.goodsName, item.isAvailable)
-                      }
-                      disabled={!item.isAvailable || addingToBasket === item.goodsNo}
-                      className="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {addingToBasket === item.goodsNo
-                        ? "담는 중..."
-                        : "장바구니 담기"}
-                    </button>
-                  </div>
+                  <button
+                    onClick={(e) =>
+                      handleAddToBasket(e, item.goodsNo, item.goodsName, item.isAvailable)
+                    }
+                    disabled={!item.isAvailable || addingToBasket === item.goodsNo}
+                    className="w-full mt-3 py-2.5 bg-black text-white text-sm hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                  >
+                    {addingToBasket === item.goodsNo
+                      ? "담는 중..."
+                      : "장바구니"}
+                  </button>
                 </div>
               ))}
             </div>
 
             {/* 페이지네이션 */}
             {totalPages > 1 && (
-              <div className="flex justify-center gap-2 mt-8">
+              <div className="flex justify-center items-center gap-4 mt-16">
                 <button
                   onClick={() => handlePageChange(page - 1)}
                   disabled={page === 0}
-                  className="px-4 py-2 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                  className="px-4 py-2 text-sm disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-60 transition"
                 >
                   이전
                 </button>
-                <span className="px-4 py-2">
+                <span className="text-sm text-gray-900">
                   {page + 1} / {totalPages}
                 </span>
                 <button
                   onClick={() => handlePageChange(page + 1)}
                   disabled={page >= totalPages - 1}
-                  className="px-4 py-2 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                  className="px-4 py-2 text-sm disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-60 transition"
                 >
                   다음
                 </button>

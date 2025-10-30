@@ -85,7 +85,7 @@ function OrderPageContent() {
   }
 
   const totalProductPrice = orderItems.reduce(
-    (sum, item) => sum + item.itemPrice * item.quantity,
+    (sum, item) => sum + item.salePrice * item.quantity,
     0
   );
 
@@ -176,7 +176,7 @@ function OrderPageContent() {
                   <p className="text-sm text-gray-600">수량: {item.quantity}개</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold">{formatPrice(item.itemPrice * item.quantity)}</p>
+                  <p className="font-bold">{formatPrice(item.salePrice * item.quantity)}</p>
                 </div>
               </div>
             ))}
