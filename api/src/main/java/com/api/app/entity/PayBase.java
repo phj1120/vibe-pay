@@ -56,4 +56,7 @@ public class PayBase extends SystemEntity {
 
     @Schema(description = "취소가능금액")
     private Long cancelableAmount;
+
+    @Schema(description = "PG사(PAY004)")
+    private String pgTypeCode;
 }

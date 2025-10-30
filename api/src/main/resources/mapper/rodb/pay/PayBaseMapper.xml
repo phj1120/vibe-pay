@@ -19,6 +19,7 @@
              , MEMBER_NO
              , AMOUNT
              , CANCELABLE_AMOUNT
+             , PG_TYPE_CODE
           FROM PAY_BASE
          ORDER BY PAY_NO
     </select>
@@ -39,6 +40,7 @@
              , MEMBER_NO
              , AMOUNT
              , CANCELABLE_AMOUNT
+             , PG_TYPE_CODE
           FROM PAY_BASE
          WHERE PAY_NO = #{payNo}
     </select>
@@ -59,6 +61,7 @@
              , MEMBER_NO
              , AMOUNT
              , CANCELABLE_AMOUNT
+             , PG_TYPE_CODE
           FROM PAY_BASE
          WHERE ORDER_NO = #{orderNo}
          ORDER BY PAY_NO
@@ -80,6 +83,7 @@
              , MEMBER_NO
              , AMOUNT
              , CANCELABLE_AMOUNT
+             , PG_TYPE_CODE
           FROM PAY_BASE
          WHERE MEMBER_NO = #{memberNo}
          ORDER BY PAY_NO
@@ -101,6 +105,7 @@
              , MEMBER_NO
              , AMOUNT
              , CANCELABLE_AMOUNT
+             , PG_TYPE_CODE
           FROM PAY_BASE
          WHERE APPROVE_NO = #{approveNo}
     </select>

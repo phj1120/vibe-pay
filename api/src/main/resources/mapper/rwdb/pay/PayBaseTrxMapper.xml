@@ -25,6 +25,7 @@
              , MEMBER_NO
              , AMOUNT
              , CANCELABLE_AMOUNT
+             , PG_TYPE_CODE
              , REGIST_ID
              , REGIST_DATE_TIME
              , MODIFY_ID
@@ -66,6 +67,7 @@
              , MEMBER_NO = #{memberNo}
              , AMOUNT = #{amount}
              , CANCELABLE_AMOUNT = #{cancelableAmount}
+             , PG_TYPE_CODE = #{pgTypeCode}
              , MODIFY_ID = #{modifyId}
              , MODIFY_DATE_TIME = #{modifyDateTime}
          WHERE PAY_NO = #{payNo}

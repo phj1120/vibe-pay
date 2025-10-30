@@ -70,24 +70,25 @@
 
 ### pay_base /  결제 기본 정보
 
-| pay_no | 결제 번호 | varchar(15) | PK | 시퀀스 |
-| --- | --- | --- | --- | --- |
-| pay_type_code | 결제유형코드 | varchar(3) |  | PAY001 / 001: 결제 / 002: 환불 |
-| pay_way_code | 결제방식코드 | varchar(3) |  | PAY002 / 001: 신용카드 /002: 포인트 |
-| pay_status_code | 결제상태코드 | varchar(3) |  | PAY003/ 001: 결제대기/ 002: 결제완료/ 003: 결제취소/ 101: 환불접수/ 102: 환불완료 / 103: 환불접수취소 |
-| approve_no | 승인번호 | varchar(15) |  |  |
-| order_no | 주문번호 | varchar(15) |  |  |
-| claim_no | 클레임번호 | varchar(15) |  |  |
-| upper_pay_no | 상위결제번호 | varchar(15) |  |  |
-| trd_no | 거래번호 | varchar(15) |  |  |
+| pay_no               | 결제 번호 | varchar(15) | PK | 시퀀스 |
+|----------------------| --- | --- | --- | --- |
+| pay_type_code        | 결제유형코드 | varchar(3) |  | PAY001 / 001: 결제 / 002: 환불 |
+| pay_way_code         | 결제방식코드 | varchar(3) |  | PAY002 / 001: 신용카드 /002: 포인트 |
+| pay_status_code      | 결제상태코드 | varchar(3) |  | PAY003/ 001: 결제대기/ 002: 결제완료/ 003: 결제취소/ 101: 환불접수/ 102: 환불완료 / 103: 환불접수취소 |
+| approve_no           | 승인번호 | varchar(15) |  |  |
+| order_no             | 주문번호 | varchar(15) |  |  |
+| claim_no             | 클레임번호 | varchar(15) |  |  |
+| upper_pay_no         | 상위결제번호 | varchar(15) |  |  |
+| trd_no               | 거래번호 | varchar(15) |  |  |
 | pay_finish_date_time | 결제완료일시 | date |  |  |
-| member_no | 회원번호 | varchar(15) |  |  |
-| amount | 결제금액 | numeric |  |  |
-| cancelable_amount | 취소가능금액 | numeric |  |  |
-| regist_id | 등록자 | varchar(15) |  |  |
-| regist_date_time | 등록일시 | timestamp |  |  |
-| modify_id | 수정자 | varchar(15) |  |  |
-| modify_date_time | 수정일시 | timestamp |  |  |
+| member_no            | 회원번호 | varchar(15) |  |  |
+| amount               | 결제금액 | numeric |  |  |
+| cancelable_amount    | 취소가능금액 | numeric |  |  |
+| pg_type_code	        |PG 코드 |	varchar(3)|		PAY004 / 001 이니시스 / 002 나이스|
+| regist_id            | 등록자 | varchar(15) |  |  |
+| regist_date_time     | 등록일시 | timestamp |  |  |
+| modify_id            | 수정자 | varchar(15) |  |  |
+| modify_date_time     | 수정일시 | timestamp |  |  |
 
 ### pay_interface_log /  결제 인터페이스 로그
 
