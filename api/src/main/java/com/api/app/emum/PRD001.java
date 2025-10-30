@@ -3,6 +3,9 @@ package com.api.app.emum;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * 상품상태코드: goodsStatusCode
+ * */
 @Getter
 @AllArgsConstructor
 public enum PRD001 implements CommonCode {

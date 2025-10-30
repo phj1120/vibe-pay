@@ -4,13 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * 포인트적립사용코드: pointTransactionCode
+ * PG 코드: pgTypeCode
  * */
 @Getter
 @AllArgsConstructor
-public enum MEM002 implements CommonCode {
-    EARN("001", "적립", 1, "", ""),
-    USE("002", "사용", 2, "", ""),
+public enum PAY005 implements CommonCode {
+    INICIS("001", "이니시스", 1, "", ""),
+    NICE("002", "나이스", 2, "", ""),
     ;
 
     private final String code;
@@ -19,7 +19,7 @@ public enum MEM002 implements CommonCode {
     private final String referenceValue1;
     private final String referenceValue2;
 
-    public static MEM002 findByCode(String code) {
-        return CommonCodeUtil.findByCode(MEM002.class, code);
+    public static PAY005 findByCode(String code) {
+        return CommonCodeUtil.findByCode(PAY005.class, code);
     }
 }

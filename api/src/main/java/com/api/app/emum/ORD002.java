@@ -3,6 +3,9 @@ package com.api.app.emum;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * 주문상태코드: orderStatusCode
+ * */
 @Getter
 @AllArgsConstructor
 public enum ORD002 implements CommonCode {

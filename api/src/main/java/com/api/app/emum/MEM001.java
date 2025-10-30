@@ -3,6 +3,9 @@ package com.api.app.emum;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * 회원상태코드: memberStatusCode
+ * */
 @Getter
 @AllArgsConstructor
 public enum MEM001 implements CommonCode {

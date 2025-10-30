@@ -3,6 +3,9 @@ package com.api.app.emum;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * 결제유형코드: payTypeCode
+ * */
 @Getter
 @AllArgsConstructor
 public enum PAY001 implements CommonCode {

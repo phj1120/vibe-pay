@@ -3,6 +3,9 @@ package com.api.app.emum;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * 주문유형코드: orderTypeCode
+ * */
 @Getter
 @AllArgsConstructor
 public enum ORD001 implements CommonCode {

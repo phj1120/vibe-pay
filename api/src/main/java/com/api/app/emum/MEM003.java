@@ -3,6 +3,9 @@ package com.api.app.emum;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * 포인트적립사용사유코드: pointTransactionReasonCode
+ * */
 @Getter
 @AllArgsConstructor
 public enum MEM003 implements CommonCode {
