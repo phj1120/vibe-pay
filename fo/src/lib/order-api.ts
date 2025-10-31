@@ -1,5 +1,13 @@
 import { apiClient } from "./api-client";
 import { OrderSheet } from "@/types/order";
+import type {
+  OrderNumberResponse,
+  PaymentInitiateResponse,
+  OrderCreateRequest,
+  OrderCreateResponse,
+  PaymentMethod,
+  PgType,
+} from '@/types/order.types';
 
 /**
  * 주문서 정보 조회
@@ -12,4 +20,48 @@ export async function getOrderSheet(basketNos: string[]): Promise<OrderSheet> {
   basketNos.forEach((no) => params.append("basketNos", no));
 
   return apiClient<OrderSheet>(`/api/order/sheet?${params.toString()}`);
+}
+
+/**
+ * 주문번호 생성 API
+ */
+export async function generateOrderNumber(): Promise<string> {
+  const response = await apiClient<OrderNumberResponse>('/api/order/generateOrderNumber');
+  return response.orderNumber;
+}
+
+/**
+ * 결제 초기화 요청 (백엔드 API 스펙에 맞춤)
+ */
+export interface PaymentInitiateRequestAPI {
+  orderNumber: string;
+  amount: number;
+  productName: string;
+  buyerName: string;
+  buyerEmail: string;
+  buyerTel: string;
+}
+
+/**
+ * 결제 초기화 API
+ */
+export async function initiatePayment(
+  request: PaymentInitiateRequestAPI
+): Promise<PaymentInitiateResponse> {
+  const response = await apiClient<PaymentInitiateResponse>('/api/payments/initiate', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+  return response;
+}
+
+/**
+ * 주문 생성 API
+ */
+export async function createOrder(request: OrderCreateRequest): Promise<OrderCreateResponse> {
+  const response = await apiClient<OrderCreateResponse>('/api/order/order', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+  return response;
 }

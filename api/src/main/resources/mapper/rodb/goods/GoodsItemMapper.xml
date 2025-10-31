@@ -26,4 +26,22 @@
          ORDER BY I.ITEM_NO
     </select>
 
+    <!-- 상품번호와 단품번호로 단품 조회 -->
+    <select id="selectGoodsItemByKey" resultType="GoodsItem">
+        SELECT /* GoodsItemMapper.selectGoodsItemByKey */
+               GOODS_NO
+             , ITEM_NO
+             , ITEM_NAME
+             , ITEM_PRICE
+             , STOCK
+             , GOODS_STATUS_CODE
+             , REGIST_ID
+             , REGIST_DATE_TIME
+             , MODIFY_ID
+             , MODIFY_DATE_TIME
+          FROM GOODS_ITEM
+         WHERE GOODS_NO = #{goodsNo}
+           AND ITEM_NO = #{itemNo}
+    </select>
+
 </mapper>

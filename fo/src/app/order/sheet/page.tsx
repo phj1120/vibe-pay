@@ -18,6 +18,9 @@ export default function OrderSheetPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [orderFailureModal, setOrderFailureModal] = useState(false);
+  const [orderFailureMessage, setOrderFailureMessage] = useState<string>("");
+  const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
@@ -83,6 +86,12 @@ export default function OrderSheetPage() {
     router.push("/basket");
   }
 
+  function handleOrderFailureModalClose() {
+    setOrderFailureModal(false);
+    setOrderFailureMessage("");
+    router.push("/basket");
+  }
+
   function formatPrice(price: number): string {
     return price.toLocaleString("ko-KR") + "원";
   }
@@ -123,7 +132,7 @@ export default function OrderSheetPage() {
     setUsePoint(numValue);
   }
 
-  function handlePayment() {
+  async function handlePayment() {
     if (!orderSheet) return;
 
     const finalAmount = orderSheet.totalProductAmount - usePoint;
@@ -133,15 +142,213 @@ export default function OrderSheetPage() {
       return;
     }
 
-    // TODO: 실제 결제 처리 로직 구현
-    console.log("결제 처리:", {
-      totalAmount: orderSheet.totalProductAmount,
-      usePoint,
-      finalAmount,
-      items: orderSheet.items,
-    });
+    try {
+      setIsPaymentProcessing(true);
 
-    alert("결제 기능은 추후 구현 예정입니다");
+      // 1. 주문번호 생성
+      const { generateOrderNumber } = await import("@/lib/order-api");
+      const orderNumber = await generateOrderNumber();
+
+      // 2. 결제 초기화 (PG사 선택 및 폼 데이터 생성)
+      const { initiatePayment } = await import("@/lib/order-api");
+      const paymentInitResponse = await initiatePayment({
+        orderNumber,
+        amount: finalAmount,
+        productName: orderSheet.items.length > 1
+          ? `${orderSheet.items[0].goodsName} 외 ${orderSheet.items.length - 1}건`
+          : orderSheet.items[0].goodsName,
+        buyerName: orderSheet.ordererName,
+        buyerEmail: orderSheet.ordererEmail,
+        buyerTel: orderSheet.ordererPhone,
+      });
+
+      // 3. 쿠키에 주문 정보 저장 (5분 유효)
+      const { setOrderCookie } = await import("@/lib/order-cookie");
+      setOrderCookie({
+        orderNumber,
+        orderInfo: {
+          ordererInfo: {
+            name: orderSheet.ordererName,
+            phone: orderSheet.ordererPhone,
+            email: orderSheet.ordererEmail,
+          },
+          deliveryInfo: {
+            recipientName: orderSheet.ordererName, // 임시로 주문자명 사용
+            phone: orderSheet.ordererPhone,
+            zipCode: '',
+            address: '',
+          },
+          paymentInfo: {
+            paymentMethod: 'CARD' as const,
+            pgType: paymentInitResponse.pgType,
+          },
+          products: orderSheet.items.map(item => ({
+            productId: item.goodsItemNo,
+            productName: item.goodsName,
+            price: item.salePrice,
+            quantity: item.quantity,
+            totalPrice: item.salePrice * item.quantity,
+          })),
+          totalAmount: orderSheet.totalProductAmount,
+          discountAmount: usePoint,
+          deliveryFee: 0,
+          finalAmount: finalAmount,
+        },
+        paymentInitiate: paymentInitResponse,
+        timestamp: Date.now(),
+      });
+
+      // 4. 결제 결과 메시지 수신 - 팝업 열기 전에 등록
+      const handlePaymentResult = async (event: MessageEvent) => {
+        console.log("Message received:", event.data, "from:", event.origin);
+        
+        // origin 체크
+        if (event.origin !== window.location.origin) {
+          console.log("Origin mismatch:", event.origin, "!==", window.location.origin);
+          return;
+        }
+
+        const { success, authData, error, errorDetails } = event.data;
+
+        // 타입 체크 - 결제 결과 메시지인지 확인
+        if (typeof success === 'undefined') {
+          return;
+        }
+
+        // 이벤트 리스너 제거
+        window.removeEventListener("message", handlePaymentResult);
+        clearInterval(checkPopupClosed);
+        setIsPaymentProcessing(false);
+
+        if (success && authData) {
+          // 결제 성공 - 주문 생성 API 호출
+          try {
+            const { createOrder } = await import("@/lib/order-api");
+
+            // PayRequest 생성
+            const payList = [];
+
+            // 카드 결제
+            payList.push({
+              payWayCode: "001", // 카드
+              amount: finalAmount,
+              payTypeCode: "001", // 결제
+              paymentConfirmRequest: {
+                pgTypeCode: paymentInitResponse.pgTypeCode,
+                authToken: authData.authToken,
+                orderNo: orderNumber,
+                authUrl: authData.authUrl,
+                netCancelUrl: authData.netCancelUrl,
+                // Nice 전용
+                transactionId: authData.transactionId,
+                amount: authData.amount,
+                tradeNo: authData.tradeNo,
+                mid: authData.mid,
+              },
+            });
+
+            // 포인트 결제
+            if (usePoint > 0) {
+              payList.push({
+                payWayCode: "002", // 포인트
+                amount: usePoint,
+                payTypeCode: "001", // 결제
+                paymentConfirmRequest: null,
+              });
+            }
+
+            await createOrder({
+              memberNo: orderSheet.memberNo,
+              memberName: orderSheet.ordererName,
+              phone: orderSheet.ordererPhone,
+              email: orderSheet.ordererEmail,
+              goodsList: orderSheet.items,
+              payList,
+            });
+
+            // 주문 완료 페이지로 이동
+            router.push(`/order/complete?orderNo=${orderNumber}`);
+          } catch (err) {
+            console.error("주문 생성 실패:", err);
+            
+            let errorMessage = "주문 생성에 실패했습니다.";
+            
+            if (err instanceof ApiError) {
+              errorMessage = err.message;
+              
+              // API 에러인 경우 상세 정보 추가
+              errorMessage += `\n\n[상세 정보]`;
+              if (err.code) {
+                errorMessage += `\n오류 코드: ${err.code}`;
+              }
+              errorMessage += `\n주문번호: ${orderNumber}`;
+              errorMessage += `\n발생 시각: ${new Date().toLocaleString('ko-KR')}`;
+              errorMessage += `\n\n결제는 완료되었으나 주문 처리 중 문제가 발생했습니다.`;
+              errorMessage += `\n고객센터(주문번호 포함)로 문의해주세요.`;
+            } else {
+              errorMessage += `\n\n고객센터로 문의해주세요.`;
+            }
+            
+            setOrderFailureMessage(errorMessage);
+            setOrderFailureModal(true);
+          }
+        } else {
+          // 결제 실패 - 상세 정보 포함
+          let failureMessage = error || "결제에 실패했습니다";
+          
+          if (errorDetails) {
+            failureMessage = `${failureMessage}\n\n[상세 정보]`;
+            if (errorDetails.pgType && errorDetails.pgType !== 'UNKNOWN') {
+              const pgName = errorDetails.pgType === 'INICIS' ? 'KG이니시스' : '나이스페이';
+              failureMessage += `\nPG사: ${pgName}`;
+            }
+            if (errorDetails.errorCode && errorDetails.errorCode !== 'UNKNOWN') {
+              failureMessage += `\n오류 코드: ${errorDetails.errorCode}`;
+            }
+            if (errorDetails.timestamp) {
+              const date = new Date(errorDetails.timestamp);
+              failureMessage += `\n발생 시각: ${date.toLocaleString('ko-KR')}`;
+            }
+          }
+          
+          setOrderFailureMessage(failureMessage);
+          setOrderFailureModal(true);
+        }
+      };
+
+      // 이벤트 리스너 등록
+      window.addEventListener("message", handlePaymentResult);
+
+      // 5. 결제 팝업 열기
+      const { openPgPopup } = await import("@/lib/pg-utils");
+      const popup = openPgPopup(paymentInitResponse.pgType, "/order/popup");
+
+      if (!popup) {
+        window.removeEventListener("message", handlePaymentResult);
+        setOrderFailureMessage("팝업 차단을 해제해주세요");
+        setOrderFailureModal(true);
+        setIsPaymentProcessing(false);
+        return;
+      }
+
+      // 6. 팝업 닫힘 감지
+      const checkPopupClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkPopupClosed);
+          window.removeEventListener("message", handlePaymentResult);
+          setIsPaymentProcessing(false);
+        }
+      }, 500);
+
+    } catch (err) {
+      console.error("결제 처리 중 오류:", err);
+      const errorMessage = err instanceof ApiError 
+        ? err.message 
+        : "결제 처리 중 오류가 발생했습니다";
+      setOrderFailureMessage(errorMessage);
+      setOrderFailureModal(true);
+      setIsPaymentProcessing(false);
+    }
   }
 
   if (loading) {
@@ -171,6 +378,24 @@ export default function OrderSheetPage() {
 
   if (!orderSheet) {
     return null;
+  }
+
+  // 주문 실패 모달
+  if (orderFailureModal) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-8 rounded-lg max-w-md">
+          <h2 className="text-lg font-medium mb-4">주문 실패</h2>
+          <p className="text-sm text-gray-700 mb-6 whitespace-pre-line">{orderFailureMessage}</p>
+          <button
+            onClick={handleOrderFailureModalClose}
+            className="w-full py-3 bg-black text-white text-sm hover:bg-gray-800"
+          >
+            장바구니로 이동
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const finalPaymentAmount = orderSheet.totalProductAmount - usePoint;
@@ -312,7 +537,12 @@ export default function OrderSheetPage() {
         {/* 결제하기 버튼 */}
         <button
           onClick={handlePayment}
-          className="w-full py-4 bg-black text-white text-sm hover:bg-gray-800"
+          disabled={isPaymentProcessing}
+          className={`w-full py-4 text-white text-sm ${
+            isPaymentProcessing
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-black hover:bg-gray-800"
+          }`}
         >
           결제하기
         </button>
