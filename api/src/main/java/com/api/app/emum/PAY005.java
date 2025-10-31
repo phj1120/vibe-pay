@@ -9,8 +9,8 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum PAY005 implements CommonCode {
-    INICIS("001", "이니시스", 1, "", ""),
-    NICE("002", "나이스", 2, "", ""),
+    INICIS("001", "이니시스", 1, "50", ""),
+    NICE("002", "나이스", 2, "50", ""),
     ;
 
     private final String code;
