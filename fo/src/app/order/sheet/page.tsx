@@ -183,8 +183,8 @@ export default function OrderSheetPage() {
             pgType: paymentInitResponse.pgType,
           },
           products: orderSheet.items.map(item => ({
-            productId: item.goodsItemNo,
-            productName: item.goodsName,
+            goodsNo: item.goodsNo,
+            goodsName: item.goodsName,
             price: item.salePrice,
             quantity: item.quantity,
             totalPrice: item.salePrice * item.quantity,
@@ -224,27 +224,50 @@ export default function OrderSheetPage() {
           // 결제 성공 - 주문 생성 API 호출
           try {
             const { createOrder } = await import("@/lib/order-api");
+            const { pgTypeToCode } = await import("@/lib/pg-utils");
 
             // PayRequest 생성
             const payList = [];
+
+            // PG 타입을 코드값으로 변환
+            const pgTypeCode = pgTypeToCode(paymentInitResponse.pgType);
+
+            // PG 타입별로 PaymentConfirmRequest 구성
+            let paymentConfirmRequest;
+
+            if (paymentInitResponse.pgType === 'INICIS') {
+              const inicisData = authData as any;
+              paymentConfirmRequest = {
+                pgTypeCode: pgTypeCode,
+                authToken: inicisData.authToken || '',
+                orderNo: orderNumber,
+                authUrl: inicisData.authUrl || '',
+                netCancelUrl: inicisData.netCancelUrl || '',
+                // Inicis 전용 필드
+                price: finalAmount,
+              };
+            } else if (paymentInitResponse.pgType === 'NICE') {
+              const niceData = authData as any;
+              paymentConfirmRequest = {
+                pgTypeCode: pgTypeCode,
+                authToken: niceData.AuthToken || '',
+                orderNo: orderNumber,
+                authUrl: niceData.NextAppURL || '',  // NextAppURL 필드 사용
+                netCancelUrl: niceData.NetCancelURL || '',  // NetCancelURL 필드 사용
+                // Nice 전용 필드
+                transactionId: niceData.Signature || '',  // Signature가 transactionId
+                amount: niceData.Amt || '',
+                tradeNo: niceData.TxTid || '',  // TxTid가 거래번호
+                mid: niceData.MID || '',
+              };
+            }
 
             // 카드 결제
             payList.push({
               payWayCode: "001", // 카드
               amount: finalAmount,
               payTypeCode: "001", // 결제
-              paymentConfirmRequest: {
-                pgTypeCode: paymentInitResponse.pgTypeCode,
-                authToken: authData.authToken,
-                orderNo: orderNumber,
-                authUrl: authData.authUrl,
-                netCancelUrl: authData.netCancelUrl,
-                // Nice 전용
-                transactionId: authData.transactionId,
-                amount: authData.amount,
-                tradeNo: authData.tradeNo,
-                mid: authData.mid,
-              },
+              paymentConfirmRequest,
             });
 
             // 포인트 결제
@@ -258,7 +281,6 @@ export default function OrderSheetPage() {
             }
 
             await createOrder({
-              memberNo: orderSheet.memberNo,
               memberName: orderSheet.ordererName,
               phone: orderSheet.ordererPhone,
               email: orderSheet.ordererEmail,

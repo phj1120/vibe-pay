@@ -1,6 +1,7 @@
 package com.api.app.controller.order;
 
 import com.api.app.common.response.ApiResponse;
+import com.api.app.common.security.SecurityUtils;
 import com.api.app.dto.request.order.OrderRequest;
 import com.api.app.dto.response.order.OrderNumberResponse;
 import com.api.app.service.order.OrderService;
@@ -27,6 +28,7 @@ import jakarta.validation.Valid;
 public class OrderController {
 
     private final OrderService orderService;
+    private final SecurityUtils securityUtils;
 
     /**
      * 주문번호 생성
@@ -55,8 +57,12 @@ public class OrderController {
     @Operation(summary = "주문 생성", description = "주문을 생성하고 결제를 처리합니다")
     @PostMapping("/order")
     public ApiResponse<Void> createOrder(@Valid @RequestBody OrderRequest request) {
+        // 토큰에서 회원번호 추출하여 설정
+        String memberNo = securityUtils.getCurrentUserMemberNo();
+        request.setMemberNo(memberNo);
+
         log.info("Create order request received. memberNo={}, goodsCount={}",
-                request.getMemberNo(), request.getGoodsList().size());
+                memberNo, request.getGoodsList().size());
 
         orderService.createOrder(request);
 

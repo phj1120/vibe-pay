@@ -1,6 +1,8 @@
 package com.api.app.service.payment;
 
+import com.api.app.dto.request.payment.PaymentConfirmRequest;
 import com.api.app.dto.request.payment.PaymentInitiateRequest;
+import com.api.app.dto.response.payment.PaymentApprovalResponse;
 import com.api.app.dto.response.payment.PaymentInitiateResponse;
 
 /**
@@ -19,4 +21,12 @@ public interface PaymentService {
      * @return 결제 초기화 응답
      */
     PaymentInitiateResponse initiatePayment(PaymentInitiateRequest request);
+
+    /**
+     * 결제 승인
+     *
+     * @param request 결제 승인 요청
+     * @return 결제 승인 응답
+     */
+    PaymentApprovalResponse approvePayment(PaymentConfirmRequest request);
 }

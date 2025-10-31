@@ -182,3 +182,35 @@ export function getPgErrorMessage(
     return data.AuthResultMsg || '결제에 실패했습니다.';
   }
 }
+
+/**
+ * PG 타입을 코드값으로 변환 (PAY005 Enum)
+ * INICIS -> "001"
+ * NICE -> "002"
+ */
+export function pgTypeToCode(pgType: PgType): string {
+  switch (pgType) {
+    case 'INICIS':
+      return '001';
+    case 'NICE':
+      return '002';
+    default:
+      throw new Error(`Unknown PG type: ${pgType}`);
+  }
+}
+
+/**
+ * PG 코드값을 타입으로 변환
+ * "001" -> INICIS
+ * "002" -> NICE
+ */
+export function pgCodeToType(code: string): PgType {
+  switch (code) {
+    case '001':
+      return 'INICIS';
+    case '002':
+      return 'NICE';
+    default:
+      throw new Error(`Unknown PG code: ${code}`);
+  }
+}

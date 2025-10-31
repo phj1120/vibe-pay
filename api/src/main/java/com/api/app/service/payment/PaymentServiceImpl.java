@@ -1,7 +1,10 @@
 package com.api.app.service.payment;
 
+import com.api.app.dto.request.payment.PaymentConfirmRequest;
 import com.api.app.dto.request.payment.PaymentInitiateRequest;
+import com.api.app.dto.response.payment.PaymentApprovalResponse;
 import com.api.app.dto.response.payment.PaymentInitiateResponse;
+import com.api.app.emum.PAY005;
 import com.api.app.service.payment.strategy.PaymentGatewayFactory;
 import com.api.app.service.payment.strategy.PaymentGatewayStrategy;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +38,24 @@ public class PaymentServiceImpl implements PaymentService {
 
         log.info("Payment initiate completed. orderNumber={}, pgType={}",
                 request.getOrderNumber(), response.getPgType());
+
+        return response;
+    }
+
+    @Override
+    public PaymentApprovalResponse approvePayment(PaymentConfirmRequest request) {
+        log.info("Payment approval started. orderNo={}, pgTypeCode={}",
+                request.getOrderNo(), request.getPgTypeCode());
+
+        // PG 코드로 PG사 선택
+        PAY005 pgType = PAY005.findByCode(request.getPgTypeCode());
+        PaymentGatewayStrategy strategy = paymentGatewayFactory.getStrategy(pgType);
+
+        // PG사별 결제 승인
+        PaymentApprovalResponse response = strategy.approvePayment(request);
+
+        log.info("Payment approval completed. orderNo={}, approveNo={}",
+                request.getOrderNo(), response.getApproveNo());
 
         return response;
     }

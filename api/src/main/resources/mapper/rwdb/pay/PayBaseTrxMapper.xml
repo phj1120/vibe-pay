@@ -45,6 +45,7 @@
              , #{memberNo}
              , #{amount}
              , #{cancelableAmount}
+             , #{pgTypeCode}
              , #{registId}
              , #{registDateTime}
              , #{modifyId}

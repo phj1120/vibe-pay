@@ -231,11 +231,11 @@ CREATE TABLE PAY_BASE
     PAY_TYPE_CODE        VARCHAR(3)  NOT NULL,               -- 결제유형코드 (PAY001: 001-결제/002-환불)
     PAY_WAY_CODE         VARCHAR(3)  NOT NULL,               -- 결제방식코드 (PAY002: 001-신용카드/002-포인트)
     PAY_STATUS_CODE      VARCHAR(3)  NOT NULL,               -- 결제상태코드 (PAY003)
-    APPROVE_NO           VARCHAR(15),                        -- 승인번호
+    APPROVE_NO           VARCHAR(30),                        -- 승인번호 (PG사 승인번호)
     ORDER_NO             VARCHAR(15),                        -- 주문번호
     CLAIM_NO             VARCHAR(15),                        -- 클레임번호
     UPPER_PAY_NO         VARCHAR(15),                        -- 상위결제번호
-    TRD_NO               VARCHAR(15),                        -- 거래번호
+    TRD_NO               VARCHAR(50),                        -- 거래번호 (PG사 거래 ID)
     PAY_FINISH_DATE_TIME TIMESTAMP,                          -- 결제완료일시
     MEMBER_NO            VARCHAR(15) NOT NULL,               -- 회원번호
     AMOUNT               NUMERIC     NOT NULL,               -- 결제금액

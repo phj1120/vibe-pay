@@ -44,4 +44,8 @@ public class PaymentConfirmRequest {
 
     @Schema(description = "가맹점 ID (나이스)")
     private String mid;
+
+    // 이니시스 전용
+    @Schema(description = "결제 금액 (이니시스)")
+    private Long price;
 }

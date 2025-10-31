@@ -5,6 +5,7 @@ import com.api.app.dto.response.payment.PaymentApprovalResponse;
 import com.api.app.emum.PAY001;
 import com.api.app.emum.PAY002;
 import com.api.app.emum.PAY003;
+import com.api.app.emum.PAY005;
 import com.api.app.entity.PayBase;
 import com.api.app.repository.pay.PayBaseTrxMapper;
 import com.api.app.service.payment.strategy.PaymentGatewayFactory;
@@ -36,8 +37,8 @@ public class CardPaymentStrategy implements PaymentMethodStrategy {
                 orderNo, payRequest.getAmount());
 
         // PG사 선택 및 승인 처리
-        PaymentGatewayStrategy pgStrategy = paymentGatewayFactory
-                .getStrategy(payRequest.getPaymentConfirmRequest().getPgTypeCode());
+        PAY005 pgType = PAY005.findByCode(payRequest.getPaymentConfirmRequest().getPgTypeCode());
+        PaymentGatewayStrategy pgStrategy = paymentGatewayFactory.getStrategy(pgType);
 
         PaymentApprovalResponse approvalResponse = pgStrategy.approvePayment(
                 payRequest.getPaymentConfirmRequest());

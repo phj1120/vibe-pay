@@ -1,19 +1,26 @@
 package com.api.app.service.payment.strategy;
 
+import com.api.app.dto.request.payment.InicisApprovalRequest;
 import com.api.app.dto.request.payment.PaymentInitiateRequest;
+import com.api.app.dto.response.payment.InicisApprovalResponse;
 import com.api.app.dto.response.payment.PaymentInitiateResponse;
 import com.api.app.emum.PAY005;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.security.Timestamp;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,7 +33,11 @@ import java.util.Map;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class InicisPaymentStrategy implements PaymentGatewayStrategy {
+
+    private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
 
     @Value("${payment.inicis.mid}")
     private String mid;
@@ -73,11 +84,12 @@ public class InicisPaymentStrategy implements PaymentGatewayStrategy {
         formData.put("charset", "UTF-8");
         formData.put("use_chkfake", "");
 
-        // signature: oid + price + timestamp
+        // signature: SHA256(oid + price + timestamp) - signKey 없음!
         String signatureData = String.format("oid=%s&price=%s&timestamp=%s",
                 request.getOrderNumber(), request.getAmount(), timestamp);
         formData.put("signature", sha256Hash(signatureData));
-        // verification: oid + price + signKey + timestamp
+
+        // verification: SHA256(oid + price + signKey + timestamp)
         String verificationData = String.format("oid=%s&price=%s&signKey=%s&timestamp=%s",
                 request.getOrderNumber(), request.getAmount(), signKey, timestamp);
         formData.put("verification", sha256Hash(verificationData));
@@ -100,22 +112,77 @@ public class InicisPaymentStrategy implements PaymentGatewayStrategy {
             com.api.app.dto.request.payment.PaymentConfirmRequest request) {
         log.info("Inicis payment approval started. orderNo={}", request.getOrderNo());
 
-        // TODO: 실제 PG사 승인 API 호출 구현
-        // POST {authUrl}
-        // Request: mid, authToken, timestamp, signature, verification, charset, format, price
-        // Response: resultCode, resultMsg, tid, mid, MOID, TotPrice, goodName, payMethod,
-        //           applDate, applTime, applNum, CARD_Num, CARD_Code
+        try {
+            // 승인 요청 데이터 생성
+            String timestamp = String.valueOf(System.currentTimeMillis());
 
-        log.warn("Inicis payment approval not implemented yet. TODO: call PG approval API");
+            // signature: SHA256(authToken={authToken}&timestamp={timestamp})
+            String signatureData = String.format("authToken=%s&timestamp=%s",
+                    request.getAuthToken(), timestamp);
+            String signature = sha256Hash(signatureData);
 
-        // 임시 응답 반환
-        return com.api.app.dto.response.payment.PaymentApprovalResponse.builder()
-                .approveNo("TEMP_APPROVE_NO")
-                .trdNo("TEMP_TRD_NO")
-                .amount(0L)
-                .cardNo("****-****-****-****")
-                .cardCode("TEMP_CARD_CODE")
-                .build();
+            // verification: SHA256(authToken={authToken}&signKey={signKey}&timestamp={timestamp})
+            String verificationData = String.format("authToken=%s&signKey=%s&timestamp=%s",
+                    request.getAuthToken(), signKey, timestamp);
+            String verification = sha256Hash(verificationData);
+
+            // 이니시스 전용 요청 DTO 생성
+            InicisApprovalRequest inicisRequest = InicisApprovalRequest.builder()
+                    .mid(mid)
+                    .authToken(request.getAuthToken())
+                    .timestamp(timestamp)
+                    .signature(signature)
+                    .verification(verification)
+                    .charset("UTF-8")
+                    .format("JSON")
+                    .price(request.getPrice())
+                    .build();
+
+            // DTO를 MultiValueMap으로 변환
+            MultiValueMap<String, String> params = convertToMultiValueMap(inicisRequest);
+
+            // HTTP 헤더 설정
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+            HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(params, headers);
+
+            log.info("Inicis approval request prepared. authUrl={}, mid={}", request.getAuthUrl(), mid);
+
+            // PG사 승인 API 호출 - 이니시스 전용 응답 DTO로 받기
+            ResponseEntity<InicisApprovalResponse> response = restTemplate.postForEntity(
+                    request.getAuthUrl(),
+                    entity,
+                    InicisApprovalResponse.class
+            );
+
+            InicisApprovalResponse responseBody = response.getBody();
+            if (responseBody == null) {
+                throw new RuntimeException("이니시스 승인 응답이 없습니다");
+            }
+
+            log.info("Inicis approval response received. resultCode={}", responseBody.getResultCode());
+
+            // 응답 검증
+            if (!"0000".equals(responseBody.getResultCode())) {
+                log.error("Inicis approval failed. resultCode={}, resultMsg={}",
+                        responseBody.getResultCode(), responseBody.getResultMsg());
+                throw new RuntimeException("이니시스 결제 승인 실패: " + responseBody.getResultMsg());
+            }
+
+            // 승인 성공 응답 생성
+            return com.api.app.dto.response.payment.PaymentApprovalResponse.builder()
+                    .approveNo(responseBody.getApplNum())        // 승인번호
+                    .trdNo(responseBody.getTid())                // 거래ID
+                    .amount(Long.parseLong(responseBody.getTotPrice()))  // 결제금액
+                    .cardNo(responseBody.getCARD_Num())          // 카드번호
+                    .cardCode(responseBody.getCARD_Code())       // 카드사 코드
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Inicis payment approval failed. orderNo={}", request.getOrderNo(), e);
+            throw new RuntimeException("이니시스 결제 승인에 실패했습니다: " + e.getMessage(), e);
+        }
     }
 
     @Override
@@ -145,5 +212,24 @@ public class InicisPaymentStrategy implements PaymentGatewayStrategy {
             log.error("SHA-256 hashing failed", e);
             throw new RuntimeException("SHA-256 해싱에 실패했습니다", e);
         }
+    }
+
+    /**
+     * DTO를 MultiValueMap으로 변환
+     * ObjectMapper를 사용하여 자동 변환
+     */
+    private MultiValueMap<String, String> convertToMultiValueMap(Object dto) {
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> map = objectMapper.convertValue(dto, Map.class);
+
+        map.forEach((key, value) -> {
+            if (value != null) {
+                params.add(key, String.valueOf(value));
+            }
+        });
+
+        return params;
     }
 }

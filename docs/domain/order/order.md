@@ -9,6 +9,8 @@
 - `pay_way_code`:  카드, 포인트(`PAY002` )
 - `pg_type_code`: 이니시스, 나이스 (`PAY005`)
 
+공통코드(enum)가 있다면 해당 코드를 기반으로 개발 진행.
+
 ### 현재 구현의 제한 사항
 
 배송비와 쿠폰 관련 업무는 현재 고려하지 않을 것.
@@ -108,11 +110,95 @@ payment:
 - 쿠키는 5분 유지 가능하고, 암호화 하지 않는다.
 - 결제/주문 실패 시 상세 오류 정보(PG사, 오류 코드, 발생 시각 등)를 모달로 표시한다.
 
+### 프론트엔드 구현 세부사항
+
+```json
+#### 1. 결제 처리 흐름 (postMessage 기반)
+
+**파일 구조:**
+- `/order/sheet` - 주문서 페이지 (부모 창)
+- `/order/popup` - 결제 팝업 페이지 (PG form 제출)
+- `/api/order/payment/return` - API Route (PG 응답 처리)
+
+**통신 흐름:**
+
+*이니시스:*
+주문서 페이지 (부모 창)
+  ↓ window.open()
+결제 팝업 (/order/popup)
+  ↓ INIStdPay.pay() 호출
+이니시스 결제 창
+  ↓ 결제 완료 후 returnUrl로 리다이렉트
+API Route (/api/order/payment/return)
+  ↓ window.opener.postMessage()
+주문서 페이지 (결과 수신)
+  ↓ 주문 API 호출
+주문 완료 or 실패 모달
+
+*나이스:*
+주문서 페이지 (부모 창)
+  ↓ window.open()
+결제 팝업 (/order/popup)
+  ↓ goPay() 호출 + nicepaySubmit() 콜백 등록
+나이스 결제 창
+  ↓ 결제 완료 후 nicepaySubmit() 콜백 호출
+결제 팝업 (/order/popup)
+  ↓ form.submit() → /api/order/payment/return
+API Route (/api/order/payment/return)
+  ↓ window.opener.postMessage()
+주문서 페이지 (결과 수신)
+  ↓ 주문 API 호출
+주문 완료 or 실패 모달
+
+#### 2. postMessage 데이터 구조
+
+interface PaymentResultMessage {
+  success: boolean;
+  authData?: InicisAuthResponse | NiceAuthResponse;
+  error?: string;
+  errorDetails?: {
+    pgType?: string;          // 'INICIS' | 'NICE'
+    errorCode?: string;        // PG 에러 코드
+    errorMessage?: string;     // 에러 메시지
+    timestamp?: string;        // ISO 8601 형식
+  };
+}
+
+#### 3. 에러 메시지 형식
+
+**결제 실패 시:**
+결제에 실패했습니다
+
+[상세 정보]
+PG사: KG이니시스
+오류 코드: 0001
+발생 시각: 2025. 10. 31. 오전 11:30:45
+
+**주문 생성 실패 시 (결제 성공):**
+
+재고가 부족합니다
+
+[상세 정보]
+오류 코드: 3001
+주문번호: 20251031O000481
+발생 시각: 2025. 10. 31. 오전 11:30:45
+
+결제는 완료되었으나 주문 처리 중 문제가 발생했습니다.
+고객센터(주문번호 포함)로 문의해주세요.
+
+#### 4. 결제하기 버튼 상태 관리
+
+- **초기 상태**: 활성화
+- **팝업 열림**: 비활성화
+- **팝업 닫힘**: 활성화
+- **주문 처리 중**: 비활성화 유지
+```
+
 ### PG 사에 따른 결제 요청 및 응답
 
 - 나이스
     - 결제 요청 Form: `nicePayForm`
-
+        
         | name | `PaymentInitiateResponse` 에 해당하는 값 | 기타 |
         | --- | --- | --- |
         | GoodsName | goodName |  |
@@ -145,7 +231,7 @@ payment:
         | NetCancelURL | netCancelUrl |  |
 - 이니시스
     - 결제 요청 Form: `inicisForm`
-
+        
         | name | `PaymentInitiateResponse` 에 해당하는 값 | 기타 |
         | --- | --- | --- |
         | mid | mid |  |
@@ -167,7 +253,7 @@ payment:
         | acceptmethod | acceptmethod |  |
         | charset |  | `UTF-8` 고정 |
     - 결제 응답: FormData (`application/x-www-form-urlencoded`)
-        
+
         | name | `PaymentConfirmRequest` 에 해당하는 값 | 비고 |
         | --- | --- | --- |
         | resultCode |  | `0000` 만 결제 성공. PG사 판별 키 필드 |
@@ -175,18 +261,44 @@ payment:
         | mid |  |  |
         | orderNumber | orderNo |  |
         | authToken | authToken |  |
+        | idc_name |  |  |
         | authUrl | authUrl |  |
         | netCancelUrl | netCancelUrl |  |
         | charset |  |  |
         | merchantData |  |  |
-    
-    **PG사 판별 로직 (API Route에서 처리):**
-    - Content-Type에 관계없이 응답 데이터의 필드로 판별
-    - 이니시스 판별: `resultCode` 필드 존재
-    - 나이스 판별: `AuthResultCode` 필드 존재
-    
+
     결제가 성공 했을 경우 `PaymentConfirmRequest` 에 PG 사 별 위의 값을 세팅해 주문 호출
 
+    **주의**: 이니시스 승인 요청 시 `price` 필드가 필요하므로, 프론트엔드에서 `PaymentConfirmRequest` 생성 시 결제 금액(`finalAmount`)을 `price` 필드에 포함해야 함
+    
+    - PG사 판별 로직 (API Route에서 처리)
+        - Content-Type에 관계없이 응답 데이터의 필드로 판별
+        - 이니시스 판별: `resultCode` 필드 존재
+        - 나이스 판별: `AuthResultCode` 필드 존재
+- 결제 인증 응답 처리 (Next.js API Route)
+    - POST `/api/order/payment/return`
+    - Request: PG사에서 POST로 전송하는 인증 응답 데이터
+        
+        Content-Type: `application/x-www-form-urlencoded` (이니시스, 나이스 공통)
+        
+        Body: PG사별 인증 응답 필드
+        
+    - Response: HTML 페이지 (postMessage 스크립트 포함)
+    - 프로세스
+        
+        ```json
+        1. PG 응답 데이터 파싱 (FormData)
+        2. 데이터 필드로 PG사 판별
+          - 이니시스: `resultCode` 필드 존재
+          - 나이스: `AuthResultCode` 필드 존재
+        3. PG사별 성공 코드 확인
+          - 이니시스: `resultCode === '0000'`
+          - 나이스: `AuthResultCode === '0000'`
+        4. 결제 결과 메시지 생성 (성공/실패, 인증 데이터, 에러 상세 정보)
+        5. HTML 응답 반환 (postMessage 스크립트로 부모 창에 결과 전송)
+        6. 팝업 창 자동 닫기 (1초 후)
+        ```
+        
 
 ### 결제 승인 요청 및 응답
 
@@ -194,8 +306,9 @@ payment:
 
 Request: PaymentConfirmRequest
 
-| String | pgTypeCode | 공통 |
+| 타입 | 필드명 | 구분 |
 | --- | --- | --- |
+| String | pgTypeCode | 공통 |
 | String | authToken | 공통 |
 | String | orderNo | 공통 |
 | String | authUrl | 공통 |
@@ -204,11 +317,12 @@ Request: PaymentConfirmRequest
 | String | amount | 나이스 |
 | String | tradeNo | 나이스 |
 | String | mid | 나이스 |
+| Long | price | 이니시스 |
 - 나이스
     - 승인 요청
         - POST 결제 요청 응답으로 넘어온 {authUrl}
         - Request
-
+            
             | TID | 거래번호 (인증 응답 TxTid 사용) |  |
             | --- | --- | --- |
             | AuthToken | 인증 TOKEN |  |
@@ -235,14 +349,13 @@ Request: PaymentConfirmRequest
     - 승인 요청
         - POST 결제 요청 응답으로 넘어온 {authUrl}
         - Request
-
+            
             | **mid** | 상점아이디 |  |
             | --- | --- | --- |
             | **authToken** | 승인요청 검증 토큰 |  |
             | **timestamp** | TimeInMillis(Long형) |  |
-            | **signature** | SHA256 Hash값(**authToken, timestamp)** |  |
-            | **verification** | SHA256 Hash값
-            (**authToken, signKey, timestamp)** |  |
+            | **signature** | SHA256 Hash값 | authToken={authToken}&timestamp={timestamp} |
+            | **verification** | SHA256 Hash값 | authToken={authToken}&signKey={signKey}&timestamp={timestamp} |
             | **charset** |  | `UTF-8` 고정 |
             | **format** |  | `JSON` 고정 |
             | **price** | 가격 |  |
@@ -269,7 +382,7 @@ Request: PaymentConfirmRequest
     - GET `/api/order/generateOrderNumber`
     - Request: X
     - Response
-
+        
         | String | orderNo | 주문번호 |
         | --- | --- | --- |
     - 프로세스
@@ -277,29 +390,11 @@ Request: PaymentConfirmRequest
         시퀀스 `SEQ_ORDER_NO` 를 조회 해서 반환.
         
         이 값을 기반으로 주문, 결제, 포인트, 로그 테이블을 쌓기 때문에 최초에 조회 함.
-
-- 결제 인증 응답 처리 (Next.js API Route)
-    - POST `/api/order/payment/return`
-    - Request: PG사에서 POST로 전송하는 인증 응답 데이터
-        - Content-Type: `application/x-www-form-urlencoded` (이니시스, 나이스 공통)
-        - Body: PG사별 인증 응답 필드
-    - Response: HTML 페이지 (postMessage 스크립트 포함)
-    - 프로세스
-        1. PG 응답 데이터 파싱 (FormData)
-        2. 데이터 필드로 PG사 판별
-            - 이니시스: `resultCode` 필드 존재
-            - 나이스: `AuthResultCode` 필드 존재
-        3. PG사별 성공 코드 확인
-            - 이니시스: `resultCode === '0000'`
-            - 나이스: `AuthResultCode === '0000'`
-        4. 결제 결과 메시지 생성 (성공/실패, 인증 데이터, 에러 상세 정보)
-        5. HTML 응답 반환 (postMessage 스크립트로 부모 창에 결과 전송)
-        6. 팝업 창 자동 닫기 (1초 후)
-
+        
 - 결제 요청 정보 생성
     - POST `/api/payments/initiate`
     - Request: `PaymentInitiateRequest`
-
+        
         | 타입 | 변수명 | 설명 |
         | --- | --- | --- |
         | Long | amount | 금액 |
@@ -356,23 +451,25 @@ Request: PaymentConfirmRequest
             ```
             
         - 해싱 데이터
-        
+
         | PG사 | 필드 | 설명 | 암호화대상데이터 |
         | --- | --- | --- | --- |
         | 이니시스 | mKey | MKey (signKey SHA-256 해싱) | {signKey} |
-        | 이니시스 | signature | 서명 데이터 (oid, price, timestamp SHA-256 해싱) | oid={orderNo}&price={price}&signKey={signKey}&timestamp={timestamp} |
-        | 이니시스 | verification | 검증 데이터 (oid, price, signKey, timestamp SHA-256 해싱) | oid={orderNo}&price={price}&timestamp={timestamp} |
+        | 이니시스 | signature (결제 요청) | 서명 데이터 | oid={orderNo}&price={price}&timestamp={timestamp} |
+        | 이니시스 | verification (결제 요청) | 검증 데이터 | oid={orderNo}&price={price}&signKey={signKey}&timestamp={timestamp} |
+        | 이니시스 | signature (승인 요청) | 서명 데이터 | authToken={authToken}&timestamp={timestamp} |
+        | 이니시스 | verification (승인 요청) | 검증 데이터 | authToken={authToken}&signKey={signKey}&timestamp={timestamp} |
         | 나이스 | SignData | 서명 데이터 (EdiDate + MID + Amt + MerchantKey 해싱) | {EdiDate}{MID}{Amt}{MerchantKey} |
-
+    
 - 주문
-
-  POST `/api/order/order`
-
+    
+    POST `/api/order/order`
+    
     - Request: OrderRequest
-
+        
         ```json
         {
-        	memberNo
+        	memberNo // api에서 현재 토큰에서 꺼내서 세팅
         	memberName
         	phone
         	email
@@ -388,11 +485,11 @@ Request: PaymentConfirmRequest
         	PaymentConfirmRequest
         }
         ```
-
+        
     - Response
-
-      응답값 없음. 주문 실패 시 예외 발생.
-
+        
+        응답값 없음. 주문 실패 시 예외 발생.
+        
     - 프로세스
     
     ```json
@@ -431,130 +528,31 @@ Request: PaymentConfirmRequest
     포인트 결제에 대해서는 예외 발생해 DB 가 롤백이 되기에 따로 처리하지 않는다.
     - 망취소 실패에 대해서는 고려하지 않는다.
     - 복합 결제 시 결제 및 취소 우선순위는 결제방식코드(payWayCode)`PAY002` 의 `displaySequence` 기준으로 한다. (현재. 카드, 포인트 순서)
+- 주문 취소
+    - POST `/api/claim/cancel`
+    - Request: CancelRequest
+        
+        ```json
+        {
+        	memberNo
+        	memberName
+        	phone
+        	email
+        	goodsList: List<BasketResponse>
+        	payList: List<PayRequest>
+        }
+        ```
+        
+    - Response
+        - 응답값 없음. 주문 취소 실패 시 예외 발생.
+    - 프로세스
 
-### 프론트엔드 구현 세부사항
-
-#### 1. 결제 처리 흐름 (postMessage 기반)
-
-**파일 구조:**
-- `/order/sheet` - 주문서 페이지 (부모 창)
-- `/order/popup` - 결제 팝업 페이지 (PG form 제출)
-- `/api/order/payment/return` - API Route (PG 응답 처리)
-
-**통신 흐름:**
-
-*이니시스:*
-```
-주문서 페이지 (부모 창)
-  ↓ window.open()
-결제 팝업 (/order/popup)
-  ↓ INIStdPay.pay() 호출
-이니시스 결제 창
-  ↓ 결제 완료 후 returnUrl로 리다이렉트
-API Route (/api/order/payment/return)
-  ↓ window.opener.postMessage()
-주문서 페이지 (결과 수신)
-  ↓ 주문 API 호출
-주문 완료 or 실패 모달
-```
-
-*나이스:*
-```
-주문서 페이지 (부모 창)
-  ↓ window.open()
-결제 팝업 (/order/popup)
-  ↓ goPay() 호출 + nicepaySubmit() 콜백 등록
-나이스 결제 창
-  ↓ 결제 완료 후 nicepaySubmit() 콜백 호출
-결제 팝업 (/order/popup)
-  ↓ form.submit() → /api/order/payment/return
-API Route (/api/order/payment/return)
-  ↓ window.opener.postMessage()
-주문서 페이지 (결과 수신)
-  ↓ 주문 API 호출
-주문 완료 or 실패 모달
-```
-
-#### 2. postMessage 데이터 구조
-
-```typescript
-interface PaymentResultMessage {
-  success: boolean;
-  authData?: InicisAuthResponse | NiceAuthResponse;
-  error?: string;
-  errorDetails?: {
-    pgType?: string;          // 'INICIS' | 'NICE'
-    errorCode?: string;        // PG 에러 코드
-    errorMessage?: string;     // 에러 메시지
-    timestamp?: string;        // ISO 8601 형식
-  };
-}
-```
-
-#### 3. 에러 메시지 형식
-
-**결제 실패 시:**
-```
-결제에 실패했습니다
-
-[상세 정보]
-PG사: KG이니시스
-오류 코드: 0001
-발생 시각: 2025. 10. 31. 오전 11:30:45
-```
-
-**주문 생성 실패 시 (결제 성공):**
-```
-재고가 부족합니다
-
-[상세 정보]
-오류 코드: 3001
-주문번호: 20251031O000481
-발생 시각: 2025. 10. 31. 오전 11:30:45
-
-결제는 완료되었으나 주문 처리 중 문제가 발생했습니다.
-고객센터(주문번호 포함)로 문의해주세요.
-```
-
-#### 4. 결제하기 버튼 상태 관리
-
-- **초기 상태**: 활성화
-- **팝업 열림**: 비활성화
-- **팝업 닫힘**: 활성화
-- **주문 처리 중**: 비활성화 유지
-
-#### 5. PG사 판별 로직
-
-Content-Type이 아닌 응답 데이터의 필드 존재 여부로 판별:
-
-```typescript
-// 이니시스 판별
-if (data.resultCode) {
-  pgType = 'INICIS';
-}
-
-// 나이스 판별
-if (data.AuthResultCode) {
-  pgType = 'NICE';
-}
-```
-
-#### 6. 결제 성공 여부 판단
-
-```typescript
-// 이니시스
-success = data.resultCode === '0000';
-
-// 나이스
-success = data.AuthResultCode === '0000';
-```
-
-### 주요 프로세스 DFD 작성
+### 주문/취소 DFD
 
 예시를 위한 데이터
 
 - goods_base
-
+    
     | goods_no | goods_name | goods_status_code | goods_main_image_url | regist_id | regist_date_time | modify_id | modify_date_time |  |  |  |
     | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
     | G00000000000001 | 상품A | 001 | https://cdn.ftoday.co.kr/news/photo/201510/44298_46389_2338.jpg | 999999999999999 | 2025-10-29 10:52:53.590733 | 999999999999999 | 2025-10-29 10:52:53.590733 |  |  |  |
@@ -563,7 +561,7 @@ success = data.AuthResultCode === '0000';
 ---
 
 - goods_item
-
+    
     | goods_no | item_no | item_name | item_price | stock | goods_status_code | regist_id | regist_date_time | modify_id | modify_date_time |  |
     | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
     | G00000000000001 | 001 | 단품A | 0 | 5 | 001 | 999999999999999 | 2025-10-29 10:52:53.595171 | 999999999999999 | 2025-10-29 10:52:53.595171 |  |
@@ -573,7 +571,7 @@ success = data.AuthResultCode === '0000';
 ---
 
 - goods_price_hist
-
+    
     | goods_no | start_date_time | end_date_time | sale_price | supply_price | regist_id | regist_date_time | modify_id | modify_date_time |  |  |
     | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
     | G00000000000001 | 2025-10-29 10:52:53.593352 | 9999-12-31 23:59:59.000000 | 10000 | 5000 | 999999999999999 | 2025-10-29 10:52:53.593635 | 999999999999999 | 2025-10-29 10:52:53.593635 |  |  |
@@ -582,7 +580,7 @@ success = data.AuthResultCode === '0000';
 ---
 
 - member_base
-
+    
     | member_no | member_name | phone | email | password | member_status_code | regist_id | regist_date_time | modify_id | modify_date_time |  |
     | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
     | 000000000000003 | 테스트 | 010-1234-5678 | [test@test.com](mailto:test@test.com) | $2a$10$0wV0TNKUYhGbtRM0DqHITOowAa64qmvvq4A2VHZsZ6NIZ8H7YxjZ2 | 001 | 999999999999999 | 2025-10-29 10:40:46.423024 | 999999999999999 | 2025-10-29 10:40:46.423024 |  |
@@ -590,7 +588,7 @@ success = data.AuthResultCode === '0000';
 - 상품A - 단품A 1개 / 카드 10000원 결제 / 이니시스
     - 주문
         - order_base 테이블
-
+            
             | order_no | member_no |
             | --- | --- |
             | 20251030O000001 | 000000000000003 |
@@ -824,3 +822,105 @@ success = data.AuthResultCode === '0000';
                 | point_history_no | member_no | amount | pointTransactionCode | point_transaction_reson_code | point_transaction_reson_no | start_date_time | end_date_time | upper_point_history_no | remain_point |
                 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
                 |  |  |  |  |  |  |  |  |  |  |
+- 주문취소
+    - 카드, 포인트로 상품 1개 주문 후 전체 취소
+        - order_base 테이블
+            
+            | order_no | member_no |
+            | --- | --- |
+            | 20251030O000001 | 000000000000003 |
+        
+        ---
+        
+        - order_detail 테이블
+            
+            | order_no | order_sequence | order_process_sequence | upper_order_process_sequence | claim_no | goods_no | item_no | quantity | order_status_code | delivery_type_code | order_type_code | order_accept_dtm | order_finish_dtm |
+            | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+            | 20251030O000001 | 1 | 1 |  |  | G00000000000001 | 001 | 1 | 001 | 001 | 001 | 주문시점 |  |
+            | 20251030O000001 | 1 | 2 | 1 | 20251030C000001 | G00000000000001 | 001 | 1 |  | 002 | 003 | now() |  |
+        
+        ---
+        
+        - order_goods 테이블
+            
+            | order_no | goods_no | item_no | sale_price | supply_price | goods_name | item_name |
+            | --- | --- | --- | --- | --- | --- | --- |
+            | 20251030O000001 | G00000000000001 | 001 | 10000 | 5000 | 상품A | 단품A |
+        - pay_base 테이블
+            
+            | pay_no | pay_type_code | pay_way_code | pay_status_code | approve_no | order_no | claim_no | upper_pay_no | trd_no | pay_finish_date_time | member_no | amount | cancelable_amount | pg_type_code |
+            | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+            | 000000000000002 | 001 | 001 | 002 |  | 20251030O000001 |  |  |  | now() | 000000000000003 | 10000 | 10000 | 001 |
+        
+        ---
+        
+        - pay_interface_log 테이블
+            
+            | pay_interface_no | member_no | pay_no | pay_log_code | request_json | response_json |
+            | --- | --- | --- | --- | --- | --- |
+            | 000000000000001 | 000000000000003 | 000000000000002 | 001 | 실제 요청 json 정보 | 실제 응답 json 정보 |
+            | 000000000000002 | 000000000000003 | 000000000000002 | 002 | 실제 요청 json 정보 | 실제 응답 json 정보 |
+        
+        - point_history 테이블
+            
+            | point_history_no | member_no | amount | pointTransactionCode | point_transaction_reson_code | point_transaction_reson_no | start_date_time | end_date_time | upper_point_history_no | remain_point |
+            | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+            |  |  |  |  |  |  |  |  |  |  |
+    
+    - 카드, 포인트로 상품 N 개 주문 후 상품 부분 취소
+        
+        상품A - 단품A 1개 10,000원
+        
+        상품B - 단품1 1개 8,000원
+        
+        카드 6,000원 / 이니시스
+        
+        포인트 12,000원 
+        
+        포인트 
+        
+        - order_base 테이블
+            
+            | order_no | member_no |
+            | --- | --- |
+            | 20251030O000001 | 000000000000003 |
+        
+        ---
+        
+        - order_detail 테이블
+            
+            | order_no | order_sequence | order_process_sequence | upper_order_process_sequence | claim_no | goods_no | item_no | quantity | order_status_code | delivery_type_code | order_type_code | order_accept_dtm | order_finish_dtm |
+            | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+            | 20251030O000001 | 1 | 1 |  |  | G00000000000001 | 001 | 1 | 001 | 001 | 001 | now() |  |
+            | 20251030O000001 | 2 | 1 |  |  | G00000000000021 | 001 | 1 | 001 | 001 | 001 | now() |  |
+        
+        ---
+        
+        - order_goods 테이블
+            
+            | order_no | goods_no | item_no | sale_price | supply_price | goods_name | item_name |
+            | --- | --- | --- | --- | --- | --- | --- |
+            | 20251030O000001 | G00000000000001 | 001 | 10000 | 5000 | 상품A | 단품A |
+            | 20251030O000001 | G00000000000001 | 001 | 8000 | 4000 | 상품B | 단품1 |
+        - pay_base 테이블
+            
+            | pay_no | pay_type_code | pay_way_code | pay_status_code | approve_no | order_no | claim_no | upper_pay_no | trd_no | pay_finish_date_time | member_no | amount | cancelable_amount | pg_type_code |
+            | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+            | 000000000000002 | 001 | 001 | 002 |  | 20251030O000001 |  |  |  | now() | 000000000000003 | 18000 | 18000 | 001 |
+        
+        ---
+        
+        - pay_interface_log 테이블
+            
+            | pay_interface_no | member_no | pay_no | pay_log_code | request_json | response_json |
+            | --- | --- | --- | --- | --- | --- |
+            | 000000000000001 | 000000000000003 | 000000000000002 | 001 | 실제 요청 json 정보 | 실제 응답 json 정보 |
+            | 000000000000002 | 000000000000003 | 000000000000002 | 002 | 실제 요청 json 정보 | 실제 응답 json 정보 |
+        
+        - point_history 테이블
+            
+            | point_history_no | member_no | amount | pointTransactionCode | point_transaction_reson_code | point_transaction_reson_no | start_date_time | end_date_time | upper_point_history_no | remain_point |
+            | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+            |  |  |  |  |  |  |  |  |  |  |
+        
+    - 카드로 상품 N개 주문 후 상품 부분 취소 후 전체취소

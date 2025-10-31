@@ -5,7 +5,8 @@
       "Bash(sed:*)",
       "Bash(cat:*)",
       "Bash(mv:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(./gradlew:*)"
     ],
     "deny": [],
     "ask": []

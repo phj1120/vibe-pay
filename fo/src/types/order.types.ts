@@ -39,8 +39,8 @@ export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
  * 주문 상품 정보
  */
 export const OrderProductSchema = z.object({
-  productId: z.number(),
-  productName: z.string(),
+  goodsNo: z.string(),
+  goodsName: z.string(),
   price: z.number(),
   quantity: z.number(),
   totalPrice: z.number(),
@@ -141,31 +141,34 @@ export interface InicisAuthResponse {
  * PG 인증 응답 (Nice)
  */
 export interface NiceAuthResponse {
-  PayMethod: string;
-  MID: string;
-  Moid: string;
-  Amt: string;
-  AuthResultCode?: string;
-  AuthResultMsg?: string;
-  TxTid?: string;
-  AuthToken?: string;
-  NetCancel?: string;
+  // 결제 결과 코드 (PG사 판별 키 필드)
+  AuthResultCode?: string;     // '0000'이면 성공
+  AuthResultMsg?: string;       // 결과 메시지
+
+  // 결제 정보
+  PayMethod: string;            // 결제 수단
+  MID: string;                  // 가맹점 ID
+  Moid: string;                 // 주문번호
+  Amt: string;                  // 금액
+  TxTid?: string;               // 거래번호
+  Signature?: string;           // 서명값 (transactionId)
+  AuthToken?: string;           // 인증 토큰
+  NextAppURL?: string;          // 승인 URL (authUrl)
+  NetCancelURL?: string;        // 망취소 URL
+
+  // 동적 필드를 위한 인덱스 시그니처
+  [key: string]: string | undefined;
 }
 
 /**
- * 주문 생성 요청
+ * 주문 생성 요청 (백엔드 API 스펙에 맞춤)
  */
 export interface OrderCreateRequest {
-  orderNumber: string;
-  ordererInfo: OrdererInfo;
-  deliveryInfo: DeliveryInfo;
-  paymentInfo: PaymentInfo;
-  products: OrderProduct[];
-  totalAmount: number;
-  discountAmount: number;
-  deliveryFee: number;
-  finalAmount: number;
-  pgAuthData: InicisAuthResponse | NiceAuthResponse;
+  memberName: string;
+  phone: string;
+  email: string;
+  goodsList: any[]; // BasketResponse 타입
+  payList: any[]; // PayRequest 타입
 }
 
 /**

@@ -2344,3 +2344,99 @@ payment.nice.return-url=http://localhost:3000/api/order/payment/return
 
 이제 Next.js App Router에서도 PG 리다이렉트를 안전하게 처리할 수 있습니다!",,,2025-10-31 13:22:47,2025-10-31 13:24:19,,1,330,331,claude-sonnet-4-5,0.023076,USD,38752,718,195,38554
 20251031133337,오 이제 잘뜬다! 테스트를 위해 작성한 코드 지워줘.,Session limit reached ∙ resets 3pm,,,2025-10-31 13:33:37,2025-10-31 13:34:32,,9,10,19,claude-sonnet-4-5,0.000177,USD,,,,
+20251031150626,@api/src/main/java/com/api/app/dto/request/order/OrderRequest.java 의 memberNo 를 프론트로부터 받아오는 것이 아닌 API 단에서 토큰에서 꺼내서 세팅하도록해.,,,,2025-10-31 15:06:26,,,35,,,,,,,,,
+20251031155652,"주문시 @api/src/main/java/com/api/app/service/payment/method/CardPaymentStrategy.java 에서 payRequest 로 pgTypeCode 가 PAY005 가 아닌 NICE 이런식으로 넘어와서 실패 발생해. FO 에서도 코드로 넘겨줘.
+또한 @api/src/main/java/com/api/app/dto/request/payment/PaymentConfirmRequest.java 정보가 대부분 비어서 전달 되고 있어서, 이 부분도 확인해서 제대로 세팅하도록해.","완료했습니다! 수정한 내용을 요약하면:
+
+## 수정 완료 사항
+
+### 1. PG 타입 코드 변환 유틸리티 추가 (`fo/src/lib/pg-utils.ts`)
+- `pgTypeToCode()`: ""INICIS"" → ""001"", ""NICE"" → ""002"" 변환
+- `pgCodeToType()`: ""001"" → ""INICIS"", ""002"" → ""NICE"" 변환
+
+### 2. 주문서 페이지 수정 (`fo/src/app/order/sheet/page.tsx:223-269`)
+**이전 문제점:**
+- `pgTypeCode`에 ""INICIS"", ""NICE"" 같은 문자열 전송 → Backend에서 PAY005 enum 코드(""001"", ""002"") 기대
+- PaymentConfirmRequest의 필드들이 제대로 매핑되지 않음 (authData의 필드명과 불일치)
+
+**수정 내용:**
+- PG 타입을 코드값으로 변환: `pgTypeCode = pgTypeToCode(paymentInitResponse.pgType)`
+- PG사별로 authData 필드 제대로 매핑:
+  - **INICIS**: `authToken`, `authUrl`, `netCancelUrl` (소문자)
+  - **NICE**: `AuthToken`, `NetCancel`, `TxTid`, `Amt`, `Moid`, `MID` (PascalCase)
+
+### 3. 주요 변경 사항
+```typescript
+// 이전 (잘못된 코드)
+pgTypeCode: paymentInitResponse.pgType,  // ""INICIS"" 또는 ""NICE""
+authToken: authData.authToken,           // Nice는 AuthToken이라 undefined
+
+// 수정 후 (올바른 코드)
+pgTypeCode: pgTypeToCode(paymentInitResponse.pgType),  // ""001"" 또는 ""002""
+
+// INICIS일 때
+authToken: inicisData.authToken || '',
+netCancelUrl: inicisData.netCancelUrl || '',
+
+// NICE일 때
+authToken: niceData.AuthToken || '',
+netCancelUrl: niceData.NetCancel || '',
+transactionId: niceData.TxTid || '',
+amount: niceData.Amt || '',
+tradeNo: niceData.Moid || '',
+mid: niceData.MID || '',
+```
+
+이제 PG사 코드가 올바르게 ""001""(이니시스) 또는 ""002""(나이스)로 전송되고, PaymentConfirmRequest의 모든 필드가 PG사별 응답 데이터에서 올바르게 추출됩니다.",,,2025-10-31 15:56:52,2025-10-31 16:00:14,,83,393,476,claude-sonnet-4-5,0.016066,USD,46761,1,584,46174
+20251031161905,PayBaseTrxMapper.insertPayBase 가 실패해. 컬럼이 더 많ㅇ느가 본데.확ㅇ니해봐,"완료했습니다! 
+
+## 수정 완료
+
+### 문제점
+`PayBaseTrxMapper.xml`의 `insertPayBase` 쿼리에서:
+- **컬럼 목록**: 18개 컬럼 (PG_TYPE_CODE 포함)
+- **VALUES 값**: 17개 값 (#{pgTypeCode} 누락)
+
+컬럼 개수와 값 개수가 맞지 않아서 INSERT 실패가 발생했습니다.
+
+### 수정 내용
+`/api/src/main/resources/mapper/rwdb/pay/PayBaseTrxMapper.xml:48`에 `#{pgTypeCode}` 추가
+
+**이전:**
+```sql
+, #{cancelableAmount}
+, #{registId}  -- PG_TYPE_CODE에 대한 값이 누락됨
+```
+
+**수정 후:**
+```sql
+, #{cancelableAmount}
+, #{pgTypeCode}  -- PG_TYPE_CODE 값 추가
+, #{registId}
+```
+
+이제 컬럼 18개와 값 18개가 정확히 일치하여 INSERT가 정상적으로 실행됩니다.",,,2025-10-31 16:19:05,2025-10-31 16:20:14,,17,148,165,claude-sonnet-4-5,0.022893,USD,57739,1,1609,56128
+20251031162424,"결제 승인 처리가 아직 TODO 로 되어 있어.  @docs/domain/order/order.md 문서에 승인 관련해서 업데이트 해뒀으니, 확인해서 개발 진행해줘.
+추가로 FO 에서 넘어오는 데이터 확인해봣느데, 나머지 정보는 넘어오는데 authUrl 이 안넘어 오고 있어. 확인해줘.",,,,2025-10-31 16:24:24,,,46,,,,,,,,,
+20251031162435,"결제 승인 처리가 아직 TODO 로 되어 있어.  @docs/domain/order/order.md 문서에 승인 관련해서 업데이트 해뒀으니, 확인해서 개발 진행해줘.
+추가로 FO 에서 넘어오는 데이터 확인해봣느데, 나머지 정보는 넘어오는데 authUrl 이 안넘어 오고 있어. 확인해줘.",,,,2025-10-31 16:24:35,,,46,,,,,,,,,
+20251031162702,"목데이터 반환하는게 아니라, 실제 승인 처리 하는 로직으로 개발해.",,,,2025-10-31 16:27:02,,,11,,,,,,,,,
+20251031164212,"@api/src/main/java/com/api/app/service/payment/strategy/NicePaymentStrategy.java 에서 API 호출까진 됏는데, 응답 결과를 못가져오나봐.
+
+org.springframework.web.client.UnknownContentTypeException: Could not extract response: no suitable HttpMessageConverter found for response type [interface java.util.Map] and content type [text/html;charset=UTF-8]","수정했습니다. 이제 다시 결제를 진행하면:
+
+1. 나이스페이 API 응답을 `String`으로 받아서 로그에 원본 응답을 출력합니다
+2. Content-Type도 함께 출력합니다
+3. 실제 응답 형식을 확인할 수 있도록 예외를 던집니다
+
+이렇게 하면 로그에서:
+- 나이스페이가 어떤 형식으로 응답하는지 (JSON인지, Form 데이터인지, HTML인지)
+- 실제 응답 내용이 무엇인지
+
+를 확인할 수 있습니다. 응답을 확인한 후, 그에 맞는 파싱 로직을 구현하겠습니다.
+
+다시 결제를 진행해보시고, 로그에 출력된 응답 내용을 공유해주시면 올바른 파싱 로직을 구현하겠습니다.",,,2025-10-31 16:42:12,2025-10-31 16:42:41,,94,92,186,claude-sonnet-4-5,0.014464,USD,26612,1,1871,24737
+20251031164406,"java.lang.RuntimeException: 결제 처리에 실패했습니다: 나이스 결제 승인에 실패했습니다: 나이스 응답 형식 확인 필요. 응답: {""CardCode"":""02"",""CardName"":""KB국민"",""CardNo"":""55704246****7029"",""CardQuota"":""00"",""CardInterest"":""0"",""AcquCardCode"":""02"",""AcquCardName"":""KB국민"",""CardCl"":""0"",""CcPartCl"":""1"",""CouponAmt"":""000000000000"",""CouponMinAmt"":""000000000000"",""PointAppAmt"":""000000000000"",""ClickpayCl"":"""",""MultiCl"":"""",""MultiCardAcquAmt"":"""",""MultiPointAmt"":"""",""MultiCouponAmt"":"""",""MultiDiscountAmt"":"""",""RcptType"":"""",""RcptTID"":"""",""RcptAuthCode"":"""",""CardType"":""01"",""ApproveCardQuota"":""00"",""PointCl"":""0"",""ResultCode"":""3001"",""ResultMsg"":""카드 결제 성공"",""MsgSource"":""PG"",""Amt"":""000000000500"",""MID"":""nicepay00m"",""Moid"":""20251031O000721"",""BuyerEmail"":""test@test.com"",""BuyerTel"":""010-1234-5678"",""BuyerName"":""테스트"",""GoodsName"":""상품B"",""TID"":""nicepay00m01012510311643265054"",""AuthCode"":""30019435"",""AuthDate"":""251031164351"",""PayMethod"":""CARD"",""CartData"":"""",""Signature"":""3f5aecb936da810f1b59c53f505c32bc5efeddc204a9d79261ce33172b641bec"",""MallReserved"":""""}",,,,2025-10-31 16:44:06,,,282,,,,,,,,,
+20251031164436,"reqeust, response 에서 map 은 지양하고 dto 만들어서 받도록해.",,,,2025-10-31 16:44:36,,,14,,,,,,,,,
+20251031170752,결제 처리에 실패했습니다: 이니시스 결제 승인에 실패했습니다: 이니시스 결제 승인 실패: Signature 값이 잘못되었습니다,,,,2025-10-31 17:07:52,,,20,,,,,,,,,
+20251031170910,문서에도 없고 현재 코드에도 없는데 뭐가 잘못돘다는거야?,,,,2025-10-31 17:09:10,,,9,,,,,,,,,

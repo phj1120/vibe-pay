@@ -84,10 +84,10 @@ public class PaymentGatewayFactory {
      * @param pgType PG enum
      * @return PG 전략
      */
-    public PaymentGatewayStrategy getStrategy(String pgTypeCode) {
+    public PaymentGatewayStrategy getStrategy(PAY005 pgType) {
         return strategies.stream()
-                .filter(s -> s.getPgType().isEquals(pgTypeCode))
+                .filter(s -> s.getPgType() == pgType)
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("지원하지 않는 PG입니다: " + pgTypeCode));
+                .orElseThrow(() -> new IllegalArgumentException("지원하지 않는 PG입니다: " + pgType.getCodeName()));
     }
 }

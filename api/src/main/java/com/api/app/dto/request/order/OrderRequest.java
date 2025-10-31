@@ -22,8 +22,7 @@ import java.util.List;
 @Schema(description = "주문 요청")
 public class OrderRequest {
 
-    @Schema(description = "회원번호", example = "000000000000001")
-    @NotBlank(message = "회원번호는 필수입니다")
+    @Schema(description = "회원번호 (서버에서 자동 설정)", example = "000000000000001", hidden = true)
     private String memberNo;
 
     @Schema(description = "회원명", example = "홍길동")
