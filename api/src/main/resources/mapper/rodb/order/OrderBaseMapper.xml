@@ -31,4 +31,25 @@
          ORDER BY ORDER_NO
     </select>
 
+    <!-- 주문 완료 정보 조회 -->
+    <select id="selectOrderCompleteByOrderNo" resultType="com.api.app.dto.response.order.OrderCompleteResponse">
+        SELECT /* OrderBaseMapper.selectOrderCompleteByOrderNo */
+               OB.ORDER_NO AS orderNo
+             , OB.MEMBER_NO AS memberNo
+             , MIN(OD.ORDER_ACCEPT_DTM) AS orderAcceptDtm
+             , SUM(OG.SALE_PRICE * OD.QUANTITY) AS totalAmount
+          FROM ORDER_BASE OB
+         INNER JOIN ORDER_DETAIL OD
+            ON OB.ORDER_NO = OD.ORDER_NO
+         INNER JOIN ORDER_GOODS OG
+            ON OB.ORDER_NO = OG.ORDER_NO
+           AND OD.GOODS_NO = OG.GOODS_NO
+           AND OD.ITEM_NO = OG.ITEM_NO
+         WHERE OB.ORDER_NO = #{orderNo}
+           AND OB.MEMBER_NO = #{memberNo}
+           AND OD.ORDER_TYPE_CODE = '001'
+           AND OD.ORDER_PROCESS_SEQUENCE = 1
+         GROUP BY OB.ORDER_NO, OB.MEMBER_NO
+    </select>
+
 </mapper>

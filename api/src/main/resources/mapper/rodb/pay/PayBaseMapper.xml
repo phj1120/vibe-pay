@@ -110,4 +110,27 @@
          WHERE APPROVE_NO = #{approveNo}
     </select>
 
+    <!-- 주문 완료 결제 정보 목록 조회 -->
+    <select id="selectOrderCompletePaymentByOrderNo" parameterType="string" resultType="com.api.app.dto.response.order.OrderCompleteResponse$OrderCompletePayment">
+        SELECT /* PayBaseMapper.selectOrderCompletePaymentByOrderNo */
+               PAY_WAY_CODE AS payWayCode
+             , CASE PAY_WAY_CODE
+                   WHEN '001' THEN '신용카드'
+                   WHEN '002' THEN '포인트'
+                   ELSE ''
+               END AS payWayName
+             , AMOUNT AS amount
+             , PG_TYPE_CODE AS pgTypeCode
+             , CASE PG_TYPE_CODE
+                   WHEN '001' THEN '이니시스'
+                   WHEN '002' THEN '나이스'
+                   ELSE ''
+               END AS pgTypeName
+          FROM PAY_BASE
+         WHERE ORDER_NO = #{orderNo}
+           AND PAY_TYPE_CODE = '001'
+           AND CLAIM_NO IS NULL
+         ORDER BY PAY_NO
+    </select>
+
 </mapper>

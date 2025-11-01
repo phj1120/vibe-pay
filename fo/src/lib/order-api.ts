@@ -65,3 +65,37 @@ export async function createOrder(request: OrderCreateRequest): Promise<OrderCre
   });
   return response;
 }
+
+/**
+ * 주문 완료 정보 조회 API
+ */
+export interface OrderCompleteGoods {
+  goodsNo: string;
+  itemNo: string;
+  goodsName: string;
+  itemName: string;
+  salePrice: number;
+  quantity: number;
+  subtotal: number;
+}
+
+export interface OrderCompletePayment {
+  payWayCode: string;
+  payWayName: string;
+  amount: number;
+  pgTypeCode?: string;
+  pgTypeName?: string;
+}
+
+export interface OrderCompleteResponse {
+  orderNo: string;
+  memberNo: string;
+  orderAcceptDtm: string;
+  totalAmount: number;
+  goodsList: OrderCompleteGoods[];
+  paymentList: OrderCompletePayment[];
+}
+
+export async function getOrderComplete(orderNo: string): Promise<OrderCompleteResponse> {
+  return apiClient<OrderCompleteResponse>(`/api/order/complete/${orderNo}`);
+}

@@ -48,4 +48,25 @@
            AND ITEM_NO = #{itemNo}
     </select>
 
+    <!-- 주문 완료 상품 목록 조회 -->
+    <select id="selectOrderCompleteGoodsByOrderNo" parameterType="string" resultType="com.api.app.dto.response.order.OrderCompleteResponse$OrderCompleteGoods">
+        SELECT /* OrderGoodsMapper.selectOrderCompleteGoodsByOrderNo */
+               OG.GOODS_NO AS goodsNo
+             , OG.ITEM_NO AS itemNo
+             , OG.GOODS_NAME AS goodsName
+             , OG.ITEM_NAME AS itemName
+             , OG.SALE_PRICE AS salePrice
+             , OD.QUANTITY AS quantity
+             , (OG.SALE_PRICE * OD.QUANTITY) AS subtotal
+          FROM ORDER_GOODS OG
+         INNER JOIN ORDER_DETAIL OD
+            ON OG.ORDER_NO = OD.ORDER_NO
+           AND OG.GOODS_NO = OD.GOODS_NO
+           AND OG.ITEM_NO = OD.ITEM_NO
+         WHERE OG.ORDER_NO = #{orderNo}
+           AND OD.ORDER_TYPE_CODE = '001'
+           AND OD.ORDER_PROCESS_SEQUENCE = 1
+         ORDER BY OD.ORDER_SEQUENCE
+    </select>
+
 </mapper>

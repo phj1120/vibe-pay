@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { memberApi } from "@/lib/member-api";
 import { pointApi } from "@/lib/point-api";
 import { ApiError } from "@/lib/api-client";
@@ -16,14 +16,23 @@ import OrderListSection from "@/components/features/mypage/OrderListSection";
 
 type TabType = "member" | "point" | "order";
 
-export default function MyPage() {
+function MyPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState<TabType>("member");
   const [memberInfo, setMemberInfo] = useState<MemberInfoResponse | null>(null);
   const [pointBalance, setPointBalance] = useState<PointBalanceResponse | null>(null);
   const [pointHistory, setPointHistory] = useState<PointHistoryListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
+
+  useEffect(() => {
+    // 쿼리스트링에서 탭 파라미터 읽기
+    if (tabParam && (tabParam === "member" || tabParam === "point" || tabParam === "order")) {
+      setActiveTab(tabParam as TabType);
+    }
+  }, [tabParam]);
 
   useEffect(() => {
     fetchData();
@@ -152,5 +161,17 @@ export default function MyPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function MyPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-sm text-gray-400">로딩 중...</div>
+      </div>
+    }>
+      <MyPageContent />
+    </Suspense>
   );
 }

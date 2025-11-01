@@ -470,6 +470,7 @@ Request: PaymentConfirmRequest
         ```json
         {
         	memberNo // api에서 현재 토큰에서 꺼내서 세팅
+            orderNo
         	memberName
         	phone
         	email

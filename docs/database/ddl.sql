@@ -391,7 +391,7 @@ CREATE TABLE POINT_HISTORY
     POINT_TRANSACTION_CODE        VARCHAR(3)  NOT NULL,               -- 포인트적립사용코드 (MEM002)
     POINT_TRANSACTION_REASON_CODE VARCHAR(3)  NOT NULL,               -- 포인트적립사용사유코드 (MEM003)
     POINT_TRANSACTION_REASON_NO   VARCHAR(50),                        -- 포인트적립사용번호
-    START_DATE_TIME               TIMESTAMP   NOT NULL,               -- 시작일시
+    START_DATE_TIME               TIMESTAMP,                          -- 시작일시
     END_DATE_TIME                 TIMESTAMP,                          -- 종료일시
     UPPER_POINT_HISTORY_NO        VARCHAR(15),                        -- 원포인트기록번호
     REMAIN_POINT                  NUMERIC,                            -- 잔여유효포인트

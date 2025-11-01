@@ -281,6 +281,7 @@ export default function OrderSheetPage() {
             }
 
             await createOrder({
+              orderNo: orderNumber,
               memberName: orderSheet.ordererName,
               phone: orderSheet.ordererPhone,
               email: orderSheet.ordererEmail,

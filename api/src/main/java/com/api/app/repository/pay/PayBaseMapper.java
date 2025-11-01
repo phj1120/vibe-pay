@@ -1,5 +1,6 @@
 package com.api.app.repository.pay;
 
+import com.api.app.dto.response.order.OrderCompleteResponse;
 import com.api.app.entity.PayBase;
 
 import java.util.List;
@@ -49,4 +50,12 @@ public interface PayBaseMapper {
      * @return 결제 정보
      */
     PayBase selectPayBaseByApproveNo(String approveNo);
+
+    /**
+     * 주문 완료 결제 정보 목록 조회
+     *
+     * @param orderNo 주문번호
+     * @return 주문 완료 결제 정보 목록
+     */
+    List<OrderCompleteResponse.OrderCompletePayment> selectOrderCompletePaymentByOrderNo(String orderNo);
 }

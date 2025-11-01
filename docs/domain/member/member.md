@@ -38,3 +38,4 @@
         - 전반적으로 Spring Security 이용
         - JWT AccessToken 과 RefreshToken 을 기반으로 인증
         - 요청의 accessToken 이 만료 된 경우 refreshToken 이용해서 갱신하고, 다시 요청하는 프로세스를 fo 에 공통화 하고, refresh api 구현
+

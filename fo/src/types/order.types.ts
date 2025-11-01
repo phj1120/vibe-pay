@@ -164,6 +164,7 @@ export interface NiceAuthResponse {
  * 주문 생성 요청 (백엔드 API 스펙에 맞춤)
  */
 export interface OrderCreateRequest {
+  orderNo: string; // 프론트에서 생성한 주문번호
   memberName: string;
   phone: string;
   email: string;

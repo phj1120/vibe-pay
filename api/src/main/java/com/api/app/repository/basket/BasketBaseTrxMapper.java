@@ -58,4 +58,13 @@ public interface BasketBaseTrxMapper {
      * @return 삭제된 건수
      */
     int deleteBasketBaseByMemberNo(String memberNo);
+
+    /**
+     * 장바구니 주문 완료 처리
+     *
+     * @param basketNo 장바구니번호
+     * @param modifyId 수정자
+     * @return 수정된 건수
+     */
+    int updateBasketIsOrder(@Param("basketNo") String basketNo, @Param("modifyId") String modifyId);
 }

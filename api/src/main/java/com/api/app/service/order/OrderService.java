@@ -1,6 +1,7 @@
 package com.api.app.service.order;
 
 import com.api.app.dto.request.order.OrderRequest;
+import com.api.app.dto.response.order.OrderCompleteResponse;
 
 /**
  * 주문 서비스 인터페이스
@@ -24,4 +25,13 @@ public interface OrderService {
      * @param request 주문 요청
      */
     void createOrder(OrderRequest request);
+
+    /**
+     * 주문 완료 정보 조회
+     *
+     * @param orderNo 주문번호
+     * @param memberNo 회원번호
+     * @return 주문 완료 정보
+     */
+    OrderCompleteResponse getOrderComplete(String orderNo, String memberNo);
 }

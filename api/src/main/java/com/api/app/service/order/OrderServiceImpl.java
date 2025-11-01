@@ -3,6 +3,7 @@ package com.api.app.service.order;
 import com.api.app.dto.request.order.OrderRequest;
 import com.api.app.dto.request.order.PayRequest;
 import com.api.app.dto.response.basket.BasketResponse;
+import com.api.app.dto.response.order.OrderCompleteResponse;
 import com.api.app.emum.MEM001;
 import com.api.app.emum.ORD001;
 import com.api.app.emum.ORD002;
@@ -12,9 +13,12 @@ import com.api.app.repository.basket.BasketBaseTrxMapper;
 import com.api.app.repository.goods.GoodsItemMapper;
 import com.api.app.repository.goods.GoodsPriceHistMapper;
 import com.api.app.repository.member.MemberBaseMapper;
+import com.api.app.repository.order.OrderBaseMapper;
 import com.api.app.repository.order.OrderBaseTrxMapper;
 import com.api.app.repository.order.OrderDetailTrxMapper;
+import com.api.app.repository.order.OrderGoodsMapper;
 import com.api.app.repository.order.OrderGoodsTrxMapper;
+import com.api.app.repository.pay.PayBaseMapper;
 import com.api.app.service.payment.method.PaymentMethodFactory;
 import com.api.app.service.payment.method.PaymentMethodStrategy;
 import com.api.app.service.payment.strategy.PaymentGatewayFactory;
@@ -43,6 +47,9 @@ public class OrderServiceImpl implements OrderService {
     private final OrderBaseTrxMapper orderBaseTrxMapper;
     private final OrderDetailTrxMapper orderDetailTrxMapper;
     private final OrderGoodsTrxMapper orderGoodsTrxMapper;
+    private final OrderBaseMapper orderBaseMapper;
+    private final OrderGoodsMapper orderGoodsMapper;
+    private final PayBaseMapper payBaseMapper;
     private final MemberBaseMapper memberBaseMapper;
     private final GoodsItemMapper goodsItemMapper;
     private final GoodsPriceHistMapper goodsPriceHistMapper;
@@ -60,11 +67,11 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public void createOrder(OrderRequest request) {
-        log.info("Order creation started. memberNo={}, goodsCount={}",
-                request.getMemberNo(), request.getGoodsList().size());
+        log.info("Order creation started. memberNo={}, orderNo={}, goodsCount={}",
+                request.getMemberNo(), request.getOrderNo(), request.getGoodsList().size());
 
-        // 1. 주문번호 생성 (이미 프론트에서 생성했지만, 여기서 다시 생성)
-        String orderNo = generateOrderNumber();
+        // 1. 프론트에서 전달받은 주문번호 사용
+        String orderNo = request.getOrderNo();
 
         try {
             // 2. 검증
@@ -83,7 +90,7 @@ public class OrderServiceImpl implements OrderService {
             log.info("Order creation completed successfully. orderNo={}", orderNo);
 
         } catch (Exception e) {
-            log.error("Order creation failed. Rolling back payments.", e);
+            log.error("Order creation failed. Rolling back payments. orderNo={}", orderNo, e);
             // 망취소 처리 필요 시 (카드 결제만)
             // TODO: 실제로는 completedPayments를 순회하며 망취소 호출
             throw e;
@@ -268,9 +275,39 @@ public class OrderServiceImpl implements OrderService {
         // 장바구니 주문 완료 처리
         for (BasketResponse goods : request.getGoodsList()) {
             if (goods.getBasketNo() != null) {
-                // TODO: Basket isOrder 업데이트
-                log.info("Basket order completed: {}", goods.getBasketNo());
+                int result = basketBaseTrxMapper.updateBasketIsOrder(goods.getBasketNo(), request.getMemberNo());
+                if (result != 1) {
+                    log.warn("Failed to update basket is_order. basketNo={}", goods.getBasketNo());
+                } else {
+                    log.info("Basket order completed successfully. basketNo={}", goods.getBasketNo());
+                }
             }
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrderCompleteResponse getOrderComplete(String orderNo, String memberNo) {
+        log.info("Retrieving order complete information. orderNo={}, memberNo={}", orderNo, memberNo);
+
+        // 주문 기본 정보 조회
+        OrderCompleteResponse response = orderBaseMapper.selectOrderCompleteByOrderNo(orderNo, memberNo);
+
+        if (response == null) {
+            log.error("Order not found or unauthorized access. orderNo={}, memberNo={}", orderNo, memberNo);
+            throw new IllegalArgumentException("주문 정보를 찾을 수 없습니다");
+        }
+
+        // 주문 상품 목록 조회
+        List<OrderCompleteResponse.OrderCompleteGoods> goodsList = orderGoodsMapper.selectOrderCompleteGoodsByOrderNo(orderNo);
+        response.setGoodsList(goodsList);
+
+        // 결제 정보 목록 조회
+        List<OrderCompleteResponse.OrderCompletePayment> paymentList = payBaseMapper.selectOrderCompletePaymentByOrderNo(orderNo);
+        response.setPaymentList(paymentList);
+
+        log.info("Order complete information retrieved successfully. orderNo={}", orderNo);
+
+        return response;
     }
 }

@@ -40,27 +40,21 @@ public class PointServiceImpl implements PointService {
 
     @Override
     @Transactional
-    public void processPointTransaction(String email, PointTransactionRequest request) {
-        log.debug("포인트 처리 시작: email={}, code={}, amount={}",
-                  email, request.getPointTransactionCode(), request.getAmount());
-
-        // 회원 조회
-        MemberBase member = memberBaseMapper.selectMemberBaseByEmail(email);
-        if (member == null) {
-            throw new ApiException(ApiError.DATA_NOT_FOUND, "회원 정보를 찾을 수 없습니다");
-        }
+    public void processPointTransaction(String memberNo, PointTransactionRequest request) {
+        log.debug("포인트 처리 시작: memberNo={}, code={}, amount={}",
+                  memberNo, request.getPointTransactionCode(), request.getAmount());
 
         // 적립 또는 사용 처리
         if (MEM002.EARN.getCode().equals(request.getPointTransactionCode())) {
-            processEarn(member.getMemberNo(), request);
+            processEarn(memberNo, request);
         } else if (MEM002.USE.getCode().equals(request.getPointTransactionCode())) {
-            processUse(member.getMemberNo(), request);
+            processUse(memberNo, request);
         } else {
             throw new ApiException(ApiError.INVALID_PARAMETER, "잘못된 포인트 거래 코드입니다");
         }
 
         log.info("포인트 처리 완료: memberNo={}, code={}, amount={}",
-                 member.getMemberNo(), request.getPointTransactionCode(), request.getAmount());
+                 memberNo, request.getPointTransactionCode(), request.getAmount());
     }
 
     /**
@@ -155,17 +149,11 @@ public class PointServiceImpl implements PointService {
     }
 
     @Override
-    public PointBalanceResponse getPointBalance(String email) {
-        log.debug("보유 포인트 조회: email={}", email);
-
-        // 회원 조회
-        MemberBase member = memberBaseMapper.selectMemberBaseByEmail(email);
-        if (member == null) {
-            throw new ApiException(ApiError.DATA_NOT_FOUND, "회원 정보를 찾을 수 없습니다");
-        }
+    public PointBalanceResponse getPointBalance(String memberNo) {
+        log.debug("보유 포인트 조회: memberNo={}", memberNo);
 
         // 보유 포인트 조회
-        PointBalanceResponse response = pointHistoryMapper.selectPointBalance(member.getMemberNo());
+        PointBalanceResponse response = pointHistoryMapper.selectPointBalance(memberNo);
         if (response == null) {
             response = new PointBalanceResponse();
             response.setTotalPoint(0L);
@@ -175,18 +163,12 @@ public class PointServiceImpl implements PointService {
     }
 
     @Override
-    public PointHistoryListResponse getPointHistoryList(String email, PointHistoryRequest request) {
-        log.debug("포인트 내역 조회: email={}, page={}, size={}",
-                  email, request.getPage(), request.getSize());
-
-        // 회원 조회
-        MemberBase member = memberBaseMapper.selectMemberBaseByEmail(email);
-        if (member == null) {
-            throw new ApiException(ApiError.DATA_NOT_FOUND, "회원 정보를 찾을 수 없습니다");
-        }
+    public PointHistoryListResponse getPointHistoryList(String memberNo, PointHistoryRequest request) {
+        log.debug("포인트 내역 조회: memberNo={}, page={}, size={}",
+                  memberNo, request.getPage(), request.getSize());
 
         // 회원번호 설정
-        request.setMemberNo(member.getMemberNo());
+        request.setMemberNo(memberNo);
 
         // 포인트 내역 목록 조회
         List<PointHistoryResponse> content = pointHistoryMapper.selectPointHistoryList(request);

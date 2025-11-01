@@ -3,6 +3,7 @@ package com.api.app.controller.order;
 import com.api.app.common.response.ApiResponse;
 import com.api.app.common.security.SecurityUtils;
 import com.api.app.dto.request.order.OrderRequest;
+import com.api.app.dto.response.order.OrderCompleteResponse;
 import com.api.app.dto.response.order.OrderNumberResponse;
 import com.api.app.service.order.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -69,5 +70,26 @@ public class OrderController {
         log.info("Create order completed successfully");
 
         return ApiResponse.success();
+    }
+
+    /**
+     * 주문 완료 정보 조회
+     *
+     * @param orderNo 주문번호
+     * @return 주문 완료 정보
+     */
+    @Operation(summary = "주문 완료 정보 조회", description = "주문 완료 페이지에서 사용할 주문 정보를 조회합니다")
+    @GetMapping("/complete/{orderNo}")
+    public ApiResponse<OrderCompleteResponse> getOrderComplete(@PathVariable String orderNo) {
+        // 토큰에서 회원번호 추출
+        String memberNo = securityUtils.getCurrentUserMemberNo();
+
+        log.info("Get order complete request received. orderNo={}, memberNo={}", orderNo, memberNo);
+
+        OrderCompleteResponse response = orderService.getOrderComplete(orderNo, memberNo);
+
+        log.info("Get order complete completed successfully. orderNo={}", orderNo);
+
+        return ApiResponse.success(response);
     }
 }

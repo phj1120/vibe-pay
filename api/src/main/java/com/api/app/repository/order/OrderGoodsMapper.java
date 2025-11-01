@@ -1,5 +1,6 @@
 package com.api.app.repository.order;
 
+import com.api.app.dto.response.order.OrderCompleteResponse;
 import com.api.app.entity.OrderGoods;
 import org.apache.ibatis.annotations.Param;
 
@@ -40,4 +41,12 @@ public interface OrderGoodsMapper {
             @Param("goodsNo") String goodsNo,
             @Param("itemNo") String itemNo
     );
+
+    /**
+     * 주문 완료 상품 목록 조회
+     *
+     * @param orderNo 주문번호
+     * @return 주문 완료 상품 목록
+     */
+    List<OrderCompleteResponse.OrderCompleteGoods> selectOrderCompleteGoodsByOrderNo(String orderNo);
 }
