@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * 결제 망취소 요청 DTO
+ * NicePay 승인 응답 DTO
  *
  * @author Claude
  * @version 1.0
@@ -18,11 +18,14 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaymentNetCancelRequest {
-    private String paymentId;
+public class NicePayConfirmResponse {
+    private String resultCode;
+    private String resultMsg;
+    private String tid;
     private String orderId;
-    private String pgCompany;
-    private String transactionId;
-    private String netCancelUrl;
-    private Double amount;
+    private String amt;
+    private String paidAt;
+    private String cardCode;
+    private String cardName;
+    private String cardQuota;
 }

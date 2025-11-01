@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/parkh/Dev/git/Project/vibe-pay/docs/**)",
+      "Read(//Users/parkh/Dev/git/Project/vibe-pay/api/src/main/resources/**)",
+      "mcp__jetbrains__list_directory_tree",
+      "Read(//Users/parkh/Dev/git/Project/vibe-pay/api/src/main/java/com/vibe/pay/backend/payment/**)",
+      "Read(//Users/parkh/Dev/git/Project/vibe-pay/api/src/main/java/com/vibe/pay/backend/rewardpoints/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

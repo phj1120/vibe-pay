@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * 결제 망취소 요청 DTO
+ * 결제 초기화 요청 DTO
  *
  * @author Claude
  * @version 1.0
@@ -18,11 +18,15 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaymentNetCancelRequest {
-    private String paymentId;
+public class PaymentInitRequest {
+    private Long memberId;
     private String orderId;
-    private String pgCompany;
-    private String transactionId;
-    private String netCancelUrl;
     private Double amount;
+    private String paymentMethod; // CREDIT_CARD, POINT
+    private String pgCompany; // INICIS, NICEPAY, TOSS, WEIGHTED
+    private Double usedMileage;
+    private String goodName;
+    private String buyerName;
+    private String buyerTel;
+    private String buyerEmail;
 }

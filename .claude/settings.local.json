@@ -5,7 +5,18 @@
       "Bash(cat:*)",
       "Read(//Users/parkh/.config/**)",
       "mcp__jetbrains__create_new_file",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(./gradlew clean:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m:*)",
+      "Bash(./gradlew compileJava:*)",
+      "Read(//Users/parkh/Dev/git/Project/**)",
+      "mcp__jetbrains__get_file_text_by_path",
+      "Bash(./mvnw compile:*)",
+      "Bash(./mvnw clean compile:*)",
+      "Bash(mkdir:*)",
+      "Bash(mvn clean compile:*)",
+      "mcp__jetbrains__get_project_problems"
     ],
     "deny": [],
     "ask": []

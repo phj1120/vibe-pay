@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * 결제 망취소 요청 DTO
+ * INICIS 승인 요청 DTO
  *
  * @author Claude
  * @version 1.0
@@ -18,11 +18,10 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaymentNetCancelRequest {
-    private String paymentId;
-    private String orderId;
-    private String pgCompany;
-    private String transactionId;
+public class InicisConfirmRequest {
+    private String authToken;
+    private String authUrl;
     private String netCancelUrl;
-    private Double amount;
+    private String charset;
+    private String format;
 }
