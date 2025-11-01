@@ -1,5 +1,3 @@
-.idea
-
 # ccptracker conversation tracking data
 ccptracker/*
 !ccptracker/data/
