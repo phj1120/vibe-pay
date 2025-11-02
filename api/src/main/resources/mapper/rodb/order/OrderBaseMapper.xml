@@ -52,4 +52,111 @@
          GROUP BY OB.ORDER_NO, OB.MEMBER_NO
     </select>
 
+    <!-- 마이페이지 주문 목록 조회 -->
+    <resultMap id="OrderListResponseMap" type="com.api.app.dto.response.order.OrderListResponse">
+        <result property="orderNo" column="ORDER_NO"/>
+        <result property="orderAcceptDtm" column="ORDER_ACCEPT_DTM"/>
+        <result property="totalAmount" column="TOTAL_AMOUNT"/>
+        <collection property="goodsList" ofType="com.api.app.dto.response.order.OrderListResponse$OrderListGoods">
+            <result property="orderSequence" column="ORDER_SEQUENCE"/>
+            <result property="orderProcessSequence" column="ORDER_PROCESS_SEQUENCE"/>
+            <result property="goodsNo" column="GOODS_NO"/>
+            <result property="itemNo" column="ITEM_NO"/>
+            <result property="goodsName" column="GOODS_NAME"/>
+            <result property="itemName" column="ITEM_NAME"/>
+            <result property="salePrice" column="SALE_PRICE"/>
+            <result property="quantity" column="QUANTITY"/>
+            <result property="orderStatusCode" column="ORDER_STATUS_CODE"/>
+            <result property="orderStatusName" column="ORDER_STATUS_NAME"/>
+            <result property="orderTypeCode" column="ORDER_TYPE_CODE"/>
+            <result property="orderTypeName" column="ORDER_TYPE_NAME"/>
+            <result property="cancelable" column="CANCELABLE"/>
+            <result property="cancelableAmount" column="CANCELABLE_AMOUNT"/>
+        </collection>
+    </resultMap>
+
+    <select id="selectOrderListByMemberNo" parameterType="string" resultMap="OrderListResponseMap">
+        WITH ORDER_SUMMARY AS (
+            SELECT /* OrderBaseMapper.selectOrderListByMemberNo - Summary */
+                   OB.ORDER_NO
+                 , MIN(OD.ORDER_ACCEPT_DTM) AS ORDER_ACCEPT_DTM
+                 , SUM(OG.SALE_PRICE * OD.QUANTITY) AS TOTAL_AMOUNT
+              FROM ORDER_BASE OB
+             INNER JOIN ORDER_DETAIL OD
+                ON OB.ORDER_NO = OD.ORDER_NO
+             INNER JOIN ORDER_GOODS OG
+                ON OB.ORDER_NO = OG.ORDER_NO
+               AND OD.GOODS_NO = OG.GOODS_NO
+               AND OD.ITEM_NO = OG.ITEM_NO
+             WHERE OB.MEMBER_NO = #{memberNo}
+               AND OD.ORDER_TYPE_CODE = '001'
+               AND OD.ORDER_PROCESS_SEQUENCE = 1
+             GROUP BY OB.ORDER_NO
+        ),
+        CANCELABLE_AMOUNTS AS (
+            SELECT /* OrderBaseMapper.selectOrderListByMemberNo - Cancelable */
+                   PB.ORDER_NO
+                 , SUM(PB.CANCELABLE_AMOUNT) AS TOTAL_CANCELABLE_AMOUNT
+              FROM PAY_BASE PB
+             WHERE PB.ORDER_NO IN (SELECT ORDER_NO FROM ORDER_SUMMARY)
+               AND PB.PAY_TYPE_CODE IN ('001', '002')
+             GROUP BY PB.ORDER_NO
+        )
+        SELECT /* OrderBaseMapper.selectOrderListByMemberNo - Details */
+               OS.ORDER_NO
+             , OS.ORDER_ACCEPT_DTM
+             , OS.TOTAL_AMOUNT
+             , OD.ORDER_SEQUENCE
+             , OD.ORDER_PROCESS_SEQUENCE
+             , OD.GOODS_NO
+             , OD.ITEM_NO
+             , OG.GOODS_NAME
+             , OG.ITEM_NAME
+             , OG.SALE_PRICE
+             , OD.QUANTITY
+             , OD.ORDER_STATUS_CODE
+             , CASE OD.ORDER_STATUS_CODE
+                   WHEN '001' THEN '주문접수'
+                   WHEN '002' THEN '주문완료'
+                   WHEN '003' THEN '주문취소'
+                   WHEN '107' THEN '배송완료'
+                   WHEN '207' THEN '반품완료'
+                   ELSE '기타'
+               END AS ORDER_STATUS_NAME
+             , OD.ORDER_TYPE_CODE
+             , CASE OD.ORDER_TYPE_CODE
+                   WHEN '001' THEN '주문'
+                   WHEN '002' THEN '주문취소'
+                   WHEN '101' THEN '반품'
+                   WHEN '102' THEN '반품취소'
+                   WHEN '201' THEN '교환'
+                   WHEN '202' THEN '교환취소'
+                   ELSE '기타'
+               END AS ORDER_TYPE_NAME
+             , CASE
+                   WHEN OD.ORDER_STATUS_CODE = '001'
+                    AND OD.ORDER_TYPE_CODE = '001'
+                    AND OD.ORDER_PROCESS_SEQUENCE = 1
+                   THEN TRUE
+                   ELSE FALSE
+               END AS CANCELABLE
+             , CASE
+                   WHEN OD.ORDER_STATUS_CODE = '001'
+                    AND OD.ORDER_TYPE_CODE = '001'
+                    AND OD.ORDER_PROCESS_SEQUENCE = 1
+                   THEN COALESCE(CA.TOTAL_CANCELABLE_AMOUNT, 0)
+                   ELSE 0
+               END AS CANCELABLE_AMOUNT
+          FROM ORDER_SUMMARY OS
+         INNER JOIN ORDER_DETAIL OD
+            ON OS.ORDER_NO = OD.ORDER_NO
+         INNER JOIN ORDER_GOODS OG
+            ON OD.ORDER_NO = OG.ORDER_NO
+           AND OD.GOODS_NO = OG.GOODS_NO
+           AND OD.ITEM_NO = OG.ITEM_NO
+          LEFT JOIN CANCELABLE_AMOUNTS CA
+            ON OS.ORDER_NO = CA.ORDER_NO
+         ORDER BY OS.ORDER_ACCEPT_DTM DESC, OD.ORDER_SEQUENCE, OD.ORDER_PROCESS_SEQUENCE
+    </select>
+
 </mapper>

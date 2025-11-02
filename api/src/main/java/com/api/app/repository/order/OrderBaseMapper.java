@@ -44,4 +44,12 @@ public interface OrderBaseMapper {
      * @return 주문 완료 정보
      */
     OrderCompleteResponse selectOrderCompleteByOrderNo(@Param("orderNo") String orderNo, @Param("memberNo") String memberNo);
+
+    /**
+     * 마이페이지 주문 목록 조회
+     *
+     * @param memberNo 회원번호
+     * @return 주문 목록
+     */
+    List<com.api.app.dto.response.order.OrderListResponse> selectOrderListByMemberNo(String memberNo);
 }

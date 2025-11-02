@@ -1,6 +1,7 @@
 package com.api.app.repository.pay;
 
 import com.api.app.entity.PayBase;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * @author system
@@ -39,4 +40,16 @@ public interface PayBaseTrxMapper {
      * @return 삭제된 건수
      */
     int deletePayBase(String payNo);
+
+    /**
+     * 취소가능금액 차감
+     *
+     * @param payNo        결제번호
+     * @param cancelAmount 취소금액
+     * @return 수정된 건수
+     */
+    int updateCancelableAmount(
+            @Param("payNo") String payNo,
+            @Param("cancelAmount") Long cancelAmount
+    );
 }

@@ -42,6 +42,9 @@ public class InicisPaymentStrategy implements PaymentGatewayStrategy {
     @Value("${payment.inicis.mid}")
     private String mid;
 
+    @Value("${payment.inicis.api-key}")
+    private String apiKey;
+
     @Value("${payment.inicis.sign-key}")
     private String signKey;
 
@@ -196,6 +199,73 @@ public class InicisPaymentStrategy implements PaymentGatewayStrategy {
     }
 
     @Override
+    public void cancelPaymentByOrder(com.api.app.dto.request.payment.PaymentCancelRequest request) {
+        log.info("Inicis order cancel started. orderNo={}, tid={}, cancelAmount={}",
+                request.getOrderNo(), request.getTransactionId(), request.getCancelAmount());
+
+        try {
+            // 도메인 문서에 따라 이니시스 전체 취소 API 호출
+            // POST https://iniapi.inicis.com/v2/pg/refund
+            String url = "https://iniapi.inicis.com/v2/pg/refund";
+
+            // 타임스탬프 생성
+            String timestamp = java.time.LocalDateTime.now()
+                    .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+
+            // 클라이언트 IP (서버 IP)
+            String clientIp = "127.0.0.1"; // TODO: 실제 서버 IP로 변경 필요
+
+            // data 객체 생성
+            Map<String, String> data = new HashMap<>();
+            data.put("tid", request.getTransactionId());
+            data.put("msg", request.getCancelReason());
+
+            // data를 JSON 문자열로 변환
+            String dataJson = objectMapper.writeValueAsString(data);
+
+            // hashData 생성: SHA512(apiKey + mid + type + timestamp + data)
+            String hashTarget = apiKey + mid + "refund" + timestamp + dataJson;
+            String hashData = sha512Hash(hashTarget);
+
+            // 요청 파라미터 생성
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("mid", mid);
+            requestBody.put("type", "refund");
+            requestBody.put("timestamp", timestamp);
+            requestBody.put("clientIp", clientIp);
+            requestBody.put("hashData", hashData);
+            requestBody.put("data", data);
+
+            // HTTP 요청
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
+
+            Map<String, Object> responseBody = response.getBody();
+            if (responseBody == null) {
+                throw new RuntimeException("이니시스 취소 응답이 없습니다");
+            }
+
+            String resultCode = (String) responseBody.get("resultCode");
+            String resultMsg = (String) responseBody.get("resultMsg");
+
+            if (!"00".equals(resultCode)) {
+                throw new RuntimeException("이니시스 취소 실패: " + resultMsg + " (코드: " + resultCode + ")");
+            }
+
+            log.info("Inicis order cancel completed. orderNo={}, resultCode={}, resultMsg={}",
+                    request.getOrderNo(), resultCode, resultMsg);
+
+        } catch (Exception e) {
+            log.error("Inicis order cancel failed. orderNo={}", request.getOrderNo(), e);
+            throw new RuntimeException("이니시스 주문 취소에 실패했습니다: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
     public PAY005 getPgType() {
         return PAY005.INICIS;
     }
@@ -211,6 +281,20 @@ public class InicisPaymentStrategy implements PaymentGatewayStrategy {
         } catch (Exception e) {
             log.error("SHA-256 hashing failed", e);
             throw new RuntimeException("SHA-256 해싱에 실패했습니다", e);
+        }
+    }
+
+    /**
+     * SHA-512 해싱
+     */
+    private String sha512Hash(String text) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-512");
+            md.update(text.getBytes(StandardCharsets.UTF_8));
+            return String.format("%0128x", new BigInteger(1, md.digest()));
+        } catch (Exception e) {
+            log.error("SHA-512 hashing failed", e);
+            throw new RuntimeException("SHA-512 해싱에 실패했습니다", e);
         }
     }
 

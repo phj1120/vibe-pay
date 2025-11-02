@@ -1,99 +1,73 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
-
-// 더미 데이터 타입
-interface OrderGoods {
-  goodsNo: string;
-  goodsName: string;
-  itemNo: string;
-  itemName: string;
-  quantity: number;
-  salePrice: number;
-  goodsMainImageUrl: string;
-}
-
-interface Order {
-  orderNo: string;
-  orderDate: string;
-  orderStatusCode: string;
-  orderStatusName: string;
-  totalAmount: number;
-  goods: OrderGoods[];
-}
-
-// 더미 데이터
-const DUMMY_ORDERS: Order[] = [
-  {
-    orderNo: "20251029-833701",
-    orderDate: "2025-10-29T15:30:00",
-    orderStatusCode: "001",
-    orderStatusName: "주문완료",
-    totalAmount: 455000,
-    goods: [
-      {
-        goodsNo: "G001",
-        goodsName: "DKNY 세미 와이드 팬츠",
-        itemNo: "I001",
-        itemName: "CHARCOAL GREY 32 1개",
-        quantity: 1,
-        salePrice: 455000,
-        goodsMainImageUrl: "https://via.placeholder.com/80",
-      },
-    ],
-  },
-  {
-    orderNo: "20251028-723456",
-    orderDate: "2025-10-28T14:20:00",
-    orderStatusCode: "002",
-    orderStatusName: "배송중",
-    totalAmount: 598000,
-    goods: [
-      {
-        goodsNo: "G002",
-        goodsName: "크롬 니트 가디건",
-        itemNo: "I002",
-        itemName: "BROWN XS 1개",
-        quantity: 1,
-        salePrice: 350000,
-        goodsMainImageUrl: "https://via.placeholder.com/80",
-      },
-      {
-        goodsNo: "G003",
-        goodsName: "베이직 티셔츠",
-        itemNo: "I003",
-        itemName: "WHITE M 2개",
-        quantity: 2,
-        salePrice: 124000,
-        goodsMainImageUrl: "https://via.placeholder.com/80",
-      },
-    ],
-  },
-  {
-    orderNo: "20251027-612345",
-    orderDate: "2025-10-27T10:15:00",
-    orderStatusCode: "003",
-    orderStatusName: "배송완료",
-    totalAmount: 395000,
-    goods: [
-      {
-        goodsNo: "G004",
-        goodsName: "A라인 스커트",
-        itemNo: "I004",
-        itemName: "GREY FREE 1개",
-        quantity: 1,
-        salePrice: 395000,
-        goodsMainImageUrl: "https://via.placeholder.com/80",
-      },
-    ],
-  },
-];
+import { useState, useEffect } from "react";
+import { getOrderList, cancelOrder } from "@/lib/order-api";
+import type { OrderListResponse } from "@/types/order";
 
 export default function OrderListSection() {
-  const [orders] = useState<Order[]>(DUMMY_ORDERS);
-  const [currentPage, setCurrentPage] = useState(0);
-  const totalPages = 1; // 더미 데이터는 1페이지만
+  const [orders, setOrders] = useState<OrderListResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    loadOrders();
+  }, []);
+
+  const loadOrders = async () => {
+    try {
+      setLoading(true);
+      const data = await getOrderList();
+      setOrders(data);
+    } catch (error) {
+      console.error('주문 목록 조회 실패:', error);
+      alert('주문 목록 조회에 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectItem = (orderNo: string, orderSequence: number, orderProcessSequence: number) => {
+    const key = `${orderNo}-${orderSequence}-${orderProcessSequence}`;
+    setSelectedItems((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(key)) {
+        newSet.delete(key);
+      } else {
+        newSet.add(key);
+      }
+      return newSet;
+    });
+  };
+
+  const handleCancelOrder = async () => {
+    if (selectedItems.size === 0) {
+      alert('취소할 상품을 선택해주세요.');
+      return;
+    }
+
+    if (!confirm(`선택한 ${selectedItems.size}개 상품을 취소하시겠습니까?`)) {
+      return;
+    }
+
+    try {
+      const targets = Array.from(selectedItems).map((key) => {
+        const [orderNo, orderSequence, orderProcessSequence] = key.split('-');
+        return {
+          orderNo,
+          orderSequence: Number(orderSequence),
+          orderProcessSequence: Number(orderProcessSequence),
+        };
+      });
+
+      await cancelOrder({ targets });
+      alert('주문이 취소되었습니다.');
+      setSelectedItems(new Set());
+      await loadOrders();
+    } catch (error: any) {
+      console.error('주문 취소 실패:', error);
+      alert(error.message || '주문 취소에 실패했습니다.');
+    }
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -114,14 +88,20 @@ export default function OrderListSection() {
     switch (statusCode) {
       case "001":
         return "bg-blue-100 text-blue-800";
-      case "002":
-        return "bg-yellow-100 text-yellow-800";
       case "003":
-        return "bg-green-100 text-green-800";
+        return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
+
+  if (loading) {
+    return (
+      <div className="text-center py-12 text-gray-400 text-sm">
+        로딩 중...
+      </div>
+    );
+  }
 
   if (orders.length === 0) {
     return (
@@ -133,6 +113,18 @@ export default function OrderListSection() {
 
   return (
     <div>
+      {/* 취소 버튼 */}
+      {selectedItems.size > 0 && (
+        <div className="mb-6 flex justify-end">
+          <button
+            onClick={handleCancelOrder}
+            className="px-6 py-2.5 bg-red-500 text-white hover:bg-red-600 text-sm transition"
+          >
+            선택 상품 취소 ({selectedItems.size})
+          </button>
+        </div>
+      )}
+
       <div className="space-y-8">
         {orders.map((order) => (
           <div key={order.orderNo} className="border-b pb-8">
@@ -140,12 +132,11 @@ export default function OrderListSection() {
             <div className="flex justify-between items-start mb-6">
               <div>
                 <div className="text-sm text-gray-600 mb-1">
-                  {formatDate(order.orderDate)}
+                  {formatDate(order.orderAcceptDtm)}
                 </div>
                 <div className="text-xs text-gray-500">{order.orderNo}</div>
               </div>
               <div className="text-right">
-                <div className="text-sm mb-1">{order.orderStatusName}</div>
                 <div className="text-base font-medium">
                   {formatPrice(order.totalAmount)}
                 </div>
@@ -154,75 +145,70 @@ export default function OrderListSection() {
 
             {/* 주문 상품 목록 */}
             <div className="space-y-4">
-              {order.goods.map((goods, index) => (
-                <div
-                  key={`${goods.goodsNo}-${index}`}
-                  className="flex items-center gap-4"
-                >
-                  <div className="relative w-20 h-20 flex-shrink-0 bg-gray-100">
-                    <Image
-                      src={goods.goodsMainImageUrl}
-                      alt={goods.goodsName}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-sm font-medium mb-1">{goods.goodsName}</h4>
-                    <p className="text-xs text-gray-600">
-                      {goods.itemName}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm">{formatPrice(goods.salePrice)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+              {order.goodsList.map((goods) => {
+                const key = `${order.orderNo}-${goods.orderSequence}-${goods.orderProcessSequence}`;
+                const isSelected = selectedItems.has(key);
 
-            {/* 주문 액션 버튼 */}
-            <div className="flex gap-2 mt-6">
-              <button className="flex-1 py-2.5 border border-gray-300 hover:border-black text-sm transition">
-                상세보기
-              </button>
-              {order.orderStatusCode === "003" && (
-                <button className="flex-1 py-2.5 bg-black text-white hover:bg-gray-800 text-sm transition">
-                  재주문
-                </button>
-              )}
-              {(order.orderStatusCode === "001" ||
-                order.orderStatusCode === "002") && (
-                <button className="flex-1 py-2.5 border border-gray-300 hover:border-black text-sm transition">
-                  취소
-                </button>
-              )}
+                return (
+                  <div
+                    key={key}
+                    className={`flex items-start gap-4 p-4 border rounded transition ${
+                      isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                    }`}
+                  >
+                    {goods.cancelable && (
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() =>
+                          handleSelectItem(
+                            order.orderNo,
+                            goods.orderSequence,
+                            goods.orderProcessSequence
+                          )
+                        }
+                        className="mt-1 flex-shrink-0"
+                      />
+                    )}
+
+                    <div className="flex-1">
+                      <h4 className="text-sm font-medium mb-1">
+                        {goods.goodsName} - {goods.itemName}
+                      </h4>
+                      <p className="text-xs text-gray-600 mb-2">
+                        {formatPrice(goods.salePrice)} × {goods.quantity}개
+                      </p>
+                      <div className="flex gap-2">
+                        <span
+                          className={`text-xs px-2 py-1 rounded ${getStatusColor(
+                            goods.orderStatusCode
+                          )}`}
+                        >
+                          {goods.orderStatusName}
+                        </span>
+                        <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-800">
+                          {goods.orderTypeName}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-sm font-medium">
+                        {formatPrice(goods.salePrice * goods.quantity)}
+                      </p>
+                      {goods.cancelable && goods.cancelableAmount > 0 && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          취소가능: {formatPrice(goods.cancelableAmount)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         ))}
       </div>
-
-      {/* 페이징 (더미이므로 비활성화) */}
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-4 mt-8">
-          <button
-            onClick={() => setCurrentPage(currentPage - 1)}
-            disabled={currentPage === 0}
-            className="text-sm disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-60"
-          >
-            이전
-          </button>
-          <div className="text-sm text-gray-600">
-            {currentPage + 1} / {totalPages}
-          </div>
-          <button
-            onClick={() => setCurrentPage(currentPage + 1)}
-            disabled={currentPage >= totalPages - 1}
-            className="text-sm disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-60"
-          >
-            다음
-          </button>
-        </div>
-      )}
     </div>
   );
 }

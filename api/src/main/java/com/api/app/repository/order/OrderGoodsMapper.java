@@ -49,4 +49,16 @@ public interface OrderGoodsMapper {
      * @return 주문 완료 상품 목록
      */
     List<OrderCompleteResponse.OrderCompleteGoods> selectOrderCompleteGoodsByOrderNo(String orderNo);
+
+    /**
+     * 복합키로 단건 조회 (별칭)
+     *
+     * @param orderNo 주문번호
+     * @param goodsNo 상품번호
+     * @param itemNo  단품번호
+     * @return 주문상품 정보
+     */
+    default OrderGoods selectOrderGoodsByKey(String orderNo, String goodsNo, String itemNo) {
+        return selectOrderGoodsByPk(orderNo, goodsNo, itemNo);
+    }
 }

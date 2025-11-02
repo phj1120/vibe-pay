@@ -52,4 +52,16 @@ public interface OrderDetailMapper {
             @Param("orderSequence") Long orderSequence,
             @Param("orderProcessSequence") Long orderProcessSequence
     );
+
+    /**
+     * 복합키로 단건 조회 (별칭)
+     *
+     * @param orderNo              주문번호
+     * @param orderSequence        주문순번
+     * @param orderProcessSequence 주문처리순번
+     * @return 주문상세 정보
+     */
+    default OrderDetail selectOrderDetailByKey(String orderNo, Long orderSequence, Long orderProcessSequence) {
+        return selectOrderDetailByPk(orderNo, orderSequence, orderProcessSequence);
+    }
 }

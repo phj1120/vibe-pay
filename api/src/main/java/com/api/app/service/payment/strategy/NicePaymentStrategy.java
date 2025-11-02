@@ -184,6 +184,83 @@ public class NicePaymentStrategy implements PaymentGatewayStrategy {
     }
 
     @Override
+    public void cancelPaymentByOrder(com.api.app.dto.request.payment.PaymentCancelRequest request) {
+        log.info("Nice order cancel started. orderNo={}, tid={}, cancelAmount={}",
+                request.getOrderNo(), request.getTransactionId(), request.getCancelAmount());
+
+        try {
+            // 도메인 문서에 따라 나이스 취소 API 호출
+            // POST https://pg-api.nicepay.co.kr/webapi/cancel_process.jsp
+            String url = "https://pg-api.nicepay.co.kr/webapi/cancel_process.jsp";
+
+            // 전문생성일시 생성
+            String ediDate = java.time.LocalDateTime.now()
+                    .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+
+            // SignData 생성: hex(sha256(MID + CancelAmt + EdiDate + MerchantKey))
+            String signTarget = mid + request.getCancelAmount() + ediDate + merchantKey;
+            String signData = sha256Hash(signTarget);
+
+            // 부분취소 코드 결정 (0: 전체취소, 1: 부분취소)
+            String partialCancelCode = request.getPartialCancelCode() != null
+                    ? request.getPartialCancelCode() : "0";
+
+            // 요청 파라미터 생성 (form-urlencoded)
+            MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+            params.add("TID", request.getTransactionId());
+            params.add("MID", mid);
+            params.add("Moid", request.getOrderNo());
+            params.add("CancelAmt", String.valueOf(request.getCancelAmount()));
+            params.add("CancelMsg", request.getCancelReason());
+            params.add("PartialCancelCode", partialCancelCode);
+            params.add("EdiDate", ediDate);
+            params.add("SignData", signData);
+            params.add("CharSet", "utf-8");
+            params.add("EdiType", "JSON");
+
+            // HTTP 요청
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+            HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(params, headers);
+
+            // String으로 받아서 수동 파싱 (나이스는 text/html로 JSON 응답)
+            ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
+
+            String responseBodyStr = response.getBody();
+            if (responseBodyStr == null || responseBodyStr.isEmpty()) {
+                throw new RuntimeException("나이스 취소 응답이 없습니다");
+            }
+
+            log.info("Nice cancel raw response: {}", responseBodyStr);
+
+            // JSON 문자열을 Map으로 변환
+            Map<String, Object> responseBody;
+            try {
+                responseBody = objectMapper.readValue(responseBodyStr, Map.class);
+            } catch (Exception e) {
+                log.error("Failed to parse Nice cancel response: {}", responseBodyStr, e);
+                throw new RuntimeException("나이스 취소 응답 파싱 실패: " + e.getMessage(), e);
+            }
+
+            String resultCode = (String) responseBody.get("ResultCode");
+            String resultMsg = (String) responseBody.get("ResultMsg");
+
+            // 나이스 취소 성공 코드: 2001
+            if (!"2001".equals(resultCode)) {
+                throw new RuntimeException("나이스 취소 실패: " + resultMsg + " (코드: " + resultCode + ")");
+            }
+
+            log.info("Nice order cancel completed. orderNo={}, resultCode={}, resultMsg={}",
+                    request.getOrderNo(), resultCode, resultMsg);
+
+        } catch (Exception e) {
+            log.error("Nice order cancel failed. orderNo={}", request.getOrderNo(), e);
+            throw new RuntimeException("나이스 주문 취소에 실패했습니다: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
     public PAY005 getPgType() {
         return PAY005.NICE;
     }

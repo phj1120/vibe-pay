@@ -1,5 +1,6 @@
 package com.api.app.service.payment.strategy;
 
+import com.api.app.dto.request.payment.PaymentCancelRequest;
 import com.api.app.dto.request.payment.PaymentConfirmRequest;
 import com.api.app.dto.request.payment.PaymentInitiateRequest;
 import com.api.app.dto.response.payment.PaymentApprovalResponse;
@@ -32,11 +33,18 @@ public interface PaymentGatewayStrategy {
     PaymentApprovalResponse approvePayment(PaymentConfirmRequest request);
 
     /**
-     * 결제 망취소
+     * 결제 망취소 (주문 실패 시 즉시 취소)
      *
      * @param request 결제 승인 요청
      */
     void cancelPayment(PaymentConfirmRequest request);
+
+    /**
+     * 결제 취소 (주문 취소 시 사용)
+     *
+     * @param request 결제 취소 요청
+     */
+    void cancelPaymentByOrder(PaymentCancelRequest request);
 
     /**
      * PG사 타입 반환

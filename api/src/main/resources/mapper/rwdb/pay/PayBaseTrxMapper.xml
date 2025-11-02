@@ -81,4 +81,12 @@
          WHERE PAY_NO = #{payNo}
     </delete>
 
+    <!-- 취소가능금액 차감 -->
+    <update id="updateCancelableAmount">
+        UPDATE PAY_BASE /* PayBaseTrxMapper.updateCancelableAmount */
+           SET CANCELABLE_AMOUNT = CANCELABLE_AMOUNT - #{cancelAmount}
+             , MODIFY_DATE_TIME = CURRENT_TIMESTAMP
+         WHERE PAY_NO = #{payNo}
+    </update>
+
 </mapper>

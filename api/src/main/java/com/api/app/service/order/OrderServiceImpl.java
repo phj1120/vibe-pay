@@ -4,6 +4,7 @@ import com.api.app.dto.request.order.OrderRequest;
 import com.api.app.dto.request.order.PayRequest;
 import com.api.app.dto.response.basket.BasketResponse;
 import com.api.app.dto.response.order.OrderCompleteResponse;
+import com.api.app.dto.response.order.OrderListResponse;
 import com.api.app.emum.MEM001;
 import com.api.app.emum.ORD001;
 import com.api.app.emum.ORD002;
@@ -309,5 +310,18 @@ public class OrderServiceImpl implements OrderService {
         log.info("Order complete information retrieved successfully. orderNo={}", orderNo);
 
         return response;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderListResponse> getOrderList(String memberNo) {
+        log.info("Retrieving order list. memberNo={}", memberNo);
+
+        // TODO: XML 매퍼에 selectOrderListByMemberNo 쿼리 구현 필요
+        List<OrderListResponse> orderList = orderBaseMapper.selectOrderListByMemberNo(memberNo);
+
+        log.info("Order list retrieved successfully. memberNo={}, count={}", memberNo, orderList.size());
+
+        return orderList;
     }
 }

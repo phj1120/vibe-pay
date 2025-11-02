@@ -1,5 +1,5 @@
 import { apiClient } from "./api-client";
-import { OrderSheet } from "@/types/order";
+import { OrderSheet, OrderListResponse, CancelRequest } from "@/types/order";
 import type {
   OrderNumberResponse,
   PaymentInitiateResponse,
@@ -98,4 +98,21 @@ export interface OrderCompleteResponse {
 
 export async function getOrderComplete(orderNo: string): Promise<OrderCompleteResponse> {
   return apiClient<OrderCompleteResponse>(`/api/order/complete/${orderNo}`);
+}
+
+/**
+ * 마이페이지 주문 목록 조회 API
+ */
+export async function getOrderList(): Promise<OrderListResponse[]> {
+  return apiClient<OrderListResponse[]>('/api/order/list');
+}
+
+/**
+ * 주문 취소 API
+ */
+export async function cancelOrder(request: CancelRequest): Promise<void> {
+  await apiClient<void>('/api/claim/cancel', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
 }

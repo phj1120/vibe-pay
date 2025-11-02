@@ -56,53 +56,53 @@ payment:
 
 ```yaml
 (화면) 결제하기 버튼 클릭
-	→ (서버) 주문번호조회 `/api/order/generateOrderNumber`
-	→ (서버) 요청 정보 생성 `/api/payments/initiate` 
-	→ 쿠키에 주문 정보, 요청 정보 생성
-	→ 결제 처리 팝업창 호출 `/order/popup` 
-		나이스: `width=570,height=830,scrollbars=yes,resizable=yes`
-		이니시스: `width=840,height=600,scrollbars=yes,resizable=yes`
-		→ 쿠키에 있는 주문 정보, 요청 정보 꺼내와 PG사별 form 에 세팅 후 쿠키 삭제
-		→ 해당 응답 값에 선택 된 PG 사에 따라서 각각에 맞는 정보 세팅해 PG 창 호출
-			나이스: `window.goPay(document.nicePayForm);`
-			이니시스: `window.INIStdPay.pay('inicisForm');`
-		→ PG 창에서 결제 처리
-			나이스: 
-				- 인증 완료 후 `nicepaySubmit()` 콜백 함수 호출
-				- 콜백에서 인증 응답이 append된 form을 `/api/order/payment/return`으로 submit
-			이니시스:
-				- 인증 완료 후 returnUrl로 직접 리다이렉트
-		→ (FO API Route) 결제 응답 처리 (`/api/order/payment/return`)
-			※ Next.js API Route로 구현 (SSR이 아닌 API 엔드포인트)
-			
-			**PG사별 인증 응답 전달 방식:**
-			- 나이스: `application/x-www-form-urlencoded` (FormData)
-			- 이니시스: `application/x-www-form-urlencoded` (FormData)
-			
-			**PG사 판별 방법 (Content-Type이 아닌 데이터 필드로 판별):**
-			- 이니시스: `resultCode` 필드 존재
-			- 나이스: `AuthResultCode` 필드 존재
-			
-			**결제 성공 여부 판단:**
-			- 이니시스: `resultCode === '0000'`
-			- 나이스: `AuthResultCode === '0000'`
-			
-			**응답 처리:**
-			1. PG 응답 데이터 파싱 및 PG사 판별
-			2. 결제 성공/실패 여부 확인
-			3. 결제 결과를 담은 HTML 페이지 반환 (postMessage 포함)
-			4. HTML 페이지에서 `window.opener.postMessage()`로 부모 창에 결과 전송
-			5. postMessage 전송 후 1초 뒤 팝업 창 자동 닫기
-			
-		결제처리 결과를 부모창에서 수신하고 이후 주문 프로세스 진행
-		(인증 응답에 승인 요청 정보가 있어, 이를 서버에서 주문 시점에 호출)
-		
-	→ (서버) 주문 `/api/orders/order`
-	
-	**주문 성공/실패 결과 처리:**
-	- 결제 성공 + 주문 성공 → 주문 완료 페이지 (`/order/complete?orderNo={orderNumber}`)
-	- 결제 실패 → 주문 실패 모달 (상세 오류 정보 포함) → 장바구니로 이동
-	- 결제 성공 + 주문 실패 → 주문 실패 모달 (결제 완료 안내 + 고객센터 안내) → 장바구니로 이동
+  → (서버) 주문번호조회 `/api/order/generateOrderNumber`
+  → (서버) 요청 정보 생성 `/api/payments/initiate`
+  → 쿠키에 주문 정보, 요청 정보 생성
+  → 결제 처리 팝업창 호출 `/order/popup`
+나이스: `width=570,height=830,scrollbars=yes,resizable=yes`
+이니시스: `width=840,height=600,scrollbars=yes,resizable=yes`
+  → 쿠키에 있는 주문 정보, 요청 정보 꺼내와 PG사별 form 에 세팅 후 쿠키 삭제
+  → 해당 응답 값에 선택 된 PG 사에 따라서 각각에 맞는 정보 세팅해 PG 창 호출
+나이스: `window.goPay(document.nicePayForm);`
+이니시스: `window.INIStdPay.pay('inicisForm');`
+  → PG 창에서 결제 처리
+나이스:
+  - 인증 완료 후 `nicepaySubmit()` 콜백 함수 호출
+  - 콜백에서 인증 응답이 append된 form을 `/api/order/payment/return`으로 submit
+이니시스:
+  - 인증 완료 후 returnUrl로 직접 리다이렉트
+  → (FO API Route) 결제 응답 처리 (`/api/order/payment/return`)
+  ※ Next.js API Route로 구현 (SSR이 아닌 API 엔드포인트)
+
+  **PG사별 인증 응답 전달 방식:**
+- 나이스: `application/x-www-form-urlencoded` (FormData)
+- 이니시스: `application/x-www-form-urlencoded` (FormData)
+
+  **PG사 판별 방법 (Content-Type이 아닌 데이터 필드로 판별):**
+- 이니시스: `resultCode` 필드 존재
+- 나이스: `AuthResultCode` 필드 존재
+
+  **결제 성공 여부 판단:**
+- 이니시스: `resultCode === '0000'`
+- 나이스: `AuthResultCode === '0000'`
+
+  **응답 처리:**
+  1. PG 응답 데이터 파싱 및 PG사 판별
+  2. 결제 성공/실패 여부 확인
+  3. 결제 결과를 담은 HTML 페이지 반환 (postMessage 포함)
+  4. HTML 페이지에서 `window.opener.postMessage()`로 부모 창에 결과 전송
+  5. postMessage 전송 후 1초 뒤 팝업 창 자동 닫기
+
+  결제처리 결과를 부모창에서 수신하고 이후 주문 프로세스 진행
+  (인증 응답에 승인 요청 정보가 있어, 이를 서버에서 주문 시점에 호출)
+
+  → (서버) 주문 `/api/orders/order`
+
+  **주문 성공/실패 결과 처리:**
+- 결제 성공 + 주문 성공 → 주문 완료 페이지 (`/order/complete?orderNo={orderNumber}`)
+- 결제 실패 → 주문 실패 모달 (상세 오류 정보 포함) → 장바구니로 이동
+- 결제 성공 + 주문 실패 → 주문 실패 모달 (결제 완료 안내 + 고객센터 안내) → 장바구니로 이동
 ```
 
 - 결제처리창 팝업이 열릴 경우, 주문서의 결제하기 버튼을 비활성화한다.
@@ -124,44 +124,44 @@ payment:
 
 *이니시스:*
 주문서 페이지 (부모 창)
-  ↓ window.open()
+↓ window.open()
 결제 팝업 (/order/popup)
-  ↓ INIStdPay.pay() 호출
+↓ INIStdPay.pay() 호출
 이니시스 결제 창
-  ↓ 결제 완료 후 returnUrl로 리다이렉트
+↓ 결제 완료 후 returnUrl로 리다이렉트
 API Route (/api/order/payment/return)
-  ↓ window.opener.postMessage()
+↓ window.opener.postMessage()
 주문서 페이지 (결과 수신)
-  ↓ 주문 API 호출
+↓ 주문 API 호출
 주문 완료 or 실패 모달
 
 *나이스:*
 주문서 페이지 (부모 창)
-  ↓ window.open()
+↓ window.open()
 결제 팝업 (/order/popup)
-  ↓ goPay() 호출 + nicepaySubmit() 콜백 등록
+↓ goPay() 호출 + nicepaySubmit() 콜백 등록
 나이스 결제 창
-  ↓ 결제 완료 후 nicepaySubmit() 콜백 호출
+↓ 결제 완료 후 nicepaySubmit() 콜백 호출
 결제 팝업 (/order/popup)
-  ↓ form.submit() → /api/order/payment/return
+↓ form.submit() → /api/order/payment/return
 API Route (/api/order/payment/return)
-  ↓ window.opener.postMessage()
+↓ window.opener.postMessage()
 주문서 페이지 (결과 수신)
-  ↓ 주문 API 호출
+↓ 주문 API 호출
 주문 완료 or 실패 모달
 
 #### 2. postMessage 데이터 구조
 
 interface PaymentResultMessage {
-  success: boolean;
-  authData?: InicisAuthResponse | NiceAuthResponse;
-  error?: string;
-  errorDetails?: {
-    pgType?: string;          // 'INICIS' | 'NICE'
-    errorCode?: string;        // PG 에러 코드
-    errorMessage?: string;     // 에러 메시지
-    timestamp?: string;        // ISO 8601 형식
-  };
+success: boolean;
+authData?: InicisAuthResponse | NiceAuthResponse;
+error?: string;
+errorDetails?: {
+pgType?: string;          // 'INICIS' | 'NICE'
+errorCode?: string;        // PG 에러 코드
+errorMessage?: string;     // 에러 메시지
+timestamp?: string;        // ISO 8601 형식
+};
 }
 
 #### 3. 에러 메시지 형식
@@ -198,7 +198,7 @@ PG사: KG이니시스
 
 - 나이스
     - 결제 요청 Form: `nicePayForm`
-        
+
         | name | `PaymentInitiateResponse` 에 해당하는 값 | 기타 |
         | --- | --- | --- |
         | GoodsName | goodName |  |
@@ -231,7 +231,7 @@ PG사: KG이니시스
         | NetCancelURL | netCancelUrl |  |
 - 이니시스
     - 결제 요청 Form: `inicisForm`
-        
+
         | name | `PaymentInitiateResponse` 에 해당하는 값 | 기타 |
         | --- | --- | --- |
         | mid | mid |  |
@@ -253,8 +253,8 @@ PG사: KG이니시스
         | acceptmethod | acceptmethod |  |
         | charset |  | `UTF-8` 고정 |
     - 결제 응답: FormData (`application/x-www-form-urlencoded`)
-
-        | name | `PaymentConfirmRequest` 에 해당하는 값 | 비고 |
+        
+        | name | `PaymentConfirmRequest` 에 해당하는 값 |  |
         | --- | --- | --- |
         | resultCode |  | `0000` 만 결제 성공. PG사 판별 키 필드 |
         | resultMsg |  |  |
@@ -266,10 +266,8 @@ PG사: KG이니시스
         | netCancelUrl | netCancelUrl |  |
         | charset |  |  |
         | merchantData |  |  |
-
+    
     결제가 성공 했을 경우 `PaymentConfirmRequest` 에 PG 사 별 위의 값을 세팅해 주문 호출
-
-    **주의**: 이니시스 승인 요청 시 `price` 필드가 필요하므로, 프론트엔드에서 `PaymentConfirmRequest` 생성 시 결제 금액(`finalAmount`)을 `price` 필드에 포함해야 함
     
     - PG사 판별 로직 (API Route에서 처리)
         - Content-Type에 관계없이 응답 데이터의 필드로 판별
@@ -278,14 +276,14 @@ PG사: KG이니시스
 - 결제 인증 응답 처리 (Next.js API Route)
     - POST `/api/order/payment/return`
     - Request: PG사에서 POST로 전송하는 인증 응답 데이터
-        
-        Content-Type: `application/x-www-form-urlencoded` (이니시스, 나이스 공통)
-        
-        Body: PG사별 인증 응답 필드
-        
+
+      Content-Type: `application/x-www-form-urlencoded` (이니시스, 나이스 공통)
+
+      Body: PG사별 인증 응답 필드
+
     - Response: HTML 페이지 (postMessage 스크립트 포함)
     - 프로세스
-        
+
         ```json
         1. PG 응답 데이터 파싱 (FormData)
         2. 데이터 필드로 PG사 판별
@@ -298,7 +296,7 @@ PG사: KG이니시스
         5. HTML 응답 반환 (postMessage 스크립트로 부모 창에 결과 전송)
         6. 팝업 창 자동 닫기 (1초 후)
         ```
-        
+
 
 ### 결제 승인 요청 및 응답
 
@@ -306,9 +304,8 @@ PG사: KG이니시스
 
 Request: PaymentConfirmRequest
 
-| 타입 | 필드명 | 구분 |
-| --- | --- | --- |
 | String | pgTypeCode | 공통 |
+| --- | --- | --- |
 | String | authToken | 공통 |
 | String | orderNo | 공통 |
 | String | authUrl | 공통 |
@@ -317,12 +314,11 @@ Request: PaymentConfirmRequest
 | String | amount | 나이스 |
 | String | tradeNo | 나이스 |
 | String | mid | 나이스 |
-| Long | price | 이니시스 |
 - 나이스
     - 승인 요청
         - POST 결제 요청 응답으로 넘어온 {authUrl}
         - Request
-            
+
             | TID | 거래번호 (인증 응답 TxTid 사용) |  |
             | --- | --- | --- |
             | AuthToken | 인증 TOKEN |  |
@@ -349,13 +345,14 @@ Request: PaymentConfirmRequest
     - 승인 요청
         - POST 결제 요청 응답으로 넘어온 {authUrl}
         - Request
-            
+
             | **mid** | 상점아이디 |  |
             | --- | --- | --- |
             | **authToken** | 승인요청 검증 토큰 |  |
             | **timestamp** | TimeInMillis(Long형) |  |
-            | **signature** | SHA256 Hash값 | authToken={authToken}&timestamp={timestamp} |
-            | **verification** | SHA256 Hash값 | authToken={authToken}&signKey={signKey}&timestamp={timestamp} |
+            | **signature** | SHA256 Hash값(**authToken, timestamp)** |  |
+            | **verification** | SHA256 Hash값
+            (**authToken, signKey, timestamp)** |  |
             | **charset** |  | `UTF-8` 고정 |
             | **format** |  | `JSON` 고정 |
             | **price** | 가격 |  |
@@ -376,25 +373,135 @@ Request: PaymentConfirmRequest
             | **CARD_Num** | 신용카드번호 |  |
             | **CARD_Code** | 카드사 코드 |  |
 
+### 결제 취소
+
+- 나이스
+    - 전체 취소/부분취소
+    - POST **https://pg-api.nicepay.co.kr/webapi/cancel_process.jsp**
+
+      **Content-Type application/x-www-form-urlencoded**
+
+    - Request
+
+        | **파라미터명** | **파라미터설명** |
+        | --- | --- |
+        | TID | 30 byte 필수 거래 ID |
+        | MID | 10 byte 필수 가맹점 ID |
+        | Moid | 64 byte 필수 주문번호 (부분 취소 시 중복취소 방지를 위해 설정) (별도 계약 필요) |
+        | CancelAmt | 12 byte 필수 취소금액 |
+        | CancelMsg | 100 byte 필수 취소사유 (euc-kr) |
+        | PartialCancelCode | 1 byte 필수 0:전체 취소, 1:부분 취소 |
+        | EdiDate | 14 byte 필수 전문생성일시 (YYYYMMDDHHMMSS) |
+        | SignData | 256 byte 필수 hex(sha256(MID + CancelAmt + EdiDate + MerchantKey)) |
+        | CharSet | 10 byte 인증 응답 인코딩 (euc-kr(default) / utf-8) |
+        | EdiType | 10 byte 응답전문 유형 (JSON / KV) *KV:Key=value |
+        | MallReserved | 500 byte 가맹점 여분 필드 |
+        | RefundAcctNo | 16 byte 가상계좌, 휴대폰 익월 환불 Only 환불계좌번호 (숫자만) |
+        | RefundBankCd | 3 byte 가상계좌, 휴대폰 익월 환불 Only 환불계좌코드 (*은행코드 참고) |
+        | RefundAcctNm | 10 byte 가상계좌, 휴대폰 익월 환불 Only 환불계좌주명 (euc-kr) |
+    - Response
+        
+        | **파라미터명** | **파라미터설명** |
+        | --- | --- |
+        | ResultCode | 4 byte 필수 취소 결과 코드 예) 2001 *상세 내용 결과코드 참조 |
+        | ResultMsg | 100 byte 필수 취소 결과 메시지 예) 취소 성공 *상세 내용 결과코드 참조 |
+        | CancelAmt | 12 byte 필수 취소 금액 예) 1000원인 경우 -> 000000001000 |
+        | MID | 10 byte 필수 가맹점 ID 예) nictest00m |
+        | Moid | 64 byte 필수 가맹점 주문번호 |
+        | Signature | 500 byte hex(sha256(TID + MID + CancelAmt + MerchantKey)), 위변조 검증 데이터응답 데이터 유효성 검증을 위해 가맹점 수준에서 비교하는 로직 구현을 권고합니다. |
+        | PayMethod | 10 byteCARD : 신용카드BANK : 계좌이체VBANK : 가상계좌CELLPHONE : 휴대폰결제 |
+        | TID | 30 byte 거래 ID |
+        | CancelDate | 8 byte 취소일자 (YYYYMMDD) |
+        | CancelTime | 6 byte 취소시간 (HHmmss) |
+        | CancelNum | 8 byte 취소번호 |
+        | RemainAmt | 12 byte 취소 후 잔액 예) 잔액이 1000원인 경우 -> 000000001000 |
+        | MallReserved | 500 byte 가맹점 여분 필드 |
+
+- 이니시스
+
+  전체취소, 부분취소 가능
+
+    - 전체 취소
+        - POST https://iniapi.inicis.com/v2/pg/refund
+        - Request
+
+            | **mid***** | String | 상점아이디 |  |
+            | --- | --- | --- | --- |
+            | **type***** | String | 요청서비스 ["refund" 고정] |  |
+            | **timestamp***** | String | 전문생성시간 [YYYYMMDDhhmmss] |  |
+            | **clientIp***** | String | 가맹점 요청 서버IP (추후 거래 확인 등에 사용됨) |  |
+            | **hashData***** | String | SHA512 HASH 한 값**대상 : INIAPIKey + mid + type + timestamp + data** |  |
+            | **data***** | Data | 요청데이터 |  |
+            | **Data 상세** |  |  |  |
+            | **tid***** | String | 취소요청할 승인TID |  |
+            | **msg***** | String | 취소요청 사유 |  |
+        - Response
+            
+            | **resultCode** | 결과코드**"00":성공, 이외 실패** |  |
+            | --- | --- | --- |
+            | **resultMsg** | 결과메세지 |  |
+            | **cancelDate** | 취소일자 [YYYYMMDD] |  |
+            | **cancelTime** | 취소시간 [hhmmss] |  |
+            | **cshrCancelNum** | 현금영수증 취소승인번호**현금영수증 발행건에 한함** |  |
+            | **detailResultCode** | 취소실패 응답시 상세코드 |  |
+            | **receiptInfo** | 특정 가맹점 전용 응답필드 |  |
+    - 부분 취소
+        - POST https://iniapi.inicis.com/v2/pg/partialRefund
+        - Request
+            
+            | **mid***** | String | 상점아이디 |
+            | --- | --- | --- |
+            | **type***** | String | 요청서비스 ["partialRefund" 고정] |
+            | **timestamp***** | String | 전문생성시간 [YYYYMMDDhhmmss] |
+            | **clientIp***** | String | 가맹점 요청 서버IP (추후 거래 확인 등에 사용됨) |
+            | **hashData***** | String | SHA512 HASH 한 값**대상 : INIAPIKey + mid + type + timestamp + data** |
+            | **data***** | Data | 요청데이터 |
+            | **Data 상세** |  |  |
+            | **tid***** | String | 취소요청할 승인TID |
+            | **msg***** | String | 취소요청 사유 |
+            | **price***** | String | 취소요청 금액 |
+            | **confirmPrice***** | String | 부분취소 후 남은 금액 |
+            | **currency** | String | 통화 (WON, USD) |
+            | **tax** | String | 부가세 |
+            | **taxFree** | String | 비과세 |
+        - Response
+            
+            | **resultCode** | 결과코드**"00":성공, 이외 실패** |
+            | --- | --- |
+            | **resultMsg** | 결과메세지 |
+            | **prtcDate** | 취소일자 [YYYYMMDD] |
+            | **prtcTime** | 취소시간 [hhmmss] |
+            | **tid** | 부분취소 거래번호 |
+            | **prtcTid** | 원 승인 거래번호 |
+            | **prtcPrice** | 부분취소금액 |
+            | **prtcRemains** | 부분취소 후 남은금액 |
+            | **prtcCnt** | 부분취소 요청 횟수 |
+            | **prtcType** | 부분취소 구분 ["0":재승인방식, "1":부분취소] |
+            | **pointAmount** | 부분취소 시 취소된 포인트 금액 |
+            | **discountAmount** | 부분취소 시 취소된 할인 금액 |
+            | **creditAmount** | 부분취소 시 취소된 여신 금액 |
+            | **cashReceiptAmount** | 부분취소 후 남은 금액에 대한 현금영수증 발행 대상 금액 |
+
 ### API 정의서
 
 - 주문 번호 조회
     - GET `/api/order/generateOrderNumber`
     - Request: X
     - Response
-        
+
         | String | orderNo | 주문번호 |
         | --- | --- | --- |
+  
     - 프로세스
         
         시퀀스 `SEQ_ORDER_NO` 를 조회 해서 반환.
         
         이 값을 기반으로 주문, 결제, 포인트, 로그 테이블을 쌓기 때문에 최초에 조회 함.
-        
+
 - 결제 요청 정보 생성
     - POST `/api/payments/initiate`
     - Request: `PaymentInitiateRequest`
-        
+
         | 타입 | 변수명 | 설명 |
         | --- | --- | --- |
         | Long | amount | 금액 |
@@ -451,26 +558,23 @@ Request: PaymentConfirmRequest
             ```
             
         - 해싱 데이터
-
+        
         | PG사 | 필드 | 설명 | 암호화대상데이터 |
         | --- | --- | --- | --- |
         | 이니시스 | mKey | MKey (signKey SHA-256 해싱) | {signKey} |
-        | 이니시스 | signature (결제 요청) | 서명 데이터 | oid={orderNo}&price={price}&timestamp={timestamp} |
-        | 이니시스 | verification (결제 요청) | 검증 데이터 | oid={orderNo}&price={price}&signKey={signKey}&timestamp={timestamp} |
-        | 이니시스 | signature (승인 요청) | 서명 데이터 | authToken={authToken}&timestamp={timestamp} |
-        | 이니시스 | verification (승인 요청) | 검증 데이터 | authToken={authToken}&signKey={signKey}&timestamp={timestamp} |
+        | 이니시스 | signature | 서명 데이터 (oid, price, timestamp SHA-256 해싱) | oid={orderNo}&price={price}&signKey={signKey}&timestamp={timestamp} |
+        | 이니시스 | verification | 검증 데이터 (oid, price, signKey, timestamp SHA-256 해싱) | oid={orderNo}&price={price}&timestamp={timestamp} |
         | 나이스 | SignData | 서명 데이터 (EdiDate + MID + Amt + MerchantKey 해싱) | {EdiDate}{MID}{Amt}{MerchantKey} |
-    
+
 - 주문
-    
-    POST `/api/order/order`
-    
+
+  POST `/api/order/order`
+
     - Request: OrderRequest
-        
+
         ```json
         {
         	memberNo // api에서 현재 토큰에서 꺼내서 세팅
-            orderNo
         	memberName
         	phone
         	email
@@ -486,11 +590,11 @@ Request: PaymentConfirmRequest
         	PaymentConfirmRequest
         }
         ```
-        
+
     - Response
-        
-        응답값 없음. 주문 실패 시 예외 발생.
-        
+
+      응답값 없음. 주문 실패 시 예외 발생.
+
     - 프로세스
     
     ```json
@@ -529,31 +633,41 @@ Request: PaymentConfirmRequest
     포인트 결제에 대해서는 예외 발생해 DB 가 롤백이 되기에 따로 처리하지 않는다.
     - 망취소 실패에 대해서는 고려하지 않는다.
     - 복합 결제 시 결제 및 취소 우선순위는 결제방식코드(payWayCode)`PAY002` 의 `displaySequence` 기준으로 한다. (현재. 카드, 포인트 순서)
+
 - 주문 취소
     - POST `/api/claim/cancel`
     - Request: CancelRequest
-        
+
         ```json
         {
-        	memberNo
-        	memberName
-        	phone
-        	email
-        	goodsList: List<BasketResponse>
-        	payList: List<PayRequest>
+        	memberNo 토큰에서 꺼내서 사용
+        	List<ClaimTargetReuest>
         }
-        ```
         
+        ### ClaimTargetRequest
+        orderNo
+        orderSequnce
+        orderProcessSequnce
+        
+        ```
+
     - Response
         - 응답값 없음. 주문 취소 실패 시 예외 발생.
     - 프로세스
+        - 주문 취소는 마이페이지 주문 목록 화면에서 처리.
+        - 부분 취소가 가능해, 화면에서 사용자가 선택한 상품을 주문순번, 주문 처리순번을 기준으로 화면에서 취소 금액을 노출해주고, 이를 기반으로 서버에서 금액 검증 후 취소 처리를 진행한다.
+        - 부분 취소시 수량 단위 부분취소는 불가능하다.
+        - 해당 클레임의 원건이 되는 주문 정보를 기반으로 클레임 데이터 생성
+        - order_detail 테이블은 원건과 주문 순번은 동일하고, 주문 처리순번은 + 1 한다.
+        - pay_base 테이블은 원건과 동일한 payWayCode, payTypeCode 을 기준으로 취소 처리를 각각 진행한다.
+        - 부분 취소시 수량 단위
 
 ### 주문/취소 DFD
 
 예시를 위한 데이터
 
 - goods_base
-    
+
     | goods_no | goods_name | goods_status_code | goods_main_image_url | regist_id | regist_date_time | modify_id | modify_date_time |  |  |  |
     | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
     | G00000000000001 | 상품A | 001 | https://cdn.ftoday.co.kr/news/photo/201510/44298_46389_2338.jpg | 999999999999999 | 2025-10-29 10:52:53.590733 | 999999999999999 | 2025-10-29 10:52:53.590733 |  |  |  |
@@ -562,7 +676,7 @@ Request: PaymentConfirmRequest
 ---
 
 - goods_item
-    
+
     | goods_no | item_no | item_name | item_price | stock | goods_status_code | regist_id | regist_date_time | modify_id | modify_date_time |  |
     | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
     | G00000000000001 | 001 | 단품A | 0 | 5 | 001 | 999999999999999 | 2025-10-29 10:52:53.595171 | 999999999999999 | 2025-10-29 10:52:53.595171 |  |
@@ -572,7 +686,7 @@ Request: PaymentConfirmRequest
 ---
 
 - goods_price_hist
-    
+
     | goods_no | start_date_time | end_date_time | sale_price | supply_price | regist_id | regist_date_time | modify_id | modify_date_time |  |  |
     | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
     | G00000000000001 | 2025-10-29 10:52:53.593352 | 9999-12-31 23:59:59.000000 | 10000 | 5000 | 999999999999999 | 2025-10-29 10:52:53.593635 | 999999999999999 | 2025-10-29 10:52:53.593635 |  |  |
@@ -581,7 +695,7 @@ Request: PaymentConfirmRequest
 ---
 
 - member_base
-    
+
     | member_no | member_name | phone | email | password | member_status_code | regist_id | regist_date_time | modify_id | modify_date_time |  |
     | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
     | 000000000000003 | 테스트 | 010-1234-5678 | [test@test.com](mailto:test@test.com) | $2a$10$0wV0TNKUYhGbtRM0DqHITOowAa64qmvvq4A2VHZsZ6NIZ8H7YxjZ2 | 001 | 999999999999999 | 2025-10-29 10:40:46.423024 | 999999999999999 | 2025-10-29 10:40:46.423024 |  |
@@ -589,7 +703,7 @@ Request: PaymentConfirmRequest
 - 상품A - 단품A 1개 / 카드 10000원 결제 / 이니시스
     - 주문
         - order_base 테이블
-            
+
             | order_no | member_no |
             | --- | --- |
             | 20251030O000001 | 000000000000003 |
@@ -720,7 +834,7 @@ Request: PaymentConfirmRequest
                 
                 | point_history_no | member_no | amount | pointTransactionCode | point_transaction_reson_code | point_transaction_reson_no | start_date_time | end_date_time | upper_point_history_no | remain_point |
                 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-                | 000000000000001 | 000000000000003 | 5000 | 001 | 002 | 000000000000004 (pay_no) | now() | now() + `MEM003` 의 `referenceValue1` |  | 5000 |
+                | 000000000000001 | 000000000000003 | 5000 | 002 | 002 | 000000000000004 (pay_no) |  |  |  | 5000 |
         - 주문 취소
             - order_base 테이블
                 
@@ -768,8 +882,8 @@ Request: PaymentConfirmRequest
                 
                 | point_history_no | member_no | amount | pointTransactionCode | point_transaction_reson_code | point_transaction_reson_no | start_date_time | end_date_time | upper_point_history_no | remain_point |
                 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-                | 000000000000001 | 000000000000003 | 5000 | 001 | 002 | 000000000000004 (pay_no) | now() | now() + `MEM003` 의 `referenceValue1` |  | 0 |
-                | 000000000000002 | 000000000000003 | 5000 | 002 | 002 | 000000000000006 (pay_no) | now() | now() + `MEM003` 의 `referenceValue1` | 000000000000001 | 5000 |
+                | 000000000000001 | 000000000000003 | 5000 | 002 | 002 | 000000000000004 (pay_no) |  |  |  | 0 |
+                | 000000000000002 | 000000000000003 | 5000 | 001 | 002 | 000000000000006 (pay_no) | now() | now() + `MEM003` 의 `referenceValue1` | 000000000000001 | 5000 |
     
     - 상품 N 개 주문
         - 카드 단독
@@ -812,6 +926,7 @@ Request: PaymentConfirmRequest
             ---
             
             - pay_interface_log 테이블
+               
                 
                 | pay_interface_no | member_no | pay_no | pay_log_code | request_json | response_json |
                 | --- | --- | --- | --- | --- | --- |
@@ -826,7 +941,7 @@ Request: PaymentConfirmRequest
 - 주문취소
     - 카드, 포인트로 상품 1개 주문 후 전체 취소
         - order_base 테이블
-            
+
             | order_no | member_no |
             | --- | --- |
             | 20251030O000001 | 000000000000003 |
@@ -851,7 +966,10 @@ Request: PaymentConfirmRequest
             
             | pay_no | pay_type_code | pay_way_code | pay_status_code | approve_no | order_no | claim_no | upper_pay_no | trd_no | pay_finish_date_time | member_no | amount | cancelable_amount | pg_type_code |
             | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-            | 000000000000002 | 001 | 001 | 002 |  | 20251030O000001 |  |  |  | now() | 000000000000003 | 10000 | 10000 | 001 |
+            | 000000000000002 | 001 | 001 | 002 |  | 20251030O000001 |  | 000000000000002 |  | now() | 000000000000003 | 8000 | 0 | 001 |
+            | 000000000000003 | 001 | 002 | 002 |  | 20251030O000001 |  | 000000000000003 |  | now() | 000000000000003 | 2000 | 0 |  |
+            | 000000000000004 | 002 | 001 | 003 |  | 20251030O000001 | 20251030C000001 |  |  | now() | 000000000000003 | 8000 |  | 001 |
+            | 000000000000005 | 002 | 002 | 003 |  | 20251030O000001 | 20251030C000001 |  |  | now() | 000000000000003 | 2000 |  |  |
         
         ---
         
@@ -861,30 +979,35 @@ Request: PaymentConfirmRequest
             | --- | --- | --- | --- | --- | --- |
             | 000000000000001 | 000000000000003 | 000000000000002 | 001 | 실제 요청 json 정보 | 실제 응답 json 정보 |
             | 000000000000002 | 000000000000003 | 000000000000002 | 002 | 실제 요청 json 정보 | 실제 응답 json 정보 |
+            | 000000000000002 | 000000000000003 | 000000000000004 | 004 | 실제 요청 json 정보 | 실제 응답 json 정보 |
         
         - point_history 테이블
             
             | point_history_no | member_no | amount | pointTransactionCode | point_transaction_reson_code | point_transaction_reson_no | start_date_time | end_date_time | upper_point_history_no | remain_point |
             | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-            |  |  |  |  |  |  |  |  |  |  |
+            | 000000000000001 | 000000000000003 | 4000 | 002 | 002 | 000000000000003 (pay_no) |  |  |  | 0 |
+            | 000000000000002 | 000000000000003 | 4000 | 001 | 002 | 000000000000005 (pay_no) | now() | now() + `MEM003` 의 `referenceValue1` | 000000000000001 |  |
     
     - 카드, 포인트로 상품 N 개 주문 후 상품 부분 취소
         
-        상품A - 단품A 1개 10,000원
+        주문
         
-        상품B - 단품1 1개 8,000원
+        - 상품A - 단품A 1개 10,000원
+        - 상품B - 단품1 1개 8,000원
+        - 카드 6,000원 / 이니시스
+        - 포인트 12,000원
         
-        카드 6,000원 / 이니시스
+        주문 취소
         
-        포인트 12,000원 
-        
-        포인트 
+        - 상품A - 단품A 1개 10,000원
+        - 카드 6,000원 / 이니시스 / PAY002 의 정렬 순서에 따라, 현재 기준으로 카드 먼저  취소 차감.
+        - 포인트 4,000원
         
         - order_base 테이블
             
             | order_no | member_no |
             | --- | --- |
-            | 20251030O000001 | 000000000000003 |
+            | 20251101O000001 | 000000000000003 |
         
         ---
         
@@ -892,8 +1015,10 @@ Request: PaymentConfirmRequest
             
             | order_no | order_sequence | order_process_sequence | upper_order_process_sequence | claim_no | goods_no | item_no | quantity | order_status_code | delivery_type_code | order_type_code | order_accept_dtm | order_finish_dtm |
             | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-            | 20251030O000001 | 1 | 1 |  |  | G00000000000001 | 001 | 1 | 001 | 001 | 001 | now() |  |
-            | 20251030O000001 | 2 | 1 |  |  | G00000000000021 | 001 | 1 | 001 | 001 | 001 | now() |  |
+            | 20251101O000001 | 1 | 1 |  |  | G00000000000001 | 001 | 1 | 001 | 001 | 001 | now() |  |
+            | 20251101O000001 | 2 | 1 |  |  | G00000000000021 | 001 | 1 | 001 | 001 | 001 | now() |  |
+            | 20251101O000001 | 1 | 2 | 1 | 20251101C000001 | G00000000000001 | 001 | 1 | 003 | 002 | 002 | now() |  |
+            |  |  |  |  |  |  |  |  |  |  |  |  |  |
         
         ---
         
@@ -901,13 +1026,16 @@ Request: PaymentConfirmRequest
             
             | order_no | goods_no | item_no | sale_price | supply_price | goods_name | item_name |
             | --- | --- | --- | --- | --- | --- | --- |
-            | 20251030O000001 | G00000000000001 | 001 | 10000 | 5000 | 상품A | 단품A |
-            | 20251030O000001 | G00000000000001 | 001 | 8000 | 4000 | 상품B | 단품1 |
+            | 20251101O000001 | G00000000000001 | 001 | 10000 | 5000 | 상품A | 단품A |
+            | 20251101O000001 | G00000000000001 | 001 | 8000 | 4000 | 상품B | 단품1 |
         - pay_base 테이블
             
             | pay_no | pay_type_code | pay_way_code | pay_status_code | approve_no | order_no | claim_no | upper_pay_no | trd_no | pay_finish_date_time | member_no | amount | cancelable_amount | pg_type_code |
             | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-            | 000000000000002 | 001 | 001 | 002 |  | 20251030O000001 |  |  |  | now() | 000000000000003 | 18000 | 18000 | 001 |
+            | 000000000000001 | 001 | 001 | 002 |  | 20251101O000001 |  |  |  | now() | 000000000000003 | 6000 | 0 | 001 |
+            | 000000000000002 | 001 | 002 | 002 |  | 20251101O000001 |  |  |  | now() | 000000000000003 | 12000 | 8000 |  |
+            | 000000000000003 | 002 | 001 | 003 |  | 20251101O000001 | 20251101C000001 | 000000000000001 |  | now() | 000000000000003 | 6000 |  | 001 |
+            | 000000000000004 | 002 | 002 | 003 |  | 20251101O000001 | 20251101C000001 | 000000000000002 |  | now() | 000000000000003 | 4000 |  |  |
         
         ---
         
@@ -917,11 +1045,14 @@ Request: PaymentConfirmRequest
             | --- | --- | --- | --- | --- | --- |
             | 000000000000001 | 000000000000003 | 000000000000002 | 001 | 실제 요청 json 정보 | 실제 응답 json 정보 |
             | 000000000000002 | 000000000000003 | 000000000000002 | 002 | 실제 요청 json 정보 | 실제 응답 json 정보 |
+            | 000000000000003 | 000000000000003 | 000000000000003 | 004 | 실제 요청 json 정보 | 실제 응답 json 정보 |
+            |  |  |  |  |  |  |
         
         - point_history 테이블
             
             | point_history_no | member_no | amount | pointTransactionCode | point_transaction_reson_code | point_transaction_reson_no | start_date_time | end_date_time | upper_point_history_no | remain_point |
             | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-            |  |  |  |  |  |  |  |  |  |  |
+            | 000000000000001 | 000000000000003 | 12000 | 002 | 002 | 000000000000002 (pay_no) |  |  |  | 8000 |
+            | 000000000000002 | 000000000000003 | 4000 | 001 | 002 | 000000000000004 (pay_no) | now() | now() + `MEM003` 의 `referenceValue1` | 000000000000001 |  |
         
     - 카드로 상품 N개 주문 후 상품 부분 취소 후 전체취소

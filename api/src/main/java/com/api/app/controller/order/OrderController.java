@@ -4,8 +4,11 @@ import com.api.app.common.response.ApiResponse;
 import com.api.app.common.security.SecurityUtils;
 import com.api.app.dto.request.order.OrderRequest;
 import com.api.app.dto.response.order.OrderCompleteResponse;
+import com.api.app.dto.response.order.OrderListResponse;
 import com.api.app.dto.response.order.OrderNumberResponse;
 import com.api.app.service.order.OrderService;
+
+import java.util.List;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -91,5 +94,25 @@ public class OrderController {
         log.info("Get order complete completed successfully. orderNo={}", orderNo);
 
         return ApiResponse.success(response);
+    }
+
+    /**
+     * 마이페이지 주문 목록 조회
+     *
+     * @return 주문 목록
+     */
+    @Operation(summary = "주문 목록 조회", description = "마이페이지에서 사용할 주문 목록을 조회합니다")
+    @GetMapping("/list")
+    public ApiResponse<List<OrderListResponse>> getOrderList() {
+        // 토큰에서 회원번호 추출
+        String memberNo = securityUtils.getCurrentUserMemberNo();
+
+        log.info("Get order list request received. memberNo={}", memberNo);
+
+        List<OrderListResponse> orderList = orderService.getOrderList(memberNo);
+
+        log.info("Get order list completed successfully. memberNo={}, count={}", memberNo, orderList.size());
+
+        return ApiResponse.success(orderList);
     }
 }
