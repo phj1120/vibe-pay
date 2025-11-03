@@ -3,9 +3,12 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getOrderComplete, type OrderCompleteResponse } from "@/lib/order-api";
+import AlertModal from "@/components/common/AlertModal";
+import { useAlert } from "@/hooks/useAlert";
 
 function OrderCompleteContent() {
   const router = useRouter();
+  const alert = useAlert();
   const searchParams = useSearchParams();
   const orderNo = searchParams.get("orderNo");
   const [orderData, setOrderData] = useState<OrderCompleteResponse | null>(null);
@@ -16,13 +19,13 @@ function OrderCompleteContent() {
     const fetchOrderData = async () => {
       const token = localStorage.getItem("accessToken");
       if (!token) {
-        alert("로그인이 필요한 서비스입니다");
+        alert.showAlert("로그인이 필요한 서비스입니다");
         router.push("/login");
         return;
       }
 
       if (!orderNo) {
-        alert("잘못된 접근입니다");
+        alert.showAlert("잘못된 접근입니다");
         router.push("/");
         return;
       }
@@ -33,7 +36,7 @@ function OrderCompleteContent() {
       } catch (err) {
         console.error("주문 완료 정보 조회 실패:", err);
         setError("주문 정보를 불러올 수 없습니다");
-        alert("잘못된 접근입니다");
+        alert.showAlert("잘못된 접근입니다");
         router.push("/");
       } finally {
         setLoading(false);
@@ -71,7 +74,9 @@ function OrderCompleteContent() {
   };
 
   return (
-    <div className="bg-white min-h-screen">
+    <>
+      <AlertModal isOpen={alert.isOpen} message={alert.message} onClose={alert.hideAlert} />
+      <div className="bg-white min-h-screen">
       <div className="max-w-lg mx-auto px-4 py-20">
         <div className="text-center mb-12">
           {/* 메시지 */}
@@ -150,7 +155,8 @@ function OrderCompleteContent() {
           </button>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

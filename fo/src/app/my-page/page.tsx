@@ -13,6 +13,8 @@ import type {
 import MemberInfoSection from "@/components/features/mypage/MemberInfoSection";
 import PointSection from "@/components/features/mypage/PointSection";
 import OrderListSection from "@/components/features/mypage/OrderListSection";
+import AlertModal from "@/components/common/AlertModal";
+import { useAlert } from "@/hooks/useAlert";
 
 type TabType = "member" | "point" | "order";
 
@@ -26,6 +28,7 @@ function MyPageContent() {
   const [pointHistory, setPointHistory] = useState<PointHistoryListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
+  const alert = useAlert();
 
   useEffect(() => {
     // 쿼리스트링에서 탭 파라미터 읽기
@@ -75,7 +78,7 @@ function MyPageContent() {
   function handleLogout() {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
-    alert("로그아웃 되었습니다");
+    alert.showAlert("로그아웃 되었습니다");
     router.push("/login");
   };
 
@@ -112,8 +115,14 @@ function MyPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-4xl mx-auto px-4 py-12">
+    <>
+      <AlertModal
+        isOpen={alert.isOpen}
+        message={alert.message}
+        onClose={alert.hideAlert}
+      />
+      <div className="min-h-screen bg-white">
+        <div className="max-w-4xl mx-auto px-4 py-12">
         {/* 헤더 */}
         <div className="flex justify-between items-center mb-12">
           <h1 className="text-2xl font-medium">마이페이지</h1>
@@ -161,6 +170,7 @@ function MyPageContent() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

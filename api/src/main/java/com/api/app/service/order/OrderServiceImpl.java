@@ -3,6 +3,7 @@ package com.api.app.service.order;
 import com.api.app.dto.request.order.OrderRequest;
 import com.api.app.dto.request.order.PayRequest;
 import com.api.app.dto.response.basket.BasketResponse;
+import com.api.app.dto.response.order.CancelableOrderResponse;
 import com.api.app.dto.response.order.OrderCompleteResponse;
 import com.api.app.dto.response.order.OrderListResponse;
 import com.api.app.emum.MEM001;
@@ -317,11 +318,58 @@ public class OrderServiceImpl implements OrderService {
     public List<OrderListResponse> getOrderList(String memberNo) {
         log.info("Retrieving order list. memberNo={}", memberNo);
 
-        // TODO: XML 매퍼에 selectOrderListByMemberNo 쿼리 구현 필요
         List<OrderListResponse> orderList = orderBaseMapper.selectOrderListByMemberNo(memberNo);
 
         log.info("Order list retrieved successfully. memberNo={}, count={}", memberNo, orderList.size());
 
         return orderList;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CancelableOrderResponse getCancelableOrders(String orderNo, String memberNo) {
+        log.info("Retrieving cancelable orders. orderNo={}, memberNo={}", orderNo, memberNo);
+
+        // 1. 주문 소유권 확인
+        OrderBase orderBase = orderBaseMapper.selectOrderBaseByOrderNo(orderNo);
+        if (orderBase == null || !orderBase.getMemberNo().equals(memberNo)) {
+            log.error("Order not found or unauthorized access. orderNo={}, memberNo={}", orderNo, memberNo);
+            throw new IllegalArgumentException("주문 정보를 찾을 수 없거나 접근 권한이 없습니다");
+        }
+
+        // 2. 취소 가능한 주문 순번 목록 조회
+        List<CancelableOrderResponse.CancelableOrderItem> cancelableItems =
+                orderBaseMapper.selectCancelableOrdersByOrderNo(orderNo, memberNo);
+
+        if (cancelableItems.isEmpty()) {
+            log.warn("No cancelable items found. orderNo={}", orderNo);
+            throw new IllegalArgumentException("취소 가능한 상품이 없습니다");
+        }
+
+        // 3. 환불 정보 조회
+        List<CancelableOrderResponse.RefundDetail> refundDetails =
+                orderBaseMapper.selectRefundDetailsByOrderNo(orderNo);
+
+        // 4. 환불 총액 계산
+        Long totalRefundAmount = refundDetails.stream()
+                .mapToLong(CancelableOrderResponse.RefundDetail::getRefundAmount)
+                .sum();
+
+        // 5. 응답 생성
+        CancelableOrderResponse.RefundInfo refundInfo = CancelableOrderResponse.RefundInfo.builder()
+                .totalRefundAmount(totalRefundAmount)
+                .refundDetails(refundDetails)
+                .build();
+
+        CancelableOrderResponse response = CancelableOrderResponse.builder()
+                .orderNo(orderNo)
+                .cancelableItems(cancelableItems)
+                .refundInfo(refundInfo)
+                .build();
+
+        log.info("Cancelable orders retrieved successfully. orderNo={}, cancelableItemsCount={}",
+                orderNo, cancelableItems.size());
+
+        return response;
     }
 }

@@ -9,9 +9,12 @@ import { getPointBalance } from "@/lib/point-api";
 import { ApiError } from "@/lib/api-client";
 import type { OrderSheet } from "@/types/order";
 import type { PointBalanceResponse } from "@/types/point";
+import AlertModal from "@/components/common/AlertModal";
+import { useAlert } from "@/hooks/useAlert";
 
 export default function OrderSheetPage() {
   const router = useRouter();
+  const alert = useAlert();
   const [orderSheet, setOrderSheet] = useState<OrderSheet | null>(null);
   const [pointBalance, setPointBalance] = useState<PointBalanceResponse | null>(null);
   const [usePoint, setUsePoint] = useState<number>(0);
@@ -103,7 +106,7 @@ export default function OrderSheetPage() {
     const maxUsablePoint = orderSheet.totalProductAmount - 101; // 최소 결제금액 100원 초과 유지
 
     if (maxUsablePoint <= 0) {
-      alert("포인트를 사용할 수 없습니다");
+      alert.showAlert("포인트를 사용할 수 없습니다");
       return;
     }
 
@@ -118,14 +121,14 @@ export default function OrderSheetPage() {
 
     // 보유 포인트 초과 확인
     if (numValue > pointBalance.totalPoint) {
-      alert("보유 포인트를 초과할 수 없습니다");
+      alert.showAlert("보유 포인트를 초과할 수 없습니다");
       return;
     }
 
     // 최소 결제 금액 100원 초과 유지 확인
     const remainingAmount = orderSheet.totalProductAmount - numValue;
     if (remainingAmount <= 100) {
-      alert("카드 결제 금액이 최소 100원 초과되어야 합니다");
+      alert.showAlert("카드 결제 금액이 최소 100원 초과되어야 합니다");
       return;
     }
 
@@ -138,7 +141,7 @@ export default function OrderSheetPage() {
     const finalAmount = orderSheet.totalProductAmount - usePoint;
 
     if (finalAmount <= 100) {
-      alert("결제 금액은 100원을 초과해야 합니다");
+      alert.showAlert("결제 금액은 100원을 초과해야 합니다");
       return;
     }
 
@@ -424,7 +427,9 @@ export default function OrderSheetPage() {
   const finalPaymentAmount = orderSheet.totalProductAmount - usePoint;
 
   return (
-    <div className="bg-white min-h-screen">
+    <>
+      <AlertModal isOpen={alert.isOpen} message={alert.message} onClose={alert.hideAlert} />
+      <div className="bg-white min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h1 className="text-2xl font-medium mb-12">주문서</h1>
 
@@ -570,6 +575,7 @@ export default function OrderSheetPage() {
           결제하기
         </button>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

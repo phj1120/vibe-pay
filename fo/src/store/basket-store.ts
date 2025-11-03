@@ -18,6 +18,7 @@ interface BasketStore {
   toggleSelectBasket: (basketNo: string) => void;
   toggleSelectAll: () => void;
   clearSelection: () => void;
+  getValidBasketCount: () => number;
 }
 
 export const useBasketStore = create<BasketStore>((set, get) => ({
@@ -141,5 +142,10 @@ export const useBasketStore = create<BasketStore>((set, get) => ({
 
   clearSelection: () => {
     set({ selectedBasketNos: [] });
+  },
+
+  getValidBasketCount: () => {
+    const { baskets } = get();
+    return baskets.length;
   },
 }));

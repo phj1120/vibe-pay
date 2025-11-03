@@ -13,7 +13,9 @@
       "mcp__jetbrains__search_in_files_by_text",
       "mcp__jetbrains__find_files_by_glob",
       "mcp__jetbrains__create_new_file",
-      "mcp__jetbrains__replace_text_in_file"
+      "mcp__jetbrains__replace_text_in_file",
+      "Bash(npx next lint:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []

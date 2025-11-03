@@ -4,10 +4,13 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getGoodsDetail, modifyGoods } from "@/lib/goods-api";
 import type { GoodsModifyRequest, GoodsItem } from "@/types/goods";
+import AlertModal from "@/components/common/AlertModal";
+import { useAlert } from "@/hooks/useAlert";
 
 export default function GoodsEditPage() {
   const params = useParams();
   const router = useRouter();
+  const alert = useAlert();
   const goodsNo = params.goodsNo as string;
 
   const [loading, setLoading] = useState(true);
@@ -43,7 +46,7 @@ export default function GoodsEditPage() {
         })),
       });
     } catch (err) {
-      alert(err instanceof Error ? err.message : "상품 정보를 불러올 수 없습니다");
+      alert.showAlert(err instanceof Error ? err.message : "상품 정보를 불러올 수 없습니다");
       router.push("/goods");
     } finally {
       setLoading(false);
@@ -90,34 +93,34 @@ export default function GoodsEditPage() {
 
     // 유효성 검사
     if (!formData.goodsName.trim()) {
-      alert("상품명을 입력해주세요");
+      alert.showAlert("상품명을 입력해주세요");
       return;
     }
     if (!formData.goodsMainImageUrl.trim()) {
-      alert("상품 이미지 URL을 입력해주세요");
+      alert.showAlert("상품 이미지 URL을 입력해주세요");
       return;
     }
     if (formData.salePrice <= 0) {
-      alert("판매가는 0보다 커야 합니다");
+      alert.showAlert("판매가는 0보다 커야 합니다");
       return;
     }
     if (formData.supplyPrice <= 0) {
-      alert("공급원가는 0보다 커야 합니다");
+      alert.showAlert("공급원가는 0보다 커야 합니다");
       return;
     }
     if (formData.items.length === 0) {
-      alert("단품을 최소 1개 이상 추가해주세요");
+      alert.showAlert("단품을 최소 1개 이상 추가해주세요");
       return;
     }
 
     for (let i = 0; i < formData.items.length; i++) {
       const item = formData.items[i];
       if (!item.itemName.trim()) {
-        alert(`${i + 1}번째 단품의 이름을 입력해주세요`);
+        alert.showAlert(`${i + 1}번째 단품의 이름을 입력해주세요`);
         return;
       }
       if (item.stock < 0) {
-        alert(`${i + 1}번째 단품의 재고는 0 이상이어야 합니다`);
+        alert.showAlert(`${i + 1}번째 단품의 재고는 0 이상이어야 합니다`);
         return;
       }
     }
@@ -125,10 +128,10 @@ export default function GoodsEditPage() {
     try {
       setSubmitting(true);
       await modifyGoods(goodsNo, formData);
-      alert("상품이 수정되었습니다");
+      alert.showAlert("상품이 수정되었습니다");
       router.push(`/goods/${goodsNo}`);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "상품 수정에 실패했습니다");
+      alert.showAlert(err instanceof Error ? err.message : "상품 수정에 실패했습니다");
     } finally {
       setSubmitting(false);
     }
@@ -143,7 +146,9 @@ export default function GoodsEditPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <>
+      <AlertModal isOpen={alert.isOpen} message={alert.message} onClose={alert.hideAlert} />
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
       <h1 className="text-3xl font-bold mb-6">상품 수정</h1>
 
       <form onSubmit={handleSubmit} className="bg-white shadow rounded-lg p-6">
@@ -318,6 +323,7 @@ export default function GoodsEditPage() {
           </button>
         </div>
       </form>
-    </div>
+      </div>
+    </>
   );
 }

@@ -1,5 +1,6 @@
 package com.api.app.repository.order;
 
+import com.api.app.dto.response.order.CancelableOrderResponse;
 import com.api.app.dto.response.order.OrderCompleteResponse;
 import com.api.app.entity.OrderBase;
 import org.apache.ibatis.annotations.Param;
@@ -52,4 +53,21 @@ public interface OrderBaseMapper {
      * @return 주문 목록
      */
     List<com.api.app.dto.response.order.OrderListResponse> selectOrderListByMemberNo(String memberNo);
+
+    /**
+     * 취소 가능한 주문 순번 목록 조회
+     *
+     * @param orderNo 주문번호
+     * @param memberNo 회원번호
+     * @return 취소 가능한 주문 목록
+     */
+    List<CancelableOrderResponse.CancelableOrderItem> selectCancelableOrdersByOrderNo(@Param("orderNo") String orderNo, @Param("memberNo") String memberNo);
+
+    /**
+     * 주문번호별 환불 정보 조회
+     *
+     * @param orderNo 주문번호
+     * @return 환불 상세 정보
+     */
+    List<CancelableOrderResponse.RefundDetail> selectRefundDetailsByOrderNo(String orderNo);
 }

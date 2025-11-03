@@ -117,4 +117,25 @@ public class OrderController {
 
         return ApiResponse.success(orderList);
     }
+
+    /**
+     * 취소 가능한 주문 순번 조회
+     *
+     * @param orderNo 주문번호
+     * @return 취소 가능한 주문 정보
+     */
+    @Operation(summary = "취소 가능한 주문 조회", description = "특정 주문번호의 취소 가능한 주문 순번과 환불 정보를 조회합니다")
+    @GetMapping("/cancelable/{orderNo}")
+    public ApiResponse<com.api.app.dto.response.order.CancelableOrderResponse> getCancelableOrders(@PathVariable String orderNo) {
+        // 토큰에서 회원번호 추출
+        String memberNo = securityUtils.getCurrentUserMemberNo();
+
+        log.info("Get cancelable orders request received. orderNo={}, memberNo={}", orderNo, memberNo);
+
+        com.api.app.dto.response.order.CancelableOrderResponse response = orderService.getCancelableOrders(orderNo, memberNo);
+
+        log.info("Get cancelable orders completed successfully. orderNo={}", orderNo);
+
+        return ApiResponse.success(response);
+    }
 }

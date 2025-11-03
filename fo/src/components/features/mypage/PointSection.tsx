@@ -7,6 +7,8 @@ import type {
   PointBalanceResponse,
   PointHistoryListResponse,
 } from "@/types/point";
+import AlertModal from "@/components/common/AlertModal";
+import { useAlert } from "@/hooks/useAlert";
 
 interface PointSectionProps {
   pointBalance: PointBalanceResponse | null;
@@ -22,6 +24,7 @@ export default function PointSection({
   const [chargeAmount, setChargeAmount] = useState<string>("");
   const [isCharging, setIsCharging] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
+  const alert = useAlert();
 
   const handleQuickCharge = async (amount: number) => {
     setIsCharging(true);
@@ -32,13 +35,13 @@ export default function PointSection({
         pointTransactionReasonCode: "001",
       });
 
-      alert(`${amount.toLocaleString()}원이 충전되었습니다`);
+      alert.showAlert(`${amount.toLocaleString()}원이 충전되었습니다`);
       onRefresh();
     } catch (err) {
       if (err instanceof ApiError) {
-        alert(err.message);
+        alert.showAlert(err.message);
       } else {
-        alert("포인트 충전 중 오류가 발생했습니다");
+        alert.showAlert("포인트 충전 중 오류가 발생했습니다");
       }
     } finally {
       setIsCharging(false);
@@ -48,7 +51,7 @@ export default function PointSection({
   const handleCustomCharge = async () => {
     const amount = parseInt(chargeAmount);
     if (isNaN(amount) || amount <= 0) {
-      alert("올바른 금액을 입력해주세요");
+      alert.showAlert("올바른 금액을 입력해주세요");
       return;
     }
 
@@ -61,13 +64,13 @@ export default function PointSection({
       });
 
       setChargeAmount("");
-      alert(`${amount.toLocaleString()}원이 충전되었습니다`);
+      alert.showAlert(`${amount.toLocaleString()}원이 충전되었습니다`);
       onRefresh();
     } catch (err) {
       if (err instanceof ApiError) {
-        alert(err.message);
+        alert.showAlert(err.message);
       } else {
-        alert("포인트 충전 중 오류가 발생했습니다");
+        alert.showAlert("포인트 충전 중 오류가 발생했습니다");
       }
     } finally {
       setIsCharging(false);
@@ -81,9 +84,9 @@ export default function PointSection({
       onRefresh();
     } catch (err) {
       if (err instanceof ApiError) {
-        alert(err.message);
+        alert.showAlert(err.message);
       } else {
-        alert("포인트 내역을 불러오는 중 오류가 발생했습니다");
+        alert.showAlert("포인트 내역을 불러오는 중 오류가 발생했습니다");
       }
     }
   };
@@ -108,8 +111,14 @@ export default function PointSection({
   };
 
   return (
-    <div>
-      {/* 보유 포인트 */}
+    <>
+      <AlertModal
+        isOpen={alert.isOpen}
+        message={alert.message}
+        onClose={alert.hideAlert}
+      />
+      <div>
+        {/* 보유 포인트 */}
       {pointBalance && (
         <div className="bg-gray-50 p-8 mb-12">
           <div className="text-sm text-gray-600 mb-2">보유 포인트</div>
@@ -241,5 +250,6 @@ export default function PointSection({
         )}
       </div>
     </div>
+    </>
   );
 }

@@ -4,9 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { registerGoods } from "@/lib/goods-api";
 import type { GoodsRegisterRequest, GoodsItem } from "@/types/goods";
+import AlertModal from "@/components/common/AlertModal";
+import { useAlert } from "@/hooks/useAlert";
 
 export default function GoodsRegisterPage() {
   const router = useRouter();
+  const alert = useAlert();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<GoodsRegisterRequest>({
     goodsName: "",
@@ -64,34 +67,34 @@ export default function GoodsRegisterPage() {
 
     // 유효성 검사
     if (!formData.goodsName.trim()) {
-      alert("상품명을 입력해주세요");
+      alert.showAlert("상품명을 입력해주세요");
       return;
     }
     if (!formData.goodsMainImageUrl.trim()) {
-      alert("상품 이미지 URL을 입력해주세요");
+      alert.showAlert("상품 이미지 URL을 입력해주세요");
       return;
     }
     if (formData.salePrice <= 0) {
-      alert("판매가는 0보다 커야 합니다");
+      alert.showAlert("판매가는 0보다 커야 합니다");
       return;
     }
     if (formData.supplyPrice <= 0) {
-      alert("공급원가는 0보다 커야 합니다");
+      alert.showAlert("공급원가는 0보다 커야 합니다");
       return;
     }
     if (formData.items.length === 0) {
-      alert("단품을 최소 1개 이상 추가해주세요");
+      alert.showAlert("단품을 최소 1개 이상 추가해주세요");
       return;
     }
 
     for (let i = 0; i < formData.items.length; i++) {
       const item = formData.items[i];
       if (!item.itemName.trim()) {
-        alert(`${i + 1}번째 단품의 이름을 입력해주세요`);
+        alert.showAlert(`${i + 1}번째 단품의 이름을 입력해주세요`);
         return;
       }
       if (item.stock < 0) {
-        alert(`${i + 1}번째 단품의 재고는 0 이상이어야 합니다`);
+        alert.showAlert(`${i + 1}번째 단품의 재고는 0 이상이어야 합니다`);
         return;
       }
     }
@@ -99,18 +102,20 @@ export default function GoodsRegisterPage() {
     try {
       setLoading(true);
       const goodsNo = await registerGoods(formData);
-      alert("상품이 등록되었습니다");
+      alert.showAlert("상품이 등록되었습니다");
       router.push(`/goods/${goodsNo}`);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "상품 등록에 실패했습니다");
+      alert.showAlert(err instanceof Error ? err.message : "상품 등록에 실패했습니다");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="bg-white min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <>
+      <AlertModal isOpen={alert.isOpen} message={alert.message} onClose={alert.hideAlert} />
+      <div className="bg-white min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h1 className="text-2xl font-medium mb-12">상품 등록</h1>
 
         <form onSubmit={handleSubmit} className="max-w-2xl">
@@ -282,7 +287,8 @@ export default function GoodsRegisterPage() {
             </button>
           </div>
         </form>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -5,24 +5,35 @@ import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import LoginRequiredModal from "@/components/ui/LoginRequiredModal";
 import { useLoginRequired } from "@/hooks/useLoginRequired";
+import { useBasketStore } from "@/store/basket-store";
 
 export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const { isModalOpen, checkLoginRequired, closeModal } = useLoginRequired();
+  const fetchBaskets = useBasketStore((state) => state.fetchBaskets);
+  const baskets = useBasketStore((state) => state.baskets);
+  const basketCount = baskets.length;
 
   useEffect(() => {
     const checkLoginStatus = () => {
       const token = localStorage.getItem("accessToken");
       setIsLoggedIn(!!token);
+
+      // 로그인 상태일 때 장바구니 조회
+      if (token) {
+        fetchBaskets().catch(() => {
+          // 장바구니 조회 실패는 무시 (헤더에서는 에러 처리 안 함)
+        });
+      }
     };
 
     // 초기 로드 시 체크
     checkLoginStatus();
 
     // pathname 변경 시마다 체크
-  }, [pathname]);
+  }, [pathname, fetchBaskets]);
 
   useEffect(() => {
     // storage 이벤트 리스너 (다른 탭에서의 변경 감지)
@@ -124,7 +135,7 @@ export default function Header() {
               onClick={() =>
                 checkLoginRequired(() => router.push("/basket"))
               }
-              className="flex items-center hover:opacity-60 transition"
+              className="flex items-center hover:opacity-60 transition relative"
             >
               <svg
                 className="w-6 h-6 text-black"
@@ -139,6 +150,11 @@ export default function Header() {
                   d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
                 />
               </svg>
+              {isLoggedIn && basketCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {basketCount > 99 ? '99+' : basketCount}
+                </span>
+              )}
             </button>
           </nav>
           </div>

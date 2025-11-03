@@ -15,6 +15,8 @@ import { ApiError } from "@/lib/api-client";
 import type { BasketItem } from "@/types/basket";
 import LoginRequiredModal from "@/components/ui/LoginRequiredModal";
 import { useLoginRequired } from "@/hooks/useLoginRequired";
+import AlertModal from "@/components/common/AlertModal";
+import { useAlert } from "@/hooks/useAlert";
 
 export default function BasketPage() {
   const router = useRouter();
@@ -23,6 +25,7 @@ export default function BasketPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
   const { isModalOpen, checkLoginRequired, closeModal } = useLoginRequired();
+  const alert = useAlert();
 
   useEffect(() => {
     if (!checkLoginRequired(() => fetchBasketList())) {
@@ -35,6 +38,8 @@ export default function BasketPage() {
       setLoading(true);
       const items = await getBasketList();
       setBasketItems(items);
+      // 전체 선택이 디폴트
+      setSelectedItems(new Set(items.map((item) => item.basketNo)));
       setError("");
     } catch (err) {
       if (err instanceof ApiError) {
@@ -80,53 +85,57 @@ export default function BasketPage() {
 
     try {
       await modifyBasket(basketNo, { quantity: newQuantity });
-      await fetchBasketList();
+      // 수량 변경 후에도 선택 상태 유지를 위해 현재 선택 상태 저장
+      const currentSelection = new Set(selectedItems);
+      const items = await getBasketList();
+      setBasketItems(items);
+      setSelectedItems(currentSelection);
     } catch (err) {
       if (err instanceof ApiError) {
-        alert(err.message);
+        alert.showAlert(err.message);
       } else {
-        alert("수량 변경 중 오류가 발생했습니다");
+        alert.showAlert("수량 변경 중 오류가 발생했습니다");
       }
     }
   }
 
   async function handleDeleteItem(basketNo: string) {
-    if (!confirm("해당 상품을 장바구니에서 삭제하시겠습니까?")) return;
+    if (!window.confirm("해당 상품을 장바구니에서 삭제하시겠습니까?")) return;
 
     try {
       await deleteBasket(basketNo);
-      await fetchBasketList();
-      setSelectedItems((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(basketNo);
-        return newSet;
-      });
+      const items = await getBasketList();
+      setBasketItems(items);
+      // 삭제 후 남은 아이템들은 모두 선택 상태로 유지
+      setSelectedItems(new Set(items.map((item) => item.basketNo)));
     } catch (err) {
       if (err instanceof ApiError) {
-        alert(err.message);
+        alert.showAlert(err.message);
       } else {
-        alert("삭제 중 오류가 발생했습니다");
+        alert.showAlert("삭제 중 오류가 발생했습니다");
       }
     }
   }
 
   async function handleDeleteSelected() {
     if (selectedItems.size === 0) {
-      alert("삭제할 상품을 선택해주세요");
+      alert.showAlert("삭제할 상품을 선택해주세요");
       return;
     }
 
-    if (!confirm(`선택한 ${selectedItems.size}개 상품을 삭제하시겠습니까?`)) return;
+    if (!window.confirm(`선택한 ${selectedItems.size}개 상품을 삭제하시겠습니까?`)) return;
 
     try {
       await deleteBaskets(Array.from(selectedItems));
-      await fetchBasketList();
-      setSelectedItems(new Set());
+      const items = await getBasketList();
+      setBasketItems(items);
+      // 삭제 후 남은 아이템들은 모두 선택 상태로 유지
+      setSelectedItems(new Set(items.map((item) => item.basketNo)));
     } catch (err) {
       if (err instanceof ApiError) {
-        alert(err.message);
+        alert.showAlert(err.message);
       } else {
-        alert("삭제 중 오류가 발생했습니다");
+        alert.showAlert("삭제 중 오류가 발생했습니다");
       }
     }
   }
@@ -134,24 +143,26 @@ export default function BasketPage() {
   async function handleDeleteAll() {
     if (basketItems.length === 0) return;
 
-    if (!confirm("장바구니의 모든 상품을 삭제하시겠습니까?")) return;
+    if (!window.confirm("장바구니의 모든 상품을 삭제하시겠습니까?")) return;
 
     try {
       await deleteAllBaskets();
-      await fetchBasketList();
+      const items = await getBasketList();
+      setBasketItems(items);
+      // 전체 삭제 후에는 빈 배열이므로 선택 항목도 비움
       setSelectedItems(new Set());
     } catch (err) {
       if (err instanceof ApiError) {
-        alert(err.message);
+        alert.showAlert(err.message);
       } else {
-        alert("삭제 중 오류가 발생했습니다");
+        alert.showAlert("삭제 중 오류가 발생했습니다");
       }
     }
   }
 
   function handleOrder() {
     if (selectedItems.size === 0) {
-      alert("주문할 상품을 선택해주세요");
+      alert.showAlert("주문할 상품을 선택해주세요");
       return;
     }
 
@@ -182,6 +193,11 @@ export default function BasketPage() {
 
   return (
     <>
+      <AlertModal
+        isOpen={alert.isOpen}
+        message={alert.message}
+        onClose={alert.hideAlert}
+      />
       <LoginRequiredModal isOpen={isModalOpen} onClose={closeModal} />
       <div className="bg-white min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

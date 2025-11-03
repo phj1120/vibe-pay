@@ -1,6 +1,7 @@
 package com.api.app.service.order;
 
 import com.api.app.dto.request.order.OrderRequest;
+import com.api.app.dto.response.order.CancelableOrderResponse;
 import com.api.app.dto.response.order.OrderCompleteResponse;
 import com.api.app.dto.response.order.OrderListResponse;
 
@@ -45,4 +46,13 @@ public interface OrderService {
      * @return 주문 목록
      */
     List<OrderListResponse> getOrderList(String memberNo);
+
+    /**
+     * 취소 가능한 주문 순번 조회
+     *
+     * @param orderNo 주문번호
+     * @param memberNo 회원번호
+     * @return 취소 가능한 주문 정보
+     */
+    CancelableOrderResponse getCancelableOrders(String orderNo, String memberNo);
 }

@@ -1,5 +1,5 @@
 import { apiClient } from "./api-client";
-import { OrderSheet, OrderListResponse, CancelRequest } from "@/types/order";
+import { OrderSheet, OrderListResponse, CancelRequest, CancelableOrderResponse } from "@/types/order";
 import type {
   OrderNumberResponse,
   PaymentInitiateResponse,
@@ -105,6 +105,13 @@ export async function getOrderComplete(orderNo: string): Promise<OrderCompleteRe
  */
 export async function getOrderList(): Promise<OrderListResponse[]> {
   return apiClient<OrderListResponse[]>('/api/order/list');
+}
+
+/**
+ * 취소 가능한 주문 조회 API
+ */
+export async function getCancelableOrders(orderNo: string): Promise<CancelableOrderResponse> {
+  return apiClient<CancelableOrderResponse>(`/api/order/cancelable/${orderNo}`);
 }
 
 /**

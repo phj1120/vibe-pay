@@ -153,8 +153,7 @@ public class ClaimServiceImpl implements ClaimService {
         // 원결제 정보 조회 (payTypeCode = 001: 결제, payWayCode별로 조회)
         List<PayBase> originalPayments = payBaseMapper.selectPayBaseByOrderNo(orderNo);
         originalPayments = originalPayments.stream()
-                .filter(p -> PAY004.PAYMENT.getCode().equals(p.getPayTypeCode()) ||
-                             PAY004.APPROVAL.getCode().equals(p.getPayTypeCode()))
+                .filter(p -> PAY001.PAYMENT.getCode().equals(p.getPayTypeCode()))
                 .sorted(Comparator.comparingInt(p ->
                         PAY002.findByCode(p.getPayWayCode()).getDisplaySequence()))
                 .collect(Collectors.toList());
@@ -259,14 +258,13 @@ public class ClaimServiceImpl implements ClaimService {
                 throw e;
             } finally {
                 // pay_interface_log 생성
-                // TODO: PAY001 enum에 CANCEL 값 추가 필요 (현재는 "004" 하드코딩)
-                createPayInterfaceLog(payNo, memberNo, "004", requestJson, responseJson);
+                createPayInterfaceLog(payNo, memberNo, PAY004.CANCEL.getCode(), requestJson, responseJson);
             }
 
             // PayBase 생성 (취소)
             PayBase cancelPayment = new PayBase();
             cancelPayment.setPayNo(payNo);
-            cancelPayment.setPayTypeCode(PAY004.CANCEL.getCode());
+            cancelPayment.setPayTypeCode(PAY001.REFUND.getCode());
             cancelPayment.setPayWayCode(originalPayment.getPayWayCode());
             cancelPayment.setPayStatusCode(PAY003.PAYMENT_CANCELLED.getCode());
             cancelPayment.setOrderNo(originalPayment.getOrderNo());
@@ -323,7 +321,7 @@ public class ClaimServiceImpl implements ClaimService {
             // PayBase 생성 (취소)
             PayBase cancelPayment = new PayBase();
             cancelPayment.setPayNo(payNo);
-            cancelPayment.setPayTypeCode(PAY004.CANCEL.getCode());
+            cancelPayment.setPayTypeCode(PAY001.REFUND.getCode());
             cancelPayment.setPayWayCode(originalPayment.getPayWayCode());
             cancelPayment.setPayStatusCode(PAY003.PAYMENT_CANCELLED.getCode());
             cancelPayment.setOrderNo(originalPayment.getOrderNo());

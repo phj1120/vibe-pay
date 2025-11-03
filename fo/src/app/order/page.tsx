@@ -10,9 +10,12 @@ import { ApiError } from "@/lib/api-client";
 import type { BasketItem } from "@/types/basket";
 import type { MemberInfoResponse } from "@/types/member";
 import type { PointBalanceResponse } from "@/types/point";
+import AlertModal from "@/components/common/AlertModal";
+import { useAlert } from "@/hooks/useAlert";
 
 function OrderPageContent() {
   const router = useRouter();
+  const alert = useAlert();
   const searchParams = useSearchParams();
   const basketNos = searchParams.get("basketNos")?.split(",") ?? [];
 
@@ -26,13 +29,13 @@ function OrderPageContent() {
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
     if (!token) {
-      alert("로그인이 필요한 서비스입니다");
+      alert.showAlert("로그인이 필요한 서비스입니다");
       router.push("/login");
       return;
     }
 
     if (basketNos.length === 0) {
-      alert("주문할 상품이 없습니다");
+      alert.showAlert("주문할 상품이 없습니다");
       router.push("/basket");
       return;
     }
@@ -100,7 +103,7 @@ function OrderPageContent() {
 
   function handlePayment() {
     // TODO: PG 결제 연동
-    alert("PG 결제 기능은 추후 구현될 예정입니다");
+    alert.showAlert("PG 결제 기능은 추후 구현될 예정입니다");
 
     // 임시로 주문 완료 페이지로 이동
     router.push("/order/complete?orderId=TEMP_ORDER_001");
@@ -131,7 +134,9 @@ function OrderPageContent() {
   }
 
   return (
-    <div className="bg-gray-50 min-h-[calc(100vh-200px)]">
+    <>
+      <AlertModal isOpen={alert.isOpen} message={alert.message} onClose={alert.hideAlert} />
+      <div className="bg-gray-50 min-h-[calc(100vh-200px)]">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-3xl font-bold mb-8">주문서</h1>
 
@@ -257,7 +262,8 @@ function OrderPageContent() {
           {formatPrice(totalPayment)} 결제하기
         </button>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 
