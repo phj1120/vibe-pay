@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { cn } from "@/lib/utils";
 
 interface ToastProps {
   message: string;
@@ -25,15 +24,25 @@ export default function Toast({
   }, [duration, onClose]);
 
   return (
-    <div
-      className={cn(
-        "fixed bottom-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white animate-slide-up",
-        type === "success" && "bg-green-600",
-        type === "error" && "bg-red-600",
-        type === "info" && "bg-blue-600"
-      )}
-    >
-      <p className="text-sm font-medium">{message}</p>
+    <div className="fixed bottom-4 right-4 z-50 px-6 py-4 bg-black text-white shadow-lg animate-slide-up border border-gray-800">
+      <div className="flex items-center gap-3">
+        {type === "success" && (
+          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        )}
+        {type === "error" && (
+          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        )}
+        {type === "info" && (
+          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        )}
+        <p className="text-sm">{message}</p>
+      </div>
     </div>
   );
 }

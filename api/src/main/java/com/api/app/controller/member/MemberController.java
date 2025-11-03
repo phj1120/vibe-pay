@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -65,6 +66,7 @@ public class MemberController {
      */
     @Operation(summary = "회원 정보 조회", description = "현재 로그인한 회원의 정보를 조회합니다")
     @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
     public ApiResponse<MemberInfoResponse> getMemberInfo(
             @AuthenticationPrincipal UserDetails userDetails) {
         log.info("회원 정보 조회 요청: email={}", userDetails.getUsername());

@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +30,7 @@ import java.util.List;
 @RequestMapping("/api/baskets")
 @RequiredArgsConstructor
 @Tag(name = "장바구니 관리", description = "장바구니 추가, 수정, 조회, 삭제 API")
+@PreAuthorize("isAuthenticated()")
 public class BasketController {
 
     private final BasketService basketService;

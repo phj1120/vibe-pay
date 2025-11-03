@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -24,6 +25,7 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/claim")
 @RequiredArgsConstructor
 @Tag(name = "클레임 관리", description = "주문 취소/반품/교환 API")
+@PreAuthorize("isAuthenticated()")
 public class ClaimController {
 
     private final ClaimService claimService;

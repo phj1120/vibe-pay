@@ -13,6 +13,8 @@ import {
 } from "@/lib/basket-api";
 import { ApiError } from "@/lib/api-client";
 import type { BasketItem } from "@/types/basket";
+import LoginRequiredModal from "@/components/ui/LoginRequiredModal";
+import { useLoginRequired } from "@/hooks/useLoginRequired";
 
 export default function BasketPage() {
   const router = useRouter();
@@ -20,16 +22,12 @@ export default function BasketPage() {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
+  const { isModalOpen, checkLoginRequired, closeModal } = useLoginRequired();
 
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-      alert("로그인이 필요한 서비스입니다");
-      router.push("/login");
+    if (!checkLoginRequired(() => fetchBasketList())) {
       return;
     }
-
-    fetchBasketList();
   }, [router]);
 
   async function fetchBasketList() {
@@ -183,9 +181,11 @@ export default function BasketPage() {
   }
 
   return (
-    <div className="bg-white min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h1 className="text-2xl font-medium mb-12">장바구니</h1>
+    <>
+      <LoginRequiredModal isOpen={isModalOpen} onClose={closeModal} />
+      <div className="bg-white min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <h1 className="text-2xl font-medium mb-12">장바구니</h1>
 
         {basketItems.length === 0 ? (
           <div className="text-center py-20">
@@ -306,7 +306,8 @@ export default function BasketPage() {
             </div>
           </>
         )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

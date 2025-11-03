@@ -109,181 +109,180 @@ export default function GoodsRegisterPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-6">상품 등록</h1>
+    <div className="bg-white min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h1 className="text-2xl font-medium mb-12">상품 등록</h1>
 
-      <form onSubmit={handleSubmit} className="bg-white shadow rounded-lg p-6">
-        {/* 상품 기본 정보 */}
-        <div className="space-y-4 mb-8">
-          <h2 className="text-xl font-bold">기본 정보</h2>
+        <form onSubmit={handleSubmit} className="max-w-2xl">
+          {/* 상품 기본 정보 */}
+          <div className="space-y-4 mb-8">
+            <h2 className="text-lg font-medium mb-4">기본 정보</h2>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">상품명 *</label>
-            <input
-              type="text"
-              value={formData.goodsName}
-              onChange={(e) => setFormData({ ...formData, goodsName: e.target.value })}
-              className="w-full px-4 py-2 border rounded"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">상품 상태 *</label>
-            <select
-              value={formData.goodsStatusCode}
-              onChange={(e) => setFormData({ ...formData, goodsStatusCode: e.target.value })}
-              className="w-full px-4 py-2 border rounded"
-              required
-            >
-              <option value="001">판매중</option>
-              <option value="002">판매중단</option>
-              <option value="003">품절</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">상품 이미지 URL *</label>
-            <input
-              type="url"
-              value={formData.goodsMainImageUrl}
-              onChange={(e) => setFormData({ ...formData, goodsMainImageUrl: e.target.value })}
-              className="w-full px-4 py-2 border rounded"
-              placeholder="https://example.com/image.jpg"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">판매가 *</label>
               <input
-                type="number"
-                value={formData.salePrice}
-                onChange={(e) =>
-                  setFormData({ ...formData, salePrice: parseInt(e.target.value) || 0 })
-                }
-                className="w-full px-4 py-2 border rounded"
-                min="0"
+                type="text"
+                value={formData.goodsName}
+                onChange={(e) => setFormData({ ...formData, goodsName: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 focus:outline-none focus:border-black text-sm"
+                placeholder="상품명"
                 required
               />
             </div>
+
             <div>
-              <label className="block text-sm font-medium mb-1">공급원가 *</label>
+              <select
+                value={formData.goodsStatusCode}
+                onChange={(e) => setFormData({ ...formData, goodsStatusCode: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 focus:outline-none focus:border-black text-sm"
+                required
+              >
+                <option value="001">판매중</option>
+                <option value="002">판매중단</option>
+                <option value="003">품절</option>
+              </select>
+            </div>
+
+            <div>
               <input
-                type="number"
-                value={formData.supplyPrice}
-                onChange={(e) =>
-                  setFormData({ ...formData, supplyPrice: parseInt(e.target.value) || 0 })
-                }
-                className="w-full px-4 py-2 border rounded"
-                min="0"
+                type="url"
+                value={formData.goodsMainImageUrl}
+                onChange={(e) => setFormData({ ...formData, goodsMainImageUrl: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 focus:outline-none focus:border-black text-sm"
+                placeholder="상품 이미지 URL"
                 required
               />
             </div>
-          </div>
-        </div>
 
-        {/* 단품 목록 */}
-        <div className="space-y-4 mb-6">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold">단품 목록</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <input
+                  type="number"
+                  value={formData.salePrice}
+                  onChange={(e) =>
+                    setFormData({ ...formData, salePrice: parseInt(e.target.value) || 0 })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 focus:outline-none focus:border-black text-sm"
+                  placeholder="판매가"
+                  min="0"
+                  required
+                />
+              </div>
+              <div>
+                <input
+                  type="number"
+                  value={formData.supplyPrice}
+                  onChange={(e) =>
+                    setFormData({ ...formData, supplyPrice: parseInt(e.target.value) || 0 })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 focus:outline-none focus:border-black text-sm"
+                  placeholder="공급원가"
+                  min="0"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 단품 목록 */}
+          <div className="space-y-4 mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-medium">단품 목록</h2>
+              <button
+                type="button"
+                onClick={addItem}
+                className="px-4 py-2 bg-black text-white text-sm hover:bg-gray-800"
+              >
+                단품 추가
+              </button>
+            </div>
+
+            {formData.items.map((item, index) => (
+              <div key={index} className="border border-gray-300 p-4 space-y-3">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-sm font-medium text-gray-900">단품 #{index + 1}</h3>
+                  {formData.items.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeItem(index)}
+                      className="text-sm text-gray-600 hover:text-black"
+                    >
+                      삭제
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <input
+                      type="text"
+                      value={item.itemName}
+                      onChange={(e) => updateItem(index, "itemName", e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:border-black text-sm"
+                      placeholder="단품명"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <select
+                      value={item.goodsStatusCode}
+                      onChange={(e) => updateItem(index, "goodsStatusCode", e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:border-black text-sm"
+                      required
+                    >
+                      <option value="001">판매중</option>
+                      <option value="002">판매중단</option>
+                      <option value="003">품절</option>
+                    </select>
+                  </div>
+                  <div>
+                    <input
+                      type="number"
+                      value={item.itemPrice}
+                      onChange={(e) =>
+                        updateItem(index, "itemPrice", parseInt(e.target.value) || 0)
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:border-black text-sm"
+                      placeholder="단품 금액"
+                      min="0"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="number"
+                      value={item.stock}
+                      onChange={(e) => updateItem(index, "stock", parseInt(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:border-black text-sm"
+                      placeholder="재고"
+                      min="0"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* 버튼 */}
+          <div className="flex gap-2">
             <button
               type="button"
-              onClick={addItem}
-              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+              onClick={() => router.push("/")}
+              className="flex-1 py-3 border border-gray-300 text-sm hover:bg-gray-50 disabled:opacity-50"
+              disabled={loading}
             >
-              단품 추가
+              취소
+            </button>
+            <button
+              type="submit"
+              className="flex-1 bg-black text-white py-3 text-sm hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              disabled={loading}
+            >
+              {loading ? "등록 중..." : "등록"}
             </button>
           </div>
-
-          {formData.items.map((item, index) => (
-            <div key={index} className="border rounded p-4 space-y-3">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-medium">단품 #{index + 1}</h3>
-                {formData.items.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeItem(index)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    삭제
-                  </button>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium mb-1">단품명 *</label>
-                  <input
-                    type="text"
-                    value={item.itemName}
-                    onChange={(e) => updateItem(index, "itemName", e.target.value)}
-                    className="w-full px-3 py-2 border rounded"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">단품 상태 *</label>
-                  <select
-                    value={item.goodsStatusCode}
-                    onChange={(e) => updateItem(index, "goodsStatusCode", e.target.value)}
-                    className="w-full px-3 py-2 border rounded"
-                    required
-                  >
-                    <option value="001">판매중</option>
-                    <option value="002">판매중단</option>
-                    <option value="003">품절</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">단품 금액 *</label>
-                  <input
-                    type="number"
-                    value={item.itemPrice}
-                    onChange={(e) =>
-                      updateItem(index, "itemPrice", parseInt(e.target.value) || 0)
-                    }
-                    className="w-full px-3 py-2 border rounded"
-                    min="0"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">재고 *</label>
-                  <input
-                    type="number"
-                    value={item.stock}
-                    onChange={(e) => updateItem(index, "stock", parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border rounded"
-                    min="0"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* 버튼 */}
-        <div className="flex gap-2 justify-end">
-          <button
-            type="button"
-            onClick={() => router.push("/goods")}
-            className="px-6 py-2 border rounded hover:bg-gray-50"
-            disabled={loading}
-          >
-            취소
-          </button>
-          <button
-            type="submit"
-            className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-            disabled={loading}
-          >
-            {loading ? "등록 중..." : "등록"}
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }

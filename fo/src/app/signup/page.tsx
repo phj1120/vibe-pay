@@ -32,7 +32,6 @@ export default function SignupPage() {
 
     try {
       await memberApi.register(formData);
-      alert("회원가입이 완료되었습니다. 로그인해주세요.");
       router.push("/login");
     } catch (err) {
       if (err instanceof ApiError) {

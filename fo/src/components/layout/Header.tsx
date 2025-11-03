@@ -1,16 +1,39 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+import LoginRequiredModal from "@/components/ui/LoginRequiredModal";
+import { useLoginRequired } from "@/hooks/useLoginRequired";
 
 export default function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { isModalOpen, checkLoginRequired, closeModal } = useLoginRequired();
 
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    setIsLoggedIn(!!token);
+    const checkLoginStatus = () => {
+      const token = localStorage.getItem("accessToken");
+      setIsLoggedIn(!!token);
+    };
+
+    // 초기 로드 시 체크
+    checkLoginStatus();
+
+    // pathname 변경 시마다 체크
+  }, [pathname]);
+
+  useEffect(() => {
+    // storage 이벤트 리스너 (다른 탭에서의 변경 감지)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "accessToken") {
+        setIsLoggedIn(!!e.newValue);
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
   const handleUserClick = () => {
@@ -25,14 +48,16 @@ export default function Header() {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     setIsLoggedIn(false);
-    alert("로그아웃 되었습니다");
     router.push("/");
+    router.refresh();
   };
 
   return (
-    <header className="bg-white border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+    <>
+      <LoginRequiredModal isOpen={isModalOpen} onClose={closeModal} />
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
           {/* 홈 아이콘 */}
           <Link href="/" className="flex items-center">
             <svg
@@ -95,8 +120,10 @@ export default function Header() {
             </button>
 
             {/* 장바구니 아이콘 */}
-            <Link
-              href="/basket"
+            <button
+              onClick={() =>
+                checkLoginRequired(() => router.push("/basket"))
+              }
               className="flex items-center hover:opacity-60 transition"
             >
               <svg
@@ -112,10 +139,11 @@ export default function Header() {
                   d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
                 />
               </svg>
-            </Link>
+            </button>
           </nav>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+    </>
   );
 }

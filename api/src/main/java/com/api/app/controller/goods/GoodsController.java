@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -39,6 +40,7 @@ public class GoodsController {
      */
     @Operation(summary = "상품 등록", description = "신규 상품을 등록합니다")
     @PostMapping
+    @PreAuthorize("isAuthenticated()")
     public ApiResponse<String> registerGoods(@RequestBody @Valid GoodsRegisterRequest request) {
         log.info("상품 등록 요청: goodsName={}", request.getGoodsName());
         String goodsNo = goodsService.registerGoods(request);
@@ -54,6 +56,7 @@ public class GoodsController {
      */
     @Operation(summary = "상품 수정", description = "상품 정보를 수정합니다")
     @PutMapping("/{goodsNo}")
+    @PreAuthorize("isAuthenticated()")
     public ApiResponse<Void> modifyGoods(
             @Parameter(description = "상품번호", required = true, example = "G00000000000001")
             @PathVariable String goodsNo,
@@ -101,6 +104,7 @@ public class GoodsController {
      */
     @Operation(summary = "상품 삭제", description = "상품을 삭제합니다")
     @DeleteMapping("/{goodsNo}")
+    @PreAuthorize("isAuthenticated()")
     public ApiResponse<Void> deleteGoods(
             @Parameter(description = "상품번호", required = true, example = "G00000000000001")
             @PathVariable String goodsNo) {

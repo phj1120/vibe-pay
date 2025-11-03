@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/point")
 @RequiredArgsConstructor
 @Tag(name = "포인트 관리", description = "포인트 충전/사용, 잔액 조회, 내역 조회 API")
+@PreAuthorize("isAuthenticated()")
 public class PointController {
 
     private final PointService pointService;

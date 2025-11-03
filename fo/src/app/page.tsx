@@ -1,21 +1,25 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { getGoodsList, getGoodsDetail } from "@/lib/goods-api";
 import type { GoodsListItem, GoodsSearchRequest } from "@/types/goods";
 import { useBasketStore } from "@/store/basket-store";
 import { useToast } from "@/hooks/useToast";
 import Toast from "@/components/ui/Toast";
+import LoginRequiredModal from "@/components/ui/LoginRequiredModal";
+import { useLoginRequired } from "@/hooks/useLoginRequired";
 
 export default function Home() {
   const router = useRouter();
+  const urlSearchParams = useSearchParams();
   const [goods, setGoods] = useState<GoodsListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [searchKeyword, setSearchKeyword] = useState("");
   const [searchParams, setSearchParams] = useState<GoodsSearchRequest>({
     page: 0,
     size: 20,
@@ -24,6 +28,18 @@ export default function Home() {
 
   const { addBasket } = useBasketStore();
   const { toasts, removeToast, success, error: showError } = useToast();
+  const { isModalOpen, checkLoginRequired, closeModal } = useLoginRequired();
+
+  // URL 쿼리스트링에서 검색어 읽기
+  useEffect(() => {
+    const keyword = urlSearchParams.get("keyword") || "";
+    setSearchKeyword(keyword);
+    setSearchParams({
+      page: 0,
+      size: 20,
+      goodsName: keyword || undefined,
+    });
+  }, [urlSearchParams]);
 
   useEffect(() => {
     fetchGoods();
@@ -44,11 +60,12 @@ export default function Home() {
   }
 
   function handleSearch(goodsName: string) {
-    setSearchParams({
-      ...searchParams,
-      goodsName: goodsName || undefined,
-      page: 0,
-    });
+    // URL 쿼리스트링 업데이트
+    const params = new URLSearchParams();
+    if (goodsName) {
+      params.set("keyword", goodsName);
+    }
+    router.push(`/?${params.toString()}`);
   }
 
   function handlePageChange(newPage: number) {
@@ -69,6 +86,11 @@ export default function Home() {
     isAvailable: boolean
   ) {
     event.stopPropagation();
+
+    // 로그인 체크
+    if (!checkLoginRequired()) {
+      return;
+    }
 
     if (!isAvailable) {
       showError("품절된 상품입니다");
@@ -137,6 +159,7 @@ export default function Home() {
 
   return (
     <>
+      <LoginRequiredModal isOpen={isModalOpen} onClose={closeModal} />
       <div className="bg-white min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* 검색 폼 */}
@@ -152,6 +175,8 @@ export default function Home() {
             <input
               type="text"
               name="goodsName"
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
               placeholder="상품 검색"
               className="flex-1 px-4 py-3 border border-gray-300 focus:outline-none focus:border-black transition"
             />
@@ -160,6 +185,26 @@ export default function Home() {
               className="px-8 py-3 bg-black text-white hover:bg-gray-800 transition"
             >
               검색
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/goods/new")}
+              className="px-4 py-3 bg-black text-white hover:bg-gray-800 transition flex items-center justify-center"
+              title="상품 등록"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
             </button>
           </form>
         </div>

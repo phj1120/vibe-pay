@@ -35,8 +35,8 @@ export default function LoginPage() {
       localStorage.setItem("accessToken", response.accessToken);
       localStorage.setItem("refreshToken", response.refreshToken);
 
-      alert("로그인 성공!");
       router.push("/my-page");
+      router.refresh();
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
