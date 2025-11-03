@@ -47,4 +47,10 @@ public class PaymentCancelRequest implements Serializable {
 
     @Schema(description = "부분취소여부 (0: 전체취소, 1: 부분취소)", example = "0")
     private String partialCancelCode;
+
+    @Schema(description = "원 승인 금액", example = "20000")
+    private Long originalAmount;
+
+    @Schema(description = "취소 가능한 금액 (이전 취소 반영된 현재 잔액)", example = "15000")
+    private Long cancelableAmount;
 }

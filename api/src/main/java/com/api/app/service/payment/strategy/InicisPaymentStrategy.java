@@ -1,5 +1,7 @@
 package com.api.app.service.payment.strategy;
 
+import com.api.app.common.exception.ApiError;
+import com.api.app.common.exception.ApiException;
 import com.api.app.dto.request.payment.InicisApprovalRequest;
 import com.api.app.dto.request.payment.PaymentInitiateRequest;
 import com.api.app.dto.response.payment.InicisApprovalResponse;
@@ -161,7 +163,7 @@ public class InicisPaymentStrategy implements PaymentGatewayStrategy {
 
             InicisApprovalResponse responseBody = response.getBody();
             if (responseBody == null) {
-                throw new RuntimeException("이니시스 승인 응답이 없습니다");
+                throw new ApiException(ApiError.PAYMENT_APPROVAL_FAILED, "이니시스 승인 응답이 없습니다");
             }
 
             log.info("Inicis approval response received. resultCode={}", responseBody.getResultCode());
@@ -170,7 +172,8 @@ public class InicisPaymentStrategy implements PaymentGatewayStrategy {
             if (!"0000".equals(responseBody.getResultCode())) {
                 log.error("Inicis approval failed. resultCode={}, resultMsg={}",
                         responseBody.getResultCode(), responseBody.getResultMsg());
-                throw new RuntimeException("이니시스 결제 승인 실패: " + responseBody.getResultMsg());
+                throw new ApiException(ApiError.PAYMENT_APPROVAL_FAILED, 
+                        "이니시스 결제 승인 실패: " + responseBody.getResultMsg());
             }
 
             // 승인 성공 응답 생성
@@ -182,9 +185,13 @@ public class InicisPaymentStrategy implements PaymentGatewayStrategy {
                     .cardCode(responseBody.getCARD_Code())       // 카드사 코드
                     .build();
 
+        } catch (ApiException e) {
+            // ApiException은 그대로 던짐
+            throw e;
         } catch (Exception e) {
             log.error("Inicis payment approval failed. orderNo={}", request.getOrderNo(), e);
-            throw new RuntimeException("이니시스 결제 승인에 실패했습니다: " + e.getMessage(), e);
+            throw new ApiException(ApiError.PAYMENT_APPROVAL_FAILED, 
+                    "이니시스 결제 승인에 실패했습니다: " + e.getMessage());
         }
     }
 
@@ -200,13 +207,41 @@ public class InicisPaymentStrategy implements PaymentGatewayStrategy {
 
     @Override
     public void cancelPaymentByOrder(com.api.app.dto.request.payment.PaymentCancelRequest request) {
-        log.info("Inicis order cancel started. orderNo={}, tid={}, cancelAmount={}",
-                request.getOrderNo(), request.getTransactionId(), request.getCancelAmount());
+        log.info("Inicis order cancel started. orderNo={}, tid={}, cancelAmount={}, partialCancelCode={}",
+                request.getOrderNo(), request.getTransactionId(), request.getCancelAmount(), 
+                request.getPartialCancelCode());
 
         try {
-            // 도메인 문서에 따라 이니시스 전체 취소 API 호출
-            // POST https://iniapi.inicis.com/v2/pg/refund
-            String url = "https://iniapi.inicis.com/v2/pg/refund";
+            // 취소 가능한 금액 조회
+            Long cancelableAmount = request.getCancelableAmount();
+            if (cancelableAmount == null) {
+                throw new ApiException(ApiError.INVALID_PARAMETER, 
+                        "취소 가능한 금액 정보가 필요합니다");
+            }
+            
+            // 원 승인 금액 조회
+            Long originalAmount = request.getOriginalAmount();
+            if (originalAmount == null) {
+                throw new ApiException(ApiError.INVALID_PARAMETER, 
+                        "원 승인 금액 정보가 필요합니다");
+            }
+            
+            // 취소 후 남은 금액 계산
+            Long confirmPrice = cancelableAmount - request.getCancelAmount();
+            
+            // 부분 취소 판단: 원 승인 금액과 취소 가능한 금액이 다르면 이미 부분 취소된 상태
+            // 또는 취소 후 남은 금액이 0보다 크면 부분 취소
+            boolean isPartialCancel = !originalAmount.equals(cancelableAmount) || confirmPrice > 0;
+            
+            // 부분 취소와 전체 취소는 다른 API 엔드포인트 사용
+            String url = isPartialCancel 
+                    ? "https://iniapi.inicis.com/v2/pg/partialRefund"
+                    : "https://iniapi.inicis.com/v2/pg/refund";
+            
+            String type = isPartialCancel ? "partialRefund" : "refund";
+            
+            log.info("Inicis cancel decision. originalAmount={}, cancelableAmount={}, cancelAmount={}, confirmPrice={}, isPartialCancel={}",
+                    originalAmount, cancelableAmount, request.getCancelAmount(), confirmPrice, isPartialCancel);
 
             // 타임스탬프 생성
             String timestamp = java.time.LocalDateTime.now()
@@ -219,18 +254,25 @@ public class InicisPaymentStrategy implements PaymentGatewayStrategy {
             Map<String, String> data = new HashMap<>();
             data.put("tid", request.getTransactionId());
             data.put("msg", request.getCancelReason());
+            
+            // 부분 취소인 경우 추가 필드 설정
+            if (isPartialCancel) {
+                data.put("price", String.valueOf(request.getCancelAmount()));
+                data.put("confirmPrice", String.valueOf(confirmPrice));
+                data.put("currency", "WON");
+            }
 
             // data를 JSON 문자열로 변환
             String dataJson = objectMapper.writeValueAsString(data);
 
             // hashData 생성: SHA512(apiKey + mid + type + timestamp + data)
-            String hashTarget = apiKey + mid + "refund" + timestamp + dataJson;
+            String hashTarget = apiKey + mid + type + timestamp + dataJson;
             String hashData = sha512Hash(hashTarget);
 
             // 요청 파라미터 생성
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("mid", mid);
-            requestBody.put("type", "refund");
+            requestBody.put("type", type);
             requestBody.put("timestamp", timestamp);
             requestBody.put("clientIp", clientIp);
             requestBody.put("hashData", hashData);
@@ -242,26 +284,37 @@ public class InicisPaymentStrategy implements PaymentGatewayStrategy {
 
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
+            log.info("Inicis cancel request. url={}, type={}, isPartialCancel={}", 
+                    url, type, isPartialCancel);
+
+            @SuppressWarnings("rawtypes")
             ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
 
+            @SuppressWarnings("unchecked")
             Map<String, Object> responseBody = response.getBody();
             if (responseBody == null) {
-                throw new RuntimeException("이니시스 취소 응답이 없습니다");
+                throw new ApiException(ApiError.PAYMENT_CANCEL_FAILED, "이니시스 취소 응답이 없습니다");
             }
 
             String resultCode = (String) responseBody.get("resultCode");
             String resultMsg = (String) responseBody.get("resultMsg");
 
             if (!"00".equals(resultCode)) {
-                throw new RuntimeException("이니시스 취소 실패: " + resultMsg + " (코드: " + resultCode + ")");
+                log.error("Inicis cancel failed. orderNo={}, resultCode={}, resultMsg={}",
+                        request.getOrderNo(), resultCode, resultMsg);
+                throw new ApiException(ApiError.PAYMENT_CANCEL_FAILED, resultMsg);
             }
 
-            log.info("Inicis order cancel completed. orderNo={}, resultCode={}, resultMsg={}",
-                    request.getOrderNo(), resultCode, resultMsg);
+            log.info("Inicis order cancel completed. orderNo={}, type={}, resultCode={}, resultMsg={}",
+                    request.getOrderNo(), type, resultCode, resultMsg);
 
+        } catch (ApiException e) {
+            // ApiException은 그대로 던짐
+            throw e;
         } catch (Exception e) {
             log.error("Inicis order cancel failed. orderNo={}", request.getOrderNo(), e);
-            throw new RuntimeException("이니시스 주문 취소에 실패했습니다: " + e.getMessage(), e);
+            throw new ApiException(ApiError.PAYMENT_CANCEL_FAILED, 
+                    "이니시스 주문 취소에 실패했습니다: " + e.getMessage());
         }
     }
 

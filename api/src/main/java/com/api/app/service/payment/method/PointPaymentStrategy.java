@@ -7,9 +7,13 @@ import com.api.app.emum.MEM003;
 import com.api.app.emum.PAY001;
 import com.api.app.emum.PAY002;
 import com.api.app.emum.PAY003;
+import com.api.app.emum.PAY004;
 import com.api.app.entity.PayBase;
+import com.api.app.entity.PayInterfaceLog;
 import com.api.app.repository.pay.PayBaseTrxMapper;
+import com.api.app.repository.pay.PayInterfaceLogTrxMapper;
 import com.api.app.service.point.PointService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -30,6 +34,8 @@ public class PointPaymentStrategy implements PaymentMethodStrategy {
 
     private final PointService pointService;
     private final PayBaseTrxMapper payBaseTrxMapper;
+    private final PayInterfaceLogTrxMapper payInterfaceLogTrxMapper;
+    private final ObjectMapper objectMapper;
 
     @Override
     public PayBase processPayment(String memberNo, String orderNo, PayRequest payRequest) {
@@ -46,8 +52,25 @@ public class PointPaymentStrategy implements PaymentMethodStrategy {
         pointRequest.setPointTransactionReasonCode(MEM003.ORDER.getCode()); // 주문
         pointRequest.setPointTransactionReasonNo(payNo); // 결제번호를 사용
 
+        // 결제 요청 로그 저장 (PAY_004.001: 결제)
+        try {
+            String requestJson = objectMapper.writeValueAsString(pointRequest);
+            createPayInterfaceLog(payNo, memberNo, PAY004.PAYMENT.getCode(), requestJson, null);
+        } catch (Exception e) {
+            log.error("Failed to log point payment request. payNo={}", payNo, e);
+        }
+
         // 포인트 사용 처리 (트랜잭션으로 묶여있어 실패시 롤백됨)
         pointService.processPointTransaction(memberNo, pointRequest);
+
+        // 승인 결과 로그 저장 (PAY_004.002: 승인) - 포인트는 요청과 승인이 동시 완료
+        try {
+            String responseJson = String.format("{\"payNo\":\"%s\",\"amount\":%d,\"status\":\"completed\"}",
+                    payNo, payRequest.getAmount());
+            createPayInterfaceLog(payNo, memberNo, PAY004.APPROVAL.getCode(), null, responseJson);
+        } catch (Exception e) {
+            log.error("Failed to log point payment approval. payNo={}", payNo, e);
+        }
 
         // PayBase 엔티티 생성
         PayBase payBase = new PayBase();
@@ -60,10 +83,6 @@ public class PointPaymentStrategy implements PaymentMethodStrategy {
         payBase.setMemberNo(memberNo);
         payBase.setAmount(payRequest.getAmount());
         payBase.setCancelableAmount(payRequest.getAmount());
-        payBase.setRegistId(memberNo);
-        payBase.setRegistDateTime(LocalDateTime.now());
-        payBase.setModifyId(memberNo);
-        payBase.setModifyDateTime(LocalDateTime.now());
 
         // PayBase 저장
         int result = payBaseTrxMapper.insertPayBase(payBase);
@@ -78,5 +97,35 @@ public class PointPaymentStrategy implements PaymentMethodStrategy {
     @Override
     public String getPayWayCode() {
         return PAY002.POINT.getCode();
+    }
+
+    /**
+     * pay_interface_log 생성
+     */
+    private void createPayInterfaceLog(String payNo, String memberNo, String payLogCode,
+                                        String requestJson, String responseJson) {
+        try {
+            String payInterfaceNo = payInterfaceLogTrxMapper.generatePayInterfaceNo();
+
+            PayInterfaceLog payInterfaceLog = new PayInterfaceLog();
+            payInterfaceLog.setPayInterfaceNo(payInterfaceNo);
+            payInterfaceLog.setMemberNo(memberNo);
+            payInterfaceLog.setPayNo(payNo);
+            payInterfaceLog.setPayLogCode(payLogCode);
+            payInterfaceLog.setRequestJson(requestJson);
+            payInterfaceLog.setResponseJson(responseJson);
+
+            int result = payInterfaceLogTrxMapper.insertPayInterfaceLog(payInterfaceLog);
+            if (result != 1) {
+                log.error("Failed to create pay_interface_log. payNo={}", payNo);
+            }
+
+            log.info("Pay interface log created. payInterfaceNo={}, payLogCode={}",
+                    payInterfaceNo, payLogCode);
+
+        } catch (Exception e) {
+            log.error("Error creating pay_interface_log. payNo={}", payNo, e);
+            // 로그 생성 실패는 전체 프로세스를 중단하지 않음
+        }
     }
 }

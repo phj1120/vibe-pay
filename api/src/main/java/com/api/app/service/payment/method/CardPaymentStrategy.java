@@ -5,11 +5,15 @@ import com.api.app.dto.response.payment.PaymentApprovalResponse;
 import com.api.app.emum.PAY001;
 import com.api.app.emum.PAY002;
 import com.api.app.emum.PAY003;
+import com.api.app.emum.PAY004;
 import com.api.app.emum.PAY005;
 import com.api.app.entity.PayBase;
+import com.api.app.entity.PayInterfaceLog;
 import com.api.app.repository.pay.PayBaseTrxMapper;
+import com.api.app.repository.pay.PayInterfaceLogTrxMapper;
 import com.api.app.service.payment.strategy.PaymentGatewayFactory;
 import com.api.app.service.payment.strategy.PaymentGatewayStrategy;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -30,6 +34,8 @@ public class CardPaymentStrategy implements PaymentMethodStrategy {
 
     private final PaymentGatewayFactory paymentGatewayFactory;
     private final PayBaseTrxMapper payBaseTrxMapper;
+    private final PayInterfaceLogTrxMapper payInterfaceLogTrxMapper;
+    private final ObjectMapper objectMapper;
 
     @Override
     public PayBase processPayment(String memberNo, String orderNo, PayRequest payRequest) {
@@ -40,11 +46,28 @@ public class CardPaymentStrategy implements PaymentMethodStrategy {
         PAY005 pgType = PAY005.findByCode(payRequest.getPaymentConfirmRequest().getPgTypeCode());
         PaymentGatewayStrategy pgStrategy = paymentGatewayFactory.getStrategy(pgType);
 
+        // 결제번호 생성 (로그에 사용)
+        String payNo = payBaseTrxMapper.generatePayNo();
+
+        // 결제 요청 로그 저장 (PAY_004.001: 결제)
+        try {
+            String requestJson = objectMapper.writeValueAsString(payRequest.getPaymentConfirmRequest());
+            createPayInterfaceLog(payNo, memberNo, PAY004.PAYMENT.getCode(), requestJson, null);
+        } catch (Exception e) {
+            log.error("Failed to log payment request. payNo={}", payNo, e);
+        }
+
+        // 승인 처리
         PaymentApprovalResponse approvalResponse = pgStrategy.approvePayment(
                 payRequest.getPaymentConfirmRequest());
 
-        // 결제번호 생성
-        String payNo = payBaseTrxMapper.generatePayNo();
+        // 승인 결과 로그 저장 (PAY_004.002: 승인)
+        try {
+            String responseJson = objectMapper.writeValueAsString(approvalResponse);
+            createPayInterfaceLog(payNo, memberNo, PAY004.APPROVAL.getCode(), null, responseJson);
+        } catch (Exception e) {
+            log.error("Failed to log payment approval. payNo={}", payNo, e);
+        }
 
         // PayBase 엔티티 생성
         PayBase payBase = new PayBase();
@@ -60,10 +83,6 @@ public class CardPaymentStrategy implements PaymentMethodStrategy {
         payBase.setAmount(payRequest.getAmount());
         payBase.setCancelableAmount(payRequest.getAmount());
         payBase.setPgTypeCode(payRequest.getPaymentConfirmRequest().getPgTypeCode());
-        payBase.setRegistId(memberNo);
-        payBase.setRegistDateTime(LocalDateTime.now());
-        payBase.setModifyId(memberNo);
-        payBase.setModifyDateTime(LocalDateTime.now());
 
         // PayBase 저장
         int result = payBaseTrxMapper.insertPayBase(payBase);
@@ -78,5 +97,35 @@ public class CardPaymentStrategy implements PaymentMethodStrategy {
     @Override
     public String getPayWayCode() {
         return PAY002.CREDIT_CARD.getCode();
+    }
+
+    /**
+     * pay_interface_log 생성
+     */
+    private void createPayInterfaceLog(String payNo, String memberNo, String payLogCode,
+                                        String requestJson, String responseJson) {
+        try {
+            String payInterfaceNo = payInterfaceLogTrxMapper.generatePayInterfaceNo();
+
+            PayInterfaceLog payInterfaceLog = new PayInterfaceLog();
+            payInterfaceLog.setPayInterfaceNo(payInterfaceNo);
+            payInterfaceLog.setMemberNo(memberNo);
+            payInterfaceLog.setPayNo(payNo);
+            payInterfaceLog.setPayLogCode(payLogCode);
+            payInterfaceLog.setRequestJson(requestJson);
+            payInterfaceLog.setResponseJson(responseJson);
+
+            int result = payInterfaceLogTrxMapper.insertPayInterfaceLog(payInterfaceLog);
+            if (result != 1) {
+                log.error("Failed to create pay_interface_log. payNo={}", payNo);
+            }
+
+            log.info("Pay interface log created. payInterfaceNo={}, payLogCode={}",
+                    payInterfaceNo, payLogCode);
+
+        } catch (Exception e) {
+            log.error("Error creating pay_interface_log. payNo={}", payNo, e);
+            // 로그 생성 실패는 전체 프로세스를 중단하지 않음
+        }
     }
 }

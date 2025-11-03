@@ -1,15 +1,14 @@
 package com.api.app.aop;
 
+import com.api.app.common.security.SecurityUtils;
 import com.api.app.entity.SystemEntity;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
-import jakarta.servlet.http.HttpSession;
 import java.time.LocalDateTime;
 
 /**
@@ -25,7 +24,10 @@ import java.time.LocalDateTime;
 @Aspect
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class SystemColumnAspect {
+
+    private final SecurityUtils securityUtils;
 
     /**
      * INSERT 메소드 실행 전 시스템 컬럼 세팅
@@ -61,29 +63,17 @@ public class SystemColumnAspect {
 
     /**
      * 현재 로그인한 사용자 정보를 가져옵니다.
-     * 세션에서 memberNo를 가져오며, 없을 경우 비회원 ID(999999999999999)를 반환합니다.
+     * SecurityContext에서 memberNo를 가져오며, 없을 경우 비회원 ID(999999999999999)를 반환합니다.
      *
      * @return 현재 사용자 ID
      */
     private String getCurrentUser() {
         try {
-            ServletRequestAttributes attributes =
-                (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-
-            if (attributes != null) {
-                HttpSession session = attributes.getRequest().getSession(false);
-                if (session != null) {
-                    Object memberNo = session.getAttribute("memberNo");
-                    if (memberNo != null) {
-                        return memberNo.toString();
-                    }
-                }
-            }
+            return securityUtils.getCurrentUserMemberNo();
         } catch (Exception e) {
-            log.warn("사용자 정보 조회 실패, 비회원으로 설정합니다", e);
+            log.warn("사용자 정보 조회 실패, 비회원으로 설정합니다: {}", e.getMessage());
+            // 비회원 또는 인증 정보가 없을 경우 기본값
+            return "999999999999999";
         }
-
-        // 비회원 또는 세션 정보가 없을 경우 기본값
-        return "999999999999999";
     }
 }

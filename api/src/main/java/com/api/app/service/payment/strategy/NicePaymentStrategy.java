@@ -1,5 +1,7 @@
 package com.api.app.service.payment.strategy;
 
+import com.api.app.common.exception.ApiError;
+import com.api.app.common.exception.ApiException;
 import com.api.app.dto.request.payment.NiceApprovalRequest;
 import com.api.app.dto.request.payment.PaymentInitiateRequest;
 import com.api.app.dto.response.payment.NiceApprovalResponse;
@@ -135,7 +137,7 @@ public class NicePaymentStrategy implements PaymentGatewayStrategy {
 
             String responseBodyStr = response.getBody();
             if (responseBodyStr == null || responseBodyStr.isEmpty()) {
-                throw new RuntimeException("나이스 승인 응답이 없습니다");
+                throw new ApiException(ApiError.PAYMENT_APPROVAL_FAILED, "나이스 승인 응답이 없습니다");
             }
 
             log.info("Nice approval raw response: {}", responseBodyStr);
@@ -146,7 +148,8 @@ public class NicePaymentStrategy implements PaymentGatewayStrategy {
                 responseBody = objectMapper.readValue(responseBodyStr, NiceApprovalResponse.class);
             } catch (Exception e) {
                 log.error("Failed to parse Nice approval response: {}", responseBodyStr, e);
-                throw new RuntimeException("나이스 응답 파싱 실패: " + e.getMessage(), e);
+                throw new ApiException(ApiError.PAYMENT_APPROVAL_FAILED, 
+                        "나이스 응답 파싱 실패: " + e.getMessage());
             }
 
             log.info("Nice approval response received. ResultCode={}", responseBody.getResultCode());
@@ -155,7 +158,8 @@ public class NicePaymentStrategy implements PaymentGatewayStrategy {
             if (!"3001".equals(responseBody.getResultCode())) {  // 나이스는 3001이 신용카드 성공
                 log.error("Nice approval failed. ResultCode={}, ResultMsg={}",
                         responseBody.getResultCode(), responseBody.getResultMsg());
-                throw new RuntimeException("나이스 결제 승인 실패: " + responseBody.getResultMsg());
+                throw new ApiException(ApiError.PAYMENT_APPROVAL_FAILED, 
+                        "나이스 결제 승인 실패: " + responseBody.getResultMsg());
             }
 
             // 승인 성공 응답 생성
@@ -167,9 +171,13 @@ public class NicePaymentStrategy implements PaymentGatewayStrategy {
                     .cardCode(responseBody.getCardCode())       // 카드사 코드
                     .build();
 
+        } catch (ApiException e) {
+            // ApiException은 그대로 던짐
+            throw e;
         } catch (Exception e) {
             log.error("Nice payment approval failed. orderNo={}", request.getOrderNo(), e);
-            throw new RuntimeException("나이스 결제 승인에 실패했습니다: " + e.getMessage(), e);
+            throw new ApiException(ApiError.PAYMENT_APPROVAL_FAILED, 
+                    "나이스 결제 승인에 실패했습니다: " + e.getMessage());
         }
     }
 
@@ -189,6 +197,33 @@ public class NicePaymentStrategy implements PaymentGatewayStrategy {
                 request.getOrderNo(), request.getTransactionId(), request.getCancelAmount());
 
         try {
+            // 취소 가능한 금액 조회
+            Long cancelableAmount = request.getCancelableAmount();
+            if (cancelableAmount == null) {
+                throw new ApiException(ApiError.INVALID_PARAMETER, 
+                        "취소 가능한 금액 정보가 필요합니다");
+            }
+            
+            // 원 승인 금액 조회
+            Long originalAmount = request.getOriginalAmount();
+            if (originalAmount == null) {
+                throw new ApiException(ApiError.INVALID_PARAMETER, 
+                        "원 승인 금액 정보가 필요합니다");
+            }
+            
+            // 취소 후 남은 금액 계산
+            Long remainingAmount = cancelableAmount - request.getCancelAmount();
+            
+            // 부분 취소 판단: 원 승인 금액과 취소 가능한 금액이 다르면 이미 부분 취소된 상태
+            // 또는 취소 후 남은 금액이 0보다 크면 부분 취소
+            boolean isPartialCancel = !originalAmount.equals(cancelableAmount) || remainingAmount > 0;
+            
+            // 부분취소 코드 결정 (0: 전체취소, 1: 부분취소)
+            String partialCancelCode = isPartialCancel ? "1" : "0";
+            
+            log.info("Nice cancel decision. originalAmount={}, cancelableAmount={}, cancelAmount={}, remainingAmount={}, isPartialCancel={}, partialCancelCode={}",
+                    originalAmount, cancelableAmount, request.getCancelAmount(), remainingAmount, isPartialCancel, partialCancelCode);
+            
             // 도메인 문서에 따라 나이스 취소 API 호출
             // POST https://pg-api.nicepay.co.kr/webapi/cancel_process.jsp
             String url = "https://pg-api.nicepay.co.kr/webapi/cancel_process.jsp";
@@ -200,10 +235,6 @@ public class NicePaymentStrategy implements PaymentGatewayStrategy {
             // SignData 생성: hex(sha256(MID + CancelAmt + EdiDate + MerchantKey))
             String signTarget = mid + request.getCancelAmount() + ediDate + merchantKey;
             String signData = sha256Hash(signTarget);
-
-            // 부분취소 코드 결정 (0: 전체취소, 1: 부분취소)
-            String partialCancelCode = request.getPartialCancelCode() != null
-                    ? request.getPartialCancelCode() : "0";
 
             // 요청 파라미터 생성 (form-urlencoded)
             MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
@@ -229,7 +260,7 @@ public class NicePaymentStrategy implements PaymentGatewayStrategy {
 
             String responseBodyStr = response.getBody();
             if (responseBodyStr == null || responseBodyStr.isEmpty()) {
-                throw new RuntimeException("나이스 취소 응답이 없습니다");
+                throw new ApiException(ApiError.PAYMENT_CANCEL_FAILED, "나이스 취소 응답이 없습니다");
             }
 
             log.info("Nice cancel raw response: {}", responseBodyStr);
@@ -237,10 +268,13 @@ public class NicePaymentStrategy implements PaymentGatewayStrategy {
             // JSON 문자열을 Map으로 변환
             Map<String, Object> responseBody;
             try {
-                responseBody = objectMapper.readValue(responseBodyStr, Map.class);
+                @SuppressWarnings("unchecked")
+                Map<String, Object> parsedBody = objectMapper.readValue(responseBodyStr, Map.class);
+                responseBody = parsedBody;
             } catch (Exception e) {
                 log.error("Failed to parse Nice cancel response: {}", responseBodyStr, e);
-                throw new RuntimeException("나이스 취소 응답 파싱 실패: " + e.getMessage(), e);
+                throw new ApiException(ApiError.PAYMENT_CANCEL_FAILED, 
+                        "나이스 취소 응답 파싱 실패: " + e.getMessage());
             }
 
             String resultCode = (String) responseBody.get("ResultCode");
@@ -248,15 +282,21 @@ public class NicePaymentStrategy implements PaymentGatewayStrategy {
 
             // 나이스 취소 성공 코드: 2001
             if (!"2001".equals(resultCode)) {
-                throw new RuntimeException("나이스 취소 실패: " + resultMsg + " (코드: " + resultCode + ")");
+                log.error("Nice cancel failed. orderNo={}, resultCode={}, resultMsg={}",
+                        request.getOrderNo(), resultCode, resultMsg);
+                throw new ApiException(ApiError.PAYMENT_CANCEL_FAILED, resultMsg);
             }
 
             log.info("Nice order cancel completed. orderNo={}, resultCode={}, resultMsg={}",
                     request.getOrderNo(), resultCode, resultMsg);
 
+        } catch (ApiException e) {
+            // ApiException은 그대로 던짐
+            throw e;
         } catch (Exception e) {
             log.error("Nice order cancel failed. orderNo={}", request.getOrderNo(), e);
-            throw new RuntimeException("나이스 주문 취소에 실패했습니다: " + e.getMessage(), e);
+            throw new ApiException(ApiError.PAYMENT_CANCEL_FAILED, 
+                    "나이스 주문 취소에 실패했습니다: " + e.getMessage());
         }
     }
 

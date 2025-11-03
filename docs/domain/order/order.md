@@ -375,6 +375,264 @@ Request: PaymentConfirmRequest
 
 ### 결제 취소
 
+#### 부분 취소 구현 가이드
+
+##### 1. 공통 개념
+
+**전체 취소 vs 부분 취소:**
+- **전체 취소**: 원 결제 금액 전체를 한 번에 취소 (최초 결제 후 첫 취소가 전체 금액인 경우)
+- **부분 취소**: 원 결제 금액의 일부를 취소 (여러 번에 걸쳐 취소하거나, 일부만 취소하는 모든 경우)
+
+**주요 변수:**
+- `originalAmount`: 원 승인 금액 (pay_base.amount)
+- `cancelableAmount`: 취소 가능한 금액 (pay_base.cancelable_amount) - 이전 취소가 반영된 현재 잔액
+- `cancelAmount`: 이번에 취소할 금액
+- `remainingAmount`: 취소 후 남은 금액 = cancelableAmount - cancelAmount
+
+##### 2. 나이스 페이 부분 취소
+
+**특징:**
+- 단일 API 엔드포인트 사용
+- `PartialCancelCode` 파라미터로 전체/부분 구분
+
+**부분 취소 판단 로직:**
+```java
+Long remainingAmount = cancelableAmount - cancelAmount;
+boolean isPartialCancel = !originalAmount.equals(cancelableAmount) || remainingAmount > 0;
+String partialCancelCode = isPartialCancel ? "1" : "0";
+```
+
+**시나리오별 동작:**
+
+1. **첫 전체 취소**
+```
+결제: 1,500원
+취소: 1,500원
+- originalAmount: 1,500
+- cancelableAmount: 1,500
+- cancelAmount: 1,500
+- remainingAmount: 0
+→ partialCancelCode = "0" (전체 취소)
+```
+
+2. **첫 부분 취소**
+```
+결제: 1,500원
+취소: 1,000원
+- originalAmount: 1,500
+- cancelableAmount: 1,500
+- cancelAmount: 1,000
+- remainingAmount: 500
+→ partialCancelCode = "1" (부분 취소)
+```
+
+3. **두 번째 부분 취소 (잔액 남음)**
+```
+결제: 1,500원
+첫 취소: 1,000원
+두 번째 취소: 300원
+- originalAmount: 1,500
+- cancelableAmount: 500 (이전 취소 반영)
+- cancelAmount: 300
+- remainingAmount: 200
+→ partialCancelCode = "1" (1,500 != 500)
+```
+
+4. **두 번째 부분 취소 (잔액 0원) ⭐ 중요!**
+```
+결제: 1,500원
+첫 취소: 1,000원
+두 번째 취소: 500원
+- originalAmount: 1,500
+- cancelableAmount: 500 (이전 취소 반영)
+- cancelAmount: 500
+- remainingAmount: 0
+→ partialCancelCode = "1" (1,500 != 500) ✅
+※ 잔액이 0원이 되더라도 부분 취소 처리
+```
+
+**API 요청:**
+```
+POST https://pg-api.nicepay.co.kr/webapi/cancel_process.jsp
+Content-Type: application/x-www-form-urlencoded
+
+Parameters:
+- TID: 거래 ID
+- MID: 가맹점 ID
+- Moid: 주문번호
+- CancelAmt: 취소금액
+- CancelMsg: 취소사유
+- PartialCancelCode: "0" (전체) 또는 "1" (부분) ⭐
+- EdiDate: 전문생성일시
+- SignData: hex(sha256(MID + CancelAmt + EdiDate + MerchantKey))
+- CharSet: "utf-8"
+- EdiType: "JSON"
+```
+
+##### 3. 이니시스 부분 취소
+
+**특징:**
+- API 엔드포인트를 구분
+- 부분 취소 시 `confirmPrice` (취소 후 남은 금액) 필수
+
+**부분 취소 판단 로직:**
+```java
+Long confirmPrice = cancelableAmount - cancelAmount;
+boolean isPartialCancel = !originalAmount.equals(cancelableAmount) || confirmPrice > 0;
+
+String url = isPartialCancel 
+    ? "https://iniapi.inicis.com/v2/pg/partialRefund"
+    : "https://iniapi.inicis.com/v2/pg/refund";
+String type = isPartialCancel ? "partialRefund" : "refund";
+```
+
+**시나리오별 동작:**
+
+1. **첫 전체 취소**
+```
+결제: 1,500원
+취소: 1,500원
+- originalAmount: 1,500
+- cancelableAmount: 1,500
+- cancelAmount: 1,500
+- confirmPrice: 0
+→ API: /v2/pg/refund (전체 취소)
+→ data: {tid, msg}
+```
+
+2. **첫 부분 취소**
+```
+결제: 1,500원
+취소: 1,000원
+- originalAmount: 1,500
+- cancelableAmount: 1,500
+- cancelAmount: 1,000
+- confirmPrice: 500
+→ API: /v2/pg/partialRefund (부분 취소)
+→ data: {tid, msg, price: 1000, confirmPrice: 500, currency: "WON"}
+```
+
+3. **두 번째 부분 취소 (잔액 남음)**
+```
+결제: 1,500원
+첫 취소: 1,000원
+두 번째 취소: 300원
+- originalAmount: 1,500
+- cancelableAmount: 500 (이전 취소 반영)
+- cancelAmount: 300
+- confirmPrice: 200
+→ API: /v2/pg/partialRefund (1,500 != 500)
+→ data: {tid, msg, price: 300, confirmPrice: 200, currency: "WON"}
+```
+
+4. **두 번째 부분 취소 (잔액 0원) ⭐ 중요!**
+```
+결제: 1,500원
+첫 취소: 1,000원
+두 번째 취소: 500원
+- originalAmount: 1,500
+- cancelableAmount: 500 (이전 취소 반영)
+- cancelAmount: 500
+- confirmPrice: 0
+→ API: /v2/pg/partialRefund (1,500 != 500) ✅
+→ data: {tid, msg, price: 500, confirmPrice: 0, currency: "WON"}
+※ confirmPrice가 0이더라도 부분 취소 API 사용
+```
+
+**API 요청:**
+
+**전체 취소:**
+```
+POST https://iniapi.inicis.com/v2/pg/refund
+Content-Type: application/json
+
+{
+  "mid": "상점아이디",
+  "type": "refund",
+  "timestamp": "전문생성시간",
+  "clientIp": "가맹점 서버IP",
+  "hashData": "SHA512(apiKey + mid + type + timestamp + data)",
+  "data": {
+    "tid": "거래번호",
+    "msg": "취소사유"
+  }
+}
+```
+
+**부분 취소:**
+```
+POST https://iniapi.inicis.com/v2/pg/partialRefund
+Content-Type: application/json
+
+{
+  "mid": "상점아이디",
+  "type": "partialRefund",
+  "timestamp": "전문생성시간",
+  "clientIp": "가맹점 서버IP",
+  "hashData": "SHA512(apiKey + mid + type + timestamp + data)",
+  "data": {
+    "tid": "거래번호",
+    "msg": "취소사유",
+    "price": "취소금액", ⭐
+    "confirmPrice": "취소 후 남은 금액", ⭐
+    "currency": "WON"
+  }
+}
+```
+
+##### 4. 주의사항
+
+**공통:**
+1. **cancelableAmount 사용 필수**
+   - ❌ 잘못된 계산: `originalAmount - cancelAmount`
+   - ✅ 올바른 계산: `cancelableAmount - cancelAmount`
+   - `cancelableAmount`는 이미 이전 취소가 반영된 현재 잔액
+
+2. **부분 취소 후 잔액 0원 케이스**
+   - 두 번째 이후 취소로 잔액이 0원이 되더라도 부분 취소로 처리
+   - 원 승인 금액(`originalAmount`)과 취소 가능 금액(`cancelableAmount`) 비교로 판단
+
+3. **PG사 에러 처리**
+   - PG사의 상세 오류 메시지를 화면에 전달 (ApiException 사용)
+   - 예: "간편결제 부분취소 제한 가맹점"
+
+**이니시스 전용:**
+- `confirmPrice` 계산 시 `cancelableAmount` 사용 필수
+- 부분 취소 시 `confirmPrice`, `price`, `currency` 모두 필수
+
+**나이스 전용:**
+- `PartialCancelCode`를 "0" 또는 "1"로 정확히 전달
+
+##### 5. 데이터 흐름
+
+```
+ClaimServiceImpl
+  ↓
+PaymentCancelRequest 생성
+  - pgTypeCode
+  - transactionId
+  - orderNo
+  - cancelAmount
+  - cancelReason
+  - partialCancelCode (ClaimServiceImpl에서 참고용으로 계산, Strategy에서 재판단)
+  - originalAmount (pay_base.amount)
+  - cancelableAmount (pay_base.cancelable_amount) ⭐ 핵심!
+  ↓
+NicePaymentStrategy
+  - remainingAmount = cancelableAmount - cancelAmount 계산
+  - isPartialCancel 판단
+  - PartialCancelCode 설정 ("0" or "1")
+  - 단일 API 호출
+  ↓
+InicisPaymentStrategy
+  - confirmPrice = cancelableAmount - cancelAmount 계산
+  - isPartialCancel 판단
+  - API 엔드포인트 선택 (/refund or /partialRefund)
+  - data 객체 구성 (부분 취소 시 price, confirmPrice 추가)
+  ↓
+PG사 API 호출
+```
+
 - 나이스
     - 전체 취소/부분취소
     - POST **https://pg-api.nicepay.co.kr/webapi/cancel_process.jsp**

@@ -30,6 +30,11 @@ public enum ApiError {
     INVALID_CREDENTIALS("2005", "이메일 또는 비밀번호가 일치하지 않습니다"),
     DUPLICATE_EMAIL("2006", "이미 사용 중인 이메일입니다"),
 
+    // 결제 오류 (3xxx)
+    PAYMENT_CANCEL_FAILED("3001", "결제 취소에 실패했습니다"),
+    PAYMENT_APPROVAL_FAILED("3002", "결제 승인에 실패했습니다"),
+    PAYMENT_INITIATE_FAILED("3003", "결제 요청 생성에 실패했습니다"),
+
     // 서버 오류 (9xxx)
     INTERNAL_SERVER_ERROR("9000", "서버 내부 오류가 발생했습니다"),
     VALIDATION_EXCEPTION("9100", "입력값 검증에 실패했습니다");

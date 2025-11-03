@@ -81,10 +81,6 @@ public class PointServiceImpl implements PointService {
         pointHistory.setStartDateTime(startDateTime);
         pointHistory.setEndDateTime(endDateTime);
         pointHistory.setRemainPoint(request.getAmount());
-        pointHistory.setRegistId(memberNo);
-        pointHistory.setRegistDateTime(now);
-        pointHistory.setModifyId(memberNo);
-        pointHistory.setModifyDateTime(now);
 
         // 포인트 내역 등록
         int result = pointHistoryTrxMapper.insertPointHistory(pointHistory);
@@ -123,8 +119,6 @@ public class PointServiceImpl implements PointService {
             PointHistory updateEarn = new PointHistory();
             updateEarn.setPointHistoryNo(earnHistory.getPointHistoryNo());
             updateEarn.setRemainPoint(currentRemain - deductAmount);
-            updateEarn.setModifyId(memberNo);
-            updateEarn.setModifyDateTime(now);
             pointHistoryTrxMapper.updateRemainPoint(updateEarn);
 
             // 사용 내역 등록
@@ -138,10 +132,6 @@ public class PointServiceImpl implements PointService {
             useHistory.setPointTransactionReasonNo(request.getPointTransactionReasonNo());
             useHistory.setUpperPointHistoryNo(earnHistory.getPointHistoryNo());
             useHistory.setRemainPoint(0L);
-            useHistory.setRegistId(memberNo);
-            useHistory.setRegistDateTime(now);
-            useHistory.setModifyId(memberNo);
-            useHistory.setModifyDateTime(now);
             pointHistoryTrxMapper.insertPointHistory(useHistory);
 
             remainingAmount -= deductAmount;

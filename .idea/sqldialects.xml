@@ -3,6 +3,7 @@
   <component name="SqlDialectMappings">
     <file url="file://$PROJECT_DIR$/api/sql/etc.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/api/sql/order.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/docs/database/data.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/docs/database/database-setting.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/docs/database/ddl.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/docs/database/drop.sql" dialect="PostgreSQL" />

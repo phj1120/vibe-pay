@@ -237,13 +237,18 @@ public class ClaimServiceImpl implements ClaimService {
             PAY005 pgType = PAY005.findByCode(originalPayment.getPgTypeCode());
             PaymentGatewayStrategy strategy = paymentGatewayFactory.getStrategy(pgType);
 
+            // 부분취소 코드 결정: 취소 가능한 금액과 취소금액이 같으면 전체취소(0), 아니면 부분취소(1)
+            String partialCancelCode = originalPayment.getCancelableAmount().equals(cancelAmount) ? "0" : "1";
+
             PaymentCancelRequest cancelRequest = PaymentCancelRequest.builder()
                     .pgTypeCode(originalPayment.getPgTypeCode())
                     .transactionId(originalPayment.getTrdNo())
                     .orderNo(originalPayment.getOrderNo())
                     .cancelAmount(cancelAmount)
                     .cancelReason("주문 취소")
-                    .partialCancelCode("0") // 전체 취소
+                    .partialCancelCode(partialCancelCode)
+                    .originalAmount(originalPayment.getAmount())
+                    .cancelableAmount(originalPayment.getCancelableAmount())
                     .build();
 
             // PG사 취소 API 호출 및 로그 저장
@@ -276,10 +281,6 @@ public class ClaimServiceImpl implements ClaimService {
             cancelPayment.setCancelableAmount(0L); // 취소 건은 재취소 불가
             cancelPayment.setPgTypeCode(originalPayment.getPgTypeCode());
             cancelPayment.setTrdNo(originalPayment.getTrdNo()); // 원 거래번호 유지
-            cancelPayment.setRegistId(memberNo);
-            cancelPayment.setRegistDateTime(now);
-            cancelPayment.setModifyId(memberNo);
-            cancelPayment.setModifyDateTime(now);
 
             int result = payBaseTrxMapper.insertPayBase(cancelPayment);
             if (result != 1) {
@@ -331,10 +332,6 @@ public class ClaimServiceImpl implements ClaimService {
             cancelPayment.setMemberNo(memberNo);
             cancelPayment.setAmount(cancelAmount);
             cancelPayment.setCancelableAmount(0L); // 취소 건은 재취소 불가
-            cancelPayment.setRegistId(memberNo);
-            cancelPayment.setRegistDateTime(now);
-            cancelPayment.setModifyId(memberNo);
-            cancelPayment.setModifyDateTime(now);
 
             int result = payBaseTrxMapper.insertPayBase(cancelPayment);
             if (result != 1) {
@@ -374,10 +371,6 @@ public class ClaimServiceImpl implements ClaimService {
             payInterfaceLog.setPayLogCode(payLogCode);
             payInterfaceLog.setRequestJson(requestJson);
             payInterfaceLog.setResponseJson(responseJson);
-            payInterfaceLog.setRegistId(memberNo);
-            payInterfaceLog.setRegistDateTime(LocalDateTime.now());
-            payInterfaceLog.setModifyId(memberNo);
-            payInterfaceLog.setModifyDateTime(LocalDateTime.now());
 
             int result = payInterfaceLogTrxMapper.insertPayInterfaceLog(payInterfaceLog);
             if (result != 1) {
@@ -422,10 +415,6 @@ public class ClaimServiceImpl implements ClaimService {
             cancelDetail.setDeliveryTypeCode(DLV001.COLLECTION.getCode()); // 회수 (반품배송)
             cancelDetail.setOrderTypeCode(ORD001.ORDER_CANCEL.getCode());
             cancelDetail.setOrderAcceptDtm(now);
-            cancelDetail.setRegistId(memberNo);
-            cancelDetail.setRegistDateTime(now);
-            cancelDetail.setModifyId(memberNo);
-            cancelDetail.setModifyDateTime(now);
 
             int result = orderDetailTrxMapper.insertOrderDetail(cancelDetail);
             if (result != 1) {

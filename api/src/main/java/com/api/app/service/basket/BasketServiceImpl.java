@@ -65,7 +65,6 @@ public class BasketServiceImpl implements BasketService {
         if (existingBasket != null) {
             // 이미 있으면 수량 증가
             existingBasket.setQuantity(existingBasket.getQuantity() + request.getQuantity());
-            existingBasket.setModifyId(memberNo);
 
             int result = basketBaseTrxMapper.updateBasketBase(existingBasket);
             if (result != 1) {
@@ -88,7 +87,6 @@ public class BasketServiceImpl implements BasketService {
             basketBase.setItemNo(request.getItemNo());
             basketBase.setQuantity(request.getQuantity());
             basketBase.setIsOrder(false);
-            basketBase.setRegistId(memberNo);
 
             int result = basketBaseTrxMapper.insertBasketBase(basketBase);
             if (result != 1) {
@@ -130,7 +128,6 @@ public class BasketServiceImpl implements BasketService {
         if (request.getQuantity() != null) {
             basketBase.setQuantity(request.getQuantity());
         }
-        basketBase.setModifyId(memberNo);
 
         int result = basketBaseTrxMapper.updateBasketBase(basketBase);
         if (result != 1) {

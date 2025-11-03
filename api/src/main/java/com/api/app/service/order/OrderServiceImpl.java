@@ -210,10 +210,6 @@ public class OrderServiceImpl implements OrderService {
         OrderBase orderBase = new OrderBase();
         orderBase.setOrderNo(orderNo);
         orderBase.setMemberNo(request.getMemberNo());
-        orderBase.setRegistId(request.getMemberNo());
-        orderBase.setRegistDateTime(now);
-        orderBase.setModifyId(request.getMemberNo());
-        orderBase.setModifyDateTime(now);
 
         int result = orderBaseTrxMapper.insertOrderBase(orderBase);
         if (result != 1) {
@@ -235,10 +231,6 @@ public class OrderServiceImpl implements OrderService {
             orderDetail.setDeliveryTypeCode("001"); // TODO: DLV001 enum 사용
             orderDetail.setOrderTypeCode(ORD001.ORDER.getCode());
             orderDetail.setOrderAcceptDtm(now);
-            orderDetail.setRegistId(request.getMemberNo());
-            orderDetail.setRegistDateTime(now);
-            orderDetail.setModifyId(request.getMemberNo());
-            orderDetail.setModifyDateTime(now);
 
             result = orderDetailTrxMapper.insertOrderDetail(orderDetail);
             if (result != 1) {
@@ -256,10 +248,6 @@ public class OrderServiceImpl implements OrderService {
             orderGoods.setSupplyPrice(priceHist.getSupplyPrice());
             orderGoods.setGoodsName(goods.getGoodsName());
             orderGoods.setItemName(goods.getItemName());
-            orderGoods.setRegistId(request.getMemberNo());
-            orderGoods.setRegistDateTime(now);
-            orderGoods.setModifyId(request.getMemberNo());
-            orderGoods.setModifyDateTime(now);
 
             result = orderGoodsTrxMapper.insertOrderGoods(orderGoods);
             if (result != 1) {
