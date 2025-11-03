@@ -5,8 +5,10 @@ import com.api.app.common.exception.ApiException;
 import com.api.app.common.jwt.JwtTokenProvider;
 import com.api.app.dto.request.member.MemberLoginRequest;
 import com.api.app.dto.request.member.MemberRegisterRequest;
+import com.api.app.dto.request.member.TokenRefreshRequest;
 import com.api.app.dto.response.member.MemberInfoResponse;
 import com.api.app.dto.response.member.MemberLoginResponse;
+import com.api.app.dto.response.member.TokenRefreshResponse;
 import com.api.app.entity.MemberBase;
 import com.api.app.repository.member.MemberBaseMapper;
 import com.api.app.repository.member.MemberBaseTrxMapper;
@@ -106,5 +108,41 @@ public class MemberServiceImpl implements MemberService {
         response.setMemberStatusCode(member.getMemberStatusCode());
 
         return response;
+    }
+
+    @Override
+    public TokenRefreshResponse refreshToken(TokenRefreshRequest request) {
+        log.debug("토큰 갱신 시도");
+
+        try {
+            // Refresh Token 검증
+            String refreshToken = request.getRefreshToken();
+            
+            // 토큰 만료 여부 확인
+            if (jwtTokenProvider.isTokenExpired(refreshToken)) {
+                throw new ApiException(ApiError.EXPIRED_TOKEN, "리프레시 토큰이 만료되었습니다");
+            }
+
+            // 토큰에서 이메일 추출
+            String email = jwtTokenProvider.extractEmail(refreshToken);
+
+            // 회원 존재 확인
+            MemberBase member = memberBaseMapper.selectMemberBaseByEmail(email);
+            if (member == null) {
+                throw new ApiException(ApiError.DATA_NOT_FOUND, "회원 정보를 찾을 수 없습니다");
+            }
+
+            // 새로운 토큰 생성
+            String newAccessToken = jwtTokenProvider.generateAccessToken(email);
+            String newRefreshToken = jwtTokenProvider.generateRefreshToken(email);
+
+            log.info("토큰 갱신 성공: email={}", email);
+
+            return new TokenRefreshResponse(newAccessToken, newRefreshToken);
+
+        } catch (Exception e) {
+            log.error("토큰 갱신 실패", e);
+            throw new ApiException(ApiError.INVALID_TOKEN, "유효하지 않은 토큰입니다");
+        }
     }
 }

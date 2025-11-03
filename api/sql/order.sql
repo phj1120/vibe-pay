@@ -8,3 +8,5 @@ select * from basket_base;
 
 
 ALTER TABLE point_history ALTER COLUMN start_date_time DROP NOT NULL;
+
+

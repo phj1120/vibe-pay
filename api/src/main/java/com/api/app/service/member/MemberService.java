@@ -2,8 +2,10 @@ package com.api.app.service.member;
 
 import com.api.app.dto.request.member.MemberLoginRequest;
 import com.api.app.dto.request.member.MemberRegisterRequest;
+import com.api.app.dto.request.member.TokenRefreshRequest;
 import com.api.app.dto.response.member.MemberInfoResponse;
 import com.api.app.dto.response.member.MemberLoginResponse;
+import com.api.app.dto.response.member.TokenRefreshResponse;
 
 /**
  * @author system
@@ -34,4 +36,12 @@ public interface MemberService {
      * @return 회원 정보
      */
     MemberInfoResponse getMemberInfo(String email);
+
+    /**
+     * 토큰 갱신
+     *
+     * @param request 토큰 갱신 요청
+     * @return 토큰 갱신 응답 (새로운 액세스 토큰, 리프레시 토큰)
+     */
+    TokenRefreshResponse refreshToken(TokenRefreshRequest request);
 }

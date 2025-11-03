@@ -1,6 +1,8 @@
 package com.api.app.common.jwt;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
@@ -120,11 +122,20 @@ public class JwtTokenProvider {
      * @return Claims
      */
     private Claims extractAllClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(secretKey)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        try {
+            return Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (ExpiredJwtException e) {
+            // 만료된 토큰이라도 Claims는 가져올 수 있음
+            log.debug("토큰이 만료되었지만 Claims 추출: {}", e.getMessage());
+            return e.getClaims();
+        } catch (JwtException e) {
+            log.error("토큰 파싱 실패: {}", e.getMessage());
+            throw e;
+        }
     }
 
     /**
@@ -134,7 +145,17 @@ public class JwtTokenProvider {
      * @return 만료 여부
      */
     public Boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
+        try {
+            return extractExpiration(token).before(new Date());
+        } catch (ExpiredJwtException e) {
+            // 만료된 토큰
+            log.debug("토큰 만료 확인: 만료됨");
+            return true;
+        } catch (JwtException e) {
+            // 유효하지 않은 토큰
+            log.error("토큰 검증 실패: {}", e.getMessage());
+            return true; // 유효하지 않은 토큰도 만료된 것으로 간주
+        }
     }
 
     /**
@@ -145,8 +166,13 @@ public class JwtTokenProvider {
      * @return 유효 여부
      */
     public Boolean validateToken(String token, UserDetails userDetails) {
-        final String email = extractEmail(token);
-        return (email.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        try {
+            final String email = extractEmail(token);
+            return (email.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        } catch (JwtException e) {
+            log.error("토큰 검증 실패: {}", e.getMessage());
+            return false;
+        }
     }
 
     /**
@@ -157,7 +183,12 @@ public class JwtTokenProvider {
      * @return 유효 여부
      */
     public Boolean validateToken(String token, String email) {
-        final String tokenEmail = extractEmail(token);
-        return (tokenEmail.equals(email) && !isTokenExpired(token));
+        try {
+            final String tokenEmail = extractEmail(token);
+            return (tokenEmail.equals(email) && !isTokenExpired(token));
+        } catch (JwtException e) {
+            log.error("토큰 검증 실패: {}", e.getMessage());
+            return false;
+        }
     }
 }

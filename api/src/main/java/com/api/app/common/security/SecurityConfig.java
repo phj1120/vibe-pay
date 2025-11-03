@@ -41,8 +41,16 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // Swagger 관련 경로는 인증 없이 접근 가능
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .anyRequest().permitAll()
+                        // 회원가입, 로그인, 토큰 갱신은 인증 없이 접근 가능
+                        .requestMatchers("/api/members/register", "/api/members/login", "/api/members/refresh").permitAll()
+                        // 상품 조회, 코드 조회는 인증 없이 접근 가능
+                        .requestMatchers("/api/goods/**", "/api/codes/**").permitAll()
+                        // 결제 완료 콜백은 인증 없이 접근 가능 (PG사에서 호출)
+                        .requestMatchers("/api/pay/complete").permitAll()
+                        // 그 외 모든 요청은 인증 필요
+                        .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

@@ -3,8 +3,10 @@ package com.api.app.controller.member;
 import com.api.app.common.response.ApiResponse;
 import com.api.app.dto.request.member.MemberLoginRequest;
 import com.api.app.dto.request.member.MemberRegisterRequest;
+import com.api.app.dto.request.member.TokenRefreshRequest;
 import com.api.app.dto.response.member.MemberInfoResponse;
 import com.api.app.dto.response.member.MemberLoginResponse;
+import com.api.app.dto.response.member.TokenRefreshResponse;
 import com.api.app.service.member.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -71,6 +73,20 @@ public class MemberController {
             @AuthenticationPrincipal UserDetails userDetails) {
         log.info("회원 정보 조회 요청: email={}", userDetails.getUsername());
         MemberInfoResponse response = memberService.getMemberInfo(userDetails.getUsername());
+        return ApiResponse.success(response);
+    }
+
+    /**
+     * 토큰 갱신
+     *
+     * @param request 토큰 갱신 요청
+     * @return 토큰 갱신 응답 (새로운 액세스 토큰, 리프레시 토큰)
+     */
+    @Operation(summary = "토큰 갱신", description = "리프레시 토큰을 사용하여 새로운 액세스 토큰을 발급받습니다")
+    @PostMapping("/refresh")
+    public ApiResponse<TokenRefreshResponse> refreshToken(@RequestBody @Valid TokenRefreshRequest request) {
+        log.info("토큰 갱신 요청");
+        TokenRefreshResponse response = memberService.refreshToken(request);
         return ApiResponse.success(response);
     }
 }
