@@ -1,4 +1,4 @@
-## 주문/결제
+# 6. 주문/결제
 
 ### 개발 요청사항
 
@@ -47,62 +47,65 @@ payment:
     cancel-url: "http://localhost:3000/order/cancel"
 ```
 
-**returnUrl 변경 사항:**
+### **returnUrl 변경 사항:**
+
 - 기존: `/order/return` (SSR 페이지)
+
 - 변경: `/api/order/payment/return` (Next.js API Route)
+
 - 이유: PG 응답을 API Route에서 처리하고 postMessage로 부모 창에 전달하는 방식으로 변경
 
 ### 주문 프로세스
 
 ```yaml
 (화면) 결제하기 버튼 클릭
-  → (서버) 주문번호조회 `/api/order/generateOrderNumber`
-  → (서버) 요청 정보 생성 `/api/payments/initiate`
-  → 쿠키에 주문 정보, 요청 정보 생성
-  → 결제 처리 팝업창 호출 `/order/popup`
-나이스: `width=570,height=830,scrollbars=yes,resizable=yes`
-이니시스: `width=840,height=600,scrollbars=yes,resizable=yes`
-  → 쿠키에 있는 주문 정보, 요청 정보 꺼내와 PG사별 form 에 세팅 후 쿠키 삭제
-  → 해당 응답 값에 선택 된 PG 사에 따라서 각각에 맞는 정보 세팅해 PG 창 호출
-나이스: `window.goPay(document.nicePayForm);`
-이니시스: `window.INIStdPay.pay('inicisForm');`
-  → PG 창에서 결제 처리
-나이스:
-  - 인증 완료 후 `nicepaySubmit()` 콜백 함수 호출
-  - 콜백에서 인증 응답이 append된 form을 `/api/order/payment/return`으로 submit
-이니시스:
-  - 인증 완료 후 returnUrl로 직접 리다이렉트
-  → (FO API Route) 결제 응답 처리 (`/api/order/payment/return`)
-  ※ Next.js API Route로 구현 (SSR이 아닌 API 엔드포인트)
-
-  **PG사별 인증 응답 전달 방식:**
-- 나이스: `application/x-www-form-urlencoded` (FormData)
-- 이니시스: `application/x-www-form-urlencoded` (FormData)
-
-  **PG사 판별 방법 (Content-Type이 아닌 데이터 필드로 판별):**
-- 이니시스: `resultCode` 필드 존재
-- 나이스: `AuthResultCode` 필드 존재
-
-  **결제 성공 여부 판단:**
-- 이니시스: `resultCode === '0000'`
-- 나이스: `AuthResultCode === '0000'`
-
-  **응답 처리:**
-  1. PG 응답 데이터 파싱 및 PG사 판별
-  2. 결제 성공/실패 여부 확인
-  3. 결제 결과를 담은 HTML 페이지 반환 (postMessage 포함)
-  4. HTML 페이지에서 `window.opener.postMessage()`로 부모 창에 결과 전송
-  5. postMessage 전송 후 1초 뒤 팝업 창 자동 닫기
-
-  결제처리 결과를 부모창에서 수신하고 이후 주문 프로세스 진행
-  (인증 응답에 승인 요청 정보가 있어, 이를 서버에서 주문 시점에 호출)
-
-  → (서버) 주문 `/api/orders/order`
-
-  **주문 성공/실패 결과 처리:**
-- 결제 성공 + 주문 성공 → 주문 완료 페이지 (`/order/complete?orderNo={orderNumber}`)
-- 결제 실패 → 주문 실패 모달 (상세 오류 정보 포함) → 장바구니로 이동
-- 결제 성공 + 주문 실패 → 주문 실패 모달 (결제 완료 안내 + 고객센터 안내) → 장바구니로 이동
+	→ (서버) 주문번호조회 `/api/order/generateOrderNumber`
+	→ (서버) 요청 정보 생성 `/api/payments/initiate` 
+	→ 쿠키에 주문 정보, 요청 정보 생성
+	→ 결제 처리 팝업창 호출 `/order/popup` 
+		나이스: `width=570,height=830,scrollbars=yes,resizable=yes`
+		이니시스: `width=840,height=600,scrollbars=yes,resizable=yes`
+		→ 쿠키에 있는 주문 정보, 요청 정보 꺼내와 PG사별 form 에 세팅 후 쿠키 삭제
+		→ 해당 응답 값에 선택 된 PG 사에 따라서 각각에 맞는 정보 세팅해 PG 창 호출
+			나이스: `window.goPay(document.nicePayForm);`
+			이니시스: `window.INIStdPay.pay('inicisForm');`
+		→ PG 창에서 결제 처리
+			나이스: 
+				- 인증 완료 후 `nicepaySubmit()` 콜백 함수 호출
+				- 콜백에서 인증 응답이 append된 form을 `/api/order/payment/return`으로 submit
+			이니시스:
+				- 인증 완료 후 returnUrl로 직접 리다이렉트
+		→ (FO API Route) 결제 응답 처리 (`/api/order/payment/return`)
+			※ Next.js API Route로 구현 (SSR이 아닌 API 엔드포인트)
+			
+			**PG사별 인증 응답 전달 방식:**
+			- 나이스: `application/x-www-form-urlencoded` (FormData)
+			- 이니시스: `application/x-www-form-urlencoded` (FormData)
+			
+			**PG사 판별 방법 (Content-Type이 아닌 데이터 필드로 판별):**
+			- 이니시스: `resultCode` 필드 존재
+			- 나이스: `AuthResultCode` 필드 존재
+			
+			**결제 성공 여부 판단:**
+			- 이니시스: `resultCode === '0000'`
+			- 나이스: `AuthResultCode === '0000'`
+			
+			**응답 처리:**
+			1. PG 응답 데이터 파싱 및 PG사 판별
+			2. 결제 성공/실패 여부 확인
+			3. 결제 결과를 담은 HTML 페이지 반환 (postMessage 포함)
+			4. HTML 페이지에서 `window.opener.postMessage()`로 부모 창에 결과 전송
+			5. postMessage 전송 후 1초 뒤 팝업 창 자동 닫기
+			
+		결제처리 결과를 부모창에서 수신하고 이후 주문 프로세스 진행
+		(인증 응답에 승인 요청 정보가 있어, 이를 서버에서 주문 시점에 호출)
+		
+	→ (서버) 주문 `/api/orders/order`
+	
+	**주문 성공/실패 결과 처리:**
+	- 결제 성공 + 주문 성공 → 주문 완료 페이지 (`/order/complete?orderNo={orderNumber}`)
+	- 결제 실패 → 주문 실패 모달 (상세 오류 정보 포함) → 장바구니로 이동
+	- 결제 성공 + 주문 실패 → 주문 실패 모달 (결제 완료 안내 + 고객센터 안내) → 장바구니로 이동
 ```
 
 - 결제처리창 팝업이 열릴 경우, 주문서의 결제하기 버튼을 비활성화한다.
@@ -124,44 +127,44 @@ payment:
 
 *이니시스:*
 주문서 페이지 (부모 창)
-↓ window.open()
+  ↓ window.open()
 결제 팝업 (/order/popup)
-↓ INIStdPay.pay() 호출
+  ↓ INIStdPay.pay() 호출
 이니시스 결제 창
-↓ 결제 완료 후 returnUrl로 리다이렉트
+  ↓ 결제 완료 후 returnUrl로 리다이렉트
 API Route (/api/order/payment/return)
-↓ window.opener.postMessage()
+  ↓ window.opener.postMessage()
 주문서 페이지 (결과 수신)
-↓ 주문 API 호출
+  ↓ 주문 API 호출
 주문 완료 or 실패 모달
 
 *나이스:*
 주문서 페이지 (부모 창)
-↓ window.open()
+  ↓ window.open()
 결제 팝업 (/order/popup)
-↓ goPay() 호출 + nicepaySubmit() 콜백 등록
+  ↓ goPay() 호출 + nicepaySubmit() 콜백 등록
 나이스 결제 창
-↓ 결제 완료 후 nicepaySubmit() 콜백 호출
+  ↓ 결제 완료 후 nicepaySubmit() 콜백 호출
 결제 팝업 (/order/popup)
-↓ form.submit() → /api/order/payment/return
+  ↓ form.submit() → /api/order/payment/return
 API Route (/api/order/payment/return)
-↓ window.opener.postMessage()
+  ↓ window.opener.postMessage()
 주문서 페이지 (결과 수신)
-↓ 주문 API 호출
+  ↓ 주문 API 호출
 주문 완료 or 실패 모달
 
 #### 2. postMessage 데이터 구조
 
 interface PaymentResultMessage {
-success: boolean;
-authData?: InicisAuthResponse | NiceAuthResponse;
-error?: string;
-errorDetails?: {
-pgType?: string;          // 'INICIS' | 'NICE'
-errorCode?: string;        // PG 에러 코드
-errorMessage?: string;     // 에러 메시지
-timestamp?: string;        // ISO 8601 형식
-};
+  success: boolean;
+  authData?: InicisAuthResponse | NiceAuthResponse;
+  error?: string;
+  errorDetails?: {
+    pgType?: string;          // 'INICIS' | 'NICE'
+    errorCode?: string;        // PG 에러 코드
+    errorMessage?: string;     // 에러 메시지
+    timestamp?: string;        // ISO 8601 형식
+  };
 }
 
 #### 3. 에러 메시지 형식
@@ -375,266 +378,15 @@ Request: PaymentConfirmRequest
 
 ### 결제 취소
 
-#### 부분 취소 구현 가이드
+**중요: PG사 응답 처리**
 
-##### 1. 공통 개념
+나이스, 이니시스 모두 `Content-Type: text/html;charset=UTF-8`로 JSON을 응답함
 
-**전체 취소 vs 부분 취소:**
-- **전체 취소**: 원 결제 금액 전체를 한 번에 취소 (최초 결제 후 첫 취소가 전체 금액인 경우)
-- **부분 취소**: 원 결제 금액의 일부를 취소 (여러 번에 걸쳐 취소하거나, 일부만 취소하는 모든 경우)
+`ResponseEntity<Map>`으로 직접 받으면 `UnknownContentTypeException` 발생
 
-**주요 변수:**
-- `originalAmount`: 원 승인 금액 (pay_base.amount)
-- `cancelableAmount`: 취소 가능한 금액 (pay_base.cancelable_amount) - 이전 취소가 반영된 현재 잔액
-- `cancelAmount`: 이번에 취소할 금액
-- `remainingAmount`: 취소 후 남은 금액 = cancelableAmount - cancelAmount
-
-##### 2. 나이스 페이 부분 취소
-
-**특징:**
-- 단일 API 엔드포인트 사용
-- `PartialCancelCode` 파라미터로 전체/부분 구분
-
-**부분 취소 판단 로직:**
-```java
-Long remainingAmount = cancelableAmount - cancelAmount;
-boolean isPartialCancel = !originalAmount.equals(cancelableAmount) || remainingAmount > 0;
-String partialCancelCode = isPartialCancel ? "1" : "0";
-```
-
-**시나리오별 동작:**
-
-1. **첫 전체 취소**
-```
-결제: 1,500원
-취소: 1,500원
-- originalAmount: 1,500
-- cancelableAmount: 1,500
-- cancelAmount: 1,500
-- remainingAmount: 0
-→ partialCancelCode = "0" (전체 취소)
-```
-
-2. **첫 부분 취소**
-```
-결제: 1,500원
-취소: 1,000원
-- originalAmount: 1,500
-- cancelableAmount: 1,500
-- cancelAmount: 1,000
-- remainingAmount: 500
-→ partialCancelCode = "1" (부분 취소)
-```
-
-3. **두 번째 부분 취소 (잔액 남음)**
-```
-결제: 1,500원
-첫 취소: 1,000원
-두 번째 취소: 300원
-- originalAmount: 1,500
-- cancelableAmount: 500 (이전 취소 반영)
-- cancelAmount: 300
-- remainingAmount: 200
-→ partialCancelCode = "1" (1,500 != 500)
-```
-
-4. **두 번째 부분 취소 (잔액 0원) ⭐ 중요!**
-```
-결제: 1,500원
-첫 취소: 1,000원
-두 번째 취소: 500원
-- originalAmount: 1,500
-- cancelableAmount: 500 (이전 취소 반영)
-- cancelAmount: 500
-- remainingAmount: 0
-→ partialCancelCode = "1" (1,500 != 500) ✅
-※ 잔액이 0원이 되더라도 부분 취소 처리
-```
-
-**API 요청:**
-```
-POST https://pg-api.nicepay.co.kr/webapi/cancel_process.jsp
-Content-Type: application/x-www-form-urlencoded
-
-Parameters:
-- TID: 거래 ID
-- MID: 가맹점 ID
-- Moid: 주문번호
-- CancelAmt: 취소금액
-- CancelMsg: 취소사유
-- PartialCancelCode: "0" (전체) 또는 "1" (부분) ⭐
-- EdiDate: 전문생성일시
-- SignData: hex(sha256(MID + CancelAmt + EdiDate + MerchantKey))
-- CharSet: "utf-8"
-- EdiType: "JSON"
-```
-
-##### 3. 이니시스 부분 취소
-
-**특징:**
-- API 엔드포인트를 구분
-- 부분 취소 시 `confirmPrice` (취소 후 남은 금액) 필수
-
-**부분 취소 판단 로직:**
-```java
-Long confirmPrice = cancelableAmount - cancelAmount;
-boolean isPartialCancel = !originalAmount.equals(cancelableAmount) || confirmPrice > 0;
-
-String url = isPartialCancel 
-    ? "https://iniapi.inicis.com/v2/pg/partialRefund"
-    : "https://iniapi.inicis.com/v2/pg/refund";
-String type = isPartialCancel ? "partialRefund" : "refund";
-```
-
-**시나리오별 동작:**
-
-1. **첫 전체 취소**
-```
-결제: 1,500원
-취소: 1,500원
-- originalAmount: 1,500
-- cancelableAmount: 1,500
-- cancelAmount: 1,500
-- confirmPrice: 0
-→ API: /v2/pg/refund (전체 취소)
-→ data: {tid, msg}
-```
-
-2. **첫 부분 취소**
-```
-결제: 1,500원
-취소: 1,000원
-- originalAmount: 1,500
-- cancelableAmount: 1,500
-- cancelAmount: 1,000
-- confirmPrice: 500
-→ API: /v2/pg/partialRefund (부분 취소)
-→ data: {tid, msg, price: 1000, confirmPrice: 500, currency: "WON"}
-```
-
-3. **두 번째 부분 취소 (잔액 남음)**
-```
-결제: 1,500원
-첫 취소: 1,000원
-두 번째 취소: 300원
-- originalAmount: 1,500
-- cancelableAmount: 500 (이전 취소 반영)
-- cancelAmount: 300
-- confirmPrice: 200
-→ API: /v2/pg/partialRefund (1,500 != 500)
-→ data: {tid, msg, price: 300, confirmPrice: 200, currency: "WON"}
-```
-
-4. **두 번째 부분 취소 (잔액 0원) ⭐ 중요!**
-```
-결제: 1,500원
-첫 취소: 1,000원
-두 번째 취소: 500원
-- originalAmount: 1,500
-- cancelableAmount: 500 (이전 취소 반영)
-- cancelAmount: 500
-- confirmPrice: 0
-→ API: /v2/pg/partialRefund (1,500 != 500) ✅
-→ data: {tid, msg, price: 500, confirmPrice: 0, currency: "WON"}
-※ confirmPrice가 0이더라도 부분 취소 API 사용
-```
-
-**API 요청:**
-
-**전체 취소:**
-```
-POST https://iniapi.inicis.com/v2/pg/refund
-Content-Type: application/json
-
-{
-  "mid": "상점아이디",
-  "type": "refund",
-  "timestamp": "전문생성시간",
-  "clientIp": "가맹점 서버IP",
-  "hashData": "SHA512(apiKey + mid + type + timestamp + data)",
-  "data": {
-    "tid": "거래번호",
-    "msg": "취소사유"
-  }
-}
-```
-
-**부분 취소:**
-```
-POST https://iniapi.inicis.com/v2/pg/partialRefund
-Content-Type: application/json
-
-{
-  "mid": "상점아이디",
-  "type": "partialRefund",
-  "timestamp": "전문생성시간",
-  "clientIp": "가맹점 서버IP",
-  "hashData": "SHA512(apiKey + mid + type + timestamp + data)",
-  "data": {
-    "tid": "거래번호",
-    "msg": "취소사유",
-    "price": "취소금액", ⭐
-    "confirmPrice": "취소 후 남은 금액", ⭐
-    "currency": "WON"
-  }
-}
-```
-
-##### 4. 주의사항
-
-**공통:**
-1. **cancelableAmount 사용 필수**
-   - ❌ 잘못된 계산: `originalAmount - cancelAmount`
-   - ✅ 올바른 계산: `cancelableAmount - cancelAmount`
-   - `cancelableAmount`는 이미 이전 취소가 반영된 현재 잔액
-
-2. **부분 취소 후 잔액 0원 케이스**
-   - 두 번째 이후 취소로 잔액이 0원이 되더라도 부분 취소로 처리
-   - 원 승인 금액(`originalAmount`)과 취소 가능 금액(`cancelableAmount`) 비교로 판단
-
-3. **PG사 에러 처리**
-   - PG사의 상세 오류 메시지를 화면에 전달 (ApiException 사용)
-   - 예: "간편결제 부분취소 제한 가맹점"
-
-**이니시스 전용:**
-- `confirmPrice` 계산 시 `cancelableAmount` 사용 필수
-- 부분 취소 시 `confirmPrice`, `price`, `currency` 모두 필수
-
-**나이스 전용:**
-- `PartialCancelCode`를 "0" 또는 "1"로 정확히 전달
-
-##### 5. 데이터 흐름
-
-```
-ClaimServiceImpl
-  ↓
-PaymentCancelRequest 생성
-  - pgTypeCode
-  - transactionId
-  - orderNo
-  - cancelAmount
-  - cancelReason
-  - partialCancelCode (ClaimServiceImpl에서 참고용으로 계산, Strategy에서 재판단)
-  - originalAmount (pay_base.amount)
-  - cancelableAmount (pay_base.cancelable_amount) ⭐ 핵심!
-  ↓
-NicePaymentStrategy
-  - remainingAmount = cancelableAmount - cancelAmount 계산
-  - isPartialCancel 판단
-  - PartialCancelCode 설정 ("0" or "1")
-  - 단일 API 호출
-  ↓
-InicisPaymentStrategy
-  - confirmPrice = cancelableAmount - cancelAmount 계산
-  - isPartialCancel 판단
-  - API 엔드포인트 선택 (/refund or /partialRefund)
-  - data 객체 구성 (부분 취소 시 price, confirmPrice 추가)
-  ↓
-PG사 API 호출
-```
+반드시 `ResponseEntity<String>`으로 받아서 `ObjectMapper`로 수동 파싱 필요
 
 - 나이스
-    - 전체 취소/부분취소
     - POST **https://pg-api.nicepay.co.kr/webapi/cancel_process.jsp**
 
       **Content-Type application/x-www-form-urlencoded**
@@ -740,6 +492,297 @@ PG사 API 호출
             | **creditAmount** | 부분취소 시 취소된 여신 금액 |
             | **cashReceiptAmount** | 부분취소 후 남은 금액에 대한 현금영수증 발행 대상 금액 |
 
+### **부분 취소 구현 가이드**
+
+**1. 공통 개념**
+
+**전체 취소 vs 부분 취소:**
+
+- **전체 취소**: 원 결제 금액 전체를 한 번에 취소 (최초 결제 후 첫 취소가 전체 금액인 경우)
+- **부분 취소**: 원 결제 금액의 일부를 취소 (여러 번에 걸쳐 취소하거나, 일부만 취소하는 모든 경우)
+
+**주요 변수:**
+
+- `originalAmount`: 원 승인 금액 (pay_base.amount)
+- `cancelableAmount`: 취소 가능한 금액 (pay_base.cancelable_amount) - 이전 취소가 반영된 현재 잔액
+- `cancelAmount`: 이번에 취소할 금액
+- `remainingAmount`: 취소 후 남은 금액 = cancelableAmount - cancelAmount
+
+**2. 나이스 페이 부분 취소**
+
+**특징:**
+
+- 단일 API 엔드포인트 사용
+- `PartialCancelCode` 파라미터로 전체/부분 구분
+
+**부분 취소 판단 로직:**
+
+```java
+Long remainingAmount = cancelableAmount - cancelAmount;
+boolean isPartialCancel = !originalAmount.equals(cancelableAmount) || remainingAmount > 0;
+String partialCancelCode = isPartialCancel ? "1" : "0";
+```
+
+**시나리오별 동작:**
+
+1. **첫 전체 취소**
+
+    ```
+    결제: 1,500원
+    취소: 1,500원
+    - originalAmount: 1,500
+    - cancelableAmount: 1,500
+    - cancelAmount: 1,500
+    - remainingAmount: 0
+    → partialCancelCode = "0" (전체 취소)
+    
+    ```
+
+2. **첫 부분 취소**
+
+    ```
+    결제: 1,500원
+    취소: 1,000원
+    - originalAmount: 1,500
+    - cancelableAmount: 1,500
+    - cancelAmount: 1,000
+    - remainingAmount: 500
+    → partialCancelCode = "1" (부분 취소)
+    
+    ```
+
+3. **두 번째 부분 취소 (잔액 남음)**
+
+    ```
+    결제: 1,500원
+    첫 취소: 1,000원
+    두 번째 취소: 300원
+    - originalAmount: 1,500
+    - cancelableAmount: 500 (이전 취소 반영)
+    - cancelAmount: 300
+    - remainingAmount: 200
+    → partialCancelCode = "1" (1,500 != 500)
+    
+    ```
+
+4. **두 번째 부분 취소 (잔액 0원) ⭐ 중요!**
+
+    ```
+    결제: 1,500원
+    첫 취소: 1,000원
+    두 번째 취소: 500원
+    - originalAmount: 1,500
+    - cancelableAmount: 500 (이전 취소 반영)
+    - cancelAmount: 500
+    - remainingAmount: 0
+    → partialCancelCode = "1" (1,500 != 500) ✅
+    ※ 잔액이 0원이 되더라도 부분 취소 처리
+    
+    ```
+
+
+**API 요청:**
+
+```
+POST https://pg-api.nicepay.co.kr/webapi/cancel_process.jsp
+Content-Type: application/x-www-form-urlencoded
+
+Parameters:
+- TID: 거래 ID
+- MID: 가맹점 ID
+- Moid: 주문번호
+- CancelAmt: 취소금액
+- CancelMsg: 취소사유
+- PartialCancelCode: "0" (전체) 또는 "1" (부분) ⭐
+- EdiDate: 전문생성일시
+- SignData: hex(sha256(MID + CancelAmt + EdiDate + MerchantKey))
+- CharSet: "utf-8"
+- EdiType: "JSON"
+
+```
+
+**3. 이니시스 부분 취소**
+
+**특징:**
+
+- API 엔드포인트를 구분
+- 부분 취소 시 `confirmPrice` (취소 후 남은 금액) 필수
+
+**부분 취소 판단 로직:**
+
+```java
+Long confirmPrice = cancelableAmount - cancelAmount;
+boolean isPartialCancel = !originalAmount.equals(cancelableAmount) || confirmPrice > 0;
+
+String url = isPartialCancel
+    ? "https://iniapi.inicis.com/v2/pg/partialRefund"
+    : "https://iniapi.inicis.com/v2/pg/refund";
+String type = isPartialCancel ? "partialRefund" : "refund";
+
+```
+
+**시나리오별 동작:**
+
+1. **첫 전체 취소**
+
+    ```
+    결제: 1,500원
+    취소: 1,500원
+    - originalAmount: 1,500
+    - cancelableAmount: 1,500
+    - cancelAmount: 1,500
+    - confirmPrice: 0
+    → API: /v2/pg/refund (전체 취소)
+    → data: {tid, msg}
+    
+    ```
+
+2. **첫 부분 취소**
+
+    ```
+    결제: 1,500원
+    취소: 1,000원
+    - originalAmount: 1,500
+    - cancelableAmount: 1,500
+    - cancelAmount: 1,000
+    - confirmPrice: 500
+    → API: /v2/pg/partialRefund (부분 취소)
+    → data: {tid, msg, price: 1000, confirmPrice: 500, currency: "WON"}
+    
+    ```
+
+3. **두 번째 부분 취소 (잔액 남음)**
+
+    ```
+    결제: 1,500원
+    첫 취소: 1,000원
+    두 번째 취소: 300원
+    - originalAmount: 1,500
+    - cancelableAmount: 500 (이전 취소 반영)
+    - cancelAmount: 300
+    - confirmPrice: 200
+    → API: /v2/pg/partialRefund (1,500 != 500)
+    → data: {tid, msg, price: 300, confirmPrice: 200, currency: "WON"}
+    
+    ```
+
+4. **두 번째 부분 취소 (잔액 0원) ⭐ 중요!**
+
+    ```
+    결제: 1,500원
+    첫 취소: 1,000원
+    두 번째 취소: 500원
+    - originalAmount: 1,500
+    - cancelableAmount: 500 (이전 취소 반영)
+    - cancelAmount: 500
+    - confirmPrice: 0
+    → API: /v2/pg/partialRefund (1,500 != 500) ✅
+    → data: {tid, msg, price: 500, confirmPrice: 0, currency: "WON"}
+    ※ confirmPrice가 0이더라도 부분 취소 API 사용
+    
+    ```
+
+
+**API 요청:**
+
+**전체 취소:**
+
+```
+POST https://iniapi.inicis.com/v2/pg/refund
+Content-Type: application/json
+
+{
+  "mid": "상점아이디",
+  "type": "refund",
+  "timestamp": "전문생성시간",
+  "clientIp": "가맹점 서버IP",
+  "hashData": "SHA512(apiKey + mid + type + timestamp + data)",
+  "data": {
+    "tid": "거래번호",
+    "msg": "취소사유"
+  }
+}
+
+```
+
+**부분 취소:**
+
+```
+POST https://iniapi.inicis.com/v2/pg/partialRefund
+Content-Type: application/json
+
+{
+  "mid": "상점아이디",
+  "type": "partialRefund",
+  "timestamp": "전문생성시간",
+  "clientIp": "가맹점 서버IP",
+  "hashData": "SHA512(apiKey + mid + type + timestamp + data)",
+  "data": {
+    "tid": "거래번호",
+    "msg": "취소사유",
+    "price": "취소금액", ⭐
+    "confirmPrice": "취소 후 남은 금액", ⭐
+    "currency": "WON"
+  }
+}
+
+```
+
+**4. 주의사항**
+
+**공통:**
+
+1. **cancelableAmount 사용 필수**
+    - ❌ 잘못된 계산: `originalAmount - cancelAmount`
+    - ✅ 올바른 계산: `cancelableAmount - cancelAmount`
+    - `cancelableAmount`는 이미 이전 취소가 반영된 현재 잔액
+2. **부분 취소 후 잔액 0원 케이스**
+    - 두 번째 이후 취소로 잔액이 0원이 되더라도 부분 취소로 처리
+    - 원 승인 금액(`originalAmount`)과 취소 가능 금액(`cancelableAmount`) 비교로 판단
+3. **PG사 에러 처리**
+    - PG사의 상세 오류 메시지를 화면에 전달 (ApiException 사용)
+    - 예: "간편결제 부분취소 제한 가맹점"
+
+**이니시스 전용:**
+
+- `confirmPrice` 계산 시 `cancelableAmount` 사용 필수
+- 부분 취소 시 `confirmPrice`, `price`, `currency` 모두 필수
+
+**나이스 전용:**
+
+- `PartialCancelCode`를 "0" 또는 "1"로 정확히 전달
+
+**5. 데이터 흐름**
+
+```
+ClaimServiceImpl
+  ↓
+PaymentCancelRequest 생성
+  - pgTypeCode
+  - transactionId
+  - orderNo
+  - cancelAmount
+  - cancelReason
+  - partialCancelCode (ClaimServiceImpl에서 참고용으로 계산, Strategy에서 재판단)
+  - originalAmount (pay_base.amount)
+  - cancelableAmount (pay_base.cancelable_amount) ⭐ 핵심!
+  ↓
+NicePaymentStrategy
+  - remainingAmount = cancelableAmount - cancelAmount 계산
+  - isPartialCancel 판단
+  - PartialCancelCode 설정 ("0" or "1")
+  - 단일 API 호출
+  ↓
+InicisPaymentStrategy
+  - confirmPrice = cancelableAmount - cancelAmount 계산
+  - isPartialCancel 판단
+  - API 엔드포인트 선택 (/refund or /partialRefund)
+  - data 객체 구성 (부분 취소 시 price, confirmPrice 추가)
+  ↓
+PG사 API 호출
+
+```
+
 ### API 정의서
 
 - 주문 번호 조회
@@ -749,7 +792,6 @@ PG사 API 호출
 
         | String | orderNo | 주문번호 |
         | --- | --- | --- |
-  
     - 프로세스
         
         시퀀스 `SEQ_ORDER_NO` 를 조회 해서 반환.
@@ -1184,7 +1226,7 @@ PG사 API 호출
             ---
             
             - pay_interface_log 테이블
-               
+                
                 
                 | pay_interface_no | member_no | pay_no | pay_log_code | request_json | response_json |
                 | --- | --- | --- | --- | --- | --- |
@@ -1312,5 +1354,3 @@ PG사 API 호출
             | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
             | 000000000000001 | 000000000000003 | 12000 | 002 | 002 | 000000000000002 (pay_no) |  |  |  | 8000 |
             | 000000000000002 | 000000000000003 | 4000 | 001 | 002 | 000000000000004 (pay_no) | now() | now() + `MEM003` 의 `referenceValue1` | 000000000000001 |  |
-        
-    - 카드로 상품 N개 주문 후 상품 부분 취소 후 전체취소
