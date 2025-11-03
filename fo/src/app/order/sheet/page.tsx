@@ -103,7 +103,7 @@ export default function OrderSheetPage() {
     if (!pointBalance || !orderSheet) return;
 
     const availablePoint = pointBalance.totalPoint;
-    const maxUsablePoint = orderSheet.totalProductAmount - 101; // 최소 결제금액 100원 초과 유지
+    const maxUsablePoint = orderSheet.totalProductAmount - 100; // 최소 결제금액 100원 이상 유지
 
     if (maxUsablePoint <= 0) {
       alert.showAlert("포인트를 사용할 수 없습니다");
@@ -125,10 +125,10 @@ export default function OrderSheetPage() {
       return;
     }
 
-    // 최소 결제 금액 100원 초과 유지 확인
+    // 최소 결제 금액 100원 이상 유지 확인
     const remainingAmount = orderSheet.totalProductAmount - numValue;
-    if (remainingAmount <= 100) {
-      alert.showAlert("카드 결제 금액이 최소 100원 초과되어야 합니다");
+    if (remainingAmount < 100) {
+      alert.showAlert("카드 결제 금액이 최소 100원 이상이어야 합니다");
       return;
     }
 
@@ -140,8 +140,8 @@ export default function OrderSheetPage() {
 
     const finalAmount = orderSheet.totalProductAmount - usePoint;
 
-    if (finalAmount <= 100) {
-      alert.showAlert("결제 금액은 100원을 초과해야 합니다");
+    if (finalAmount < 100) {
+      alert.showAlert("결제 금액은 100원 이상이어야 합니다");
       return;
     }
 
@@ -516,7 +516,7 @@ export default function OrderSheetPage() {
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              * 카드 결제 금액이 최소 100원 초과되어야 합니다
+              * 카드 결제 금액이 최소 100원 이상이어야 합니다
             </p>
           </div>
         </div>

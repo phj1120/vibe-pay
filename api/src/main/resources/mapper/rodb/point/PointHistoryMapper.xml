@@ -28,7 +28,6 @@
              , REGIST_DATE_TIME AS CREATED_DATE
           FROM POINT_HISTORY
          WHERE MEMBER_NO = #{memberNo}
-           AND UPPER_POINT_HISTORY_NO IS NULL
          ORDER BY REGIST_DATE_TIME DESC
          LIMIT #{size} OFFSET #{page} * #{size}
     </select>
@@ -39,7 +38,6 @@
                COUNT(*)
           FROM POINT_HISTORY
          WHERE MEMBER_NO = #{memberNo}
-           AND UPPER_POINT_HISTORY_NO IS NULL
     </select>
 
     <!-- 사용 가능한 포인트 내역 조회 (종료일시 기준 정렬) -->

@@ -39,8 +39,8 @@ export default function ConfirmModal({
 
   const confirmButtonClass =
     variant === "danger"
-      ? "bg-red-500 hover:bg-red-600 text-white"
-      : "bg-blue-500 hover:bg-blue-600 text-white";
+      ? "bg-black hover:bg-gray-800 text-white"
+      : "bg-black hover:bg-gray-800 text-white";
 
   return (
     <div 

@@ -134,20 +134,13 @@ export default function OrderListSection() {
                         {formatPrice(goods.salePrice)} × {goods.quantity}개
                       </p>
                       <div className="flex gap-2">
-                        <span
-                          className={`text-xs px-2 py-1 rounded ${getStatusColor(
-                            goods.orderStatusCode
-                          )}`}
-                        >
-                          {goods.orderStatusName}
-                        </span>
                         <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-800">
                           {goods.orderTypeName}
                         </span>
                         {goods.cancelable && (
                           <button
                             onClick={() => handleOpenCancelModal(order.orderNo)}
-                            className="text-xs px-3 py-1 border border-red-500 text-red-500 hover:bg-red-50 rounded transition"
+                            className="text-xs px-3 py-1 bg-black text-white hover:bg-gray-800 rounded transition"
                           >
                             취소하기
                           </button>

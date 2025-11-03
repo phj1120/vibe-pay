@@ -37,7 +37,7 @@ export default function AlertModal({ isOpen, message, onClose }: AlertModalProps
         <div className="flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800"
           >
             확인
           </button>
