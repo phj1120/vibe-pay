@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { getGoodsList, getGoodsDetail } from "@/lib/goods-api";
-import type { GoodsListItem, GoodsSearchRequest } from "@/types/goods";
+import type { GoodsListItem, GoodsSearchRequest, GoodsItem } from "@/types/goods";
 import { useBasketStore } from "@/store/basket-store";
 import { useToast } from "@/hooks/useToast";
 import Toast from "@/components/ui/Toast";
 import LoginRequiredModal from "@/components/ui/LoginRequiredModal";
 import { useLoginRequired } from "@/hooks/useLoginRequired";
+import ItemSelectionModal from "@/components/common/ItemSelectionModal";
 
 export default function Home() {
   const router = useRouter();
@@ -25,6 +26,12 @@ export default function Home() {
     size: 20,
   });
   const [addingToBasket, setAddingToBasket] = useState<string | null>(null);
+  const [isItemModalOpen, setIsItemModalOpen] = useState(false);
+  const [selectedGoods, setSelectedGoods] = useState<{
+    goodsNo: string;
+    goodsName: string;
+    items: GoodsItem[];
+  } | null>(null);
 
   const { addBasket } = useBasketStore();
   const { toasts, removeToast, success, error: showError } = useToast();
@@ -105,34 +112,64 @@ export default function Home() {
 
       if (!goodsDetail.items || goodsDetail.items.length === 0) {
         showError("상품 정보를 찾을 수 없습니다");
+        setAddingToBasket(null);
         return;
       }
 
-      // 재고가 있는 첫 번째 단품 찾기
-      const availableItem = goodsDetail.items.find(
+      // 재고가 있는 단품 필터링
+      const availableItems = goodsDetail.items.filter(
         (item) => item.stock > 0 && !item.isSoldOut
       );
 
-      if (!availableItem || !availableItem.itemNo) {
+      if (availableItems.length === 0) {
         showError("재고가 없습니다");
+        setAddingToBasket(null);
         return;
       }
 
-      // 장바구니에 추가
-      await addBasket({
+      // 단품 선택 모달 열기
+      setSelectedGoods({
         goodsNo,
-        itemNo: availableItem.itemNo,
-        quantity: 1,
+        goodsName,
+        items: goodsDetail.items,
       });
+      setIsItemModalOpen(true);
+      setAddingToBasket(null);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "상품 정보를 불러올 수 없습니다";
+      showError(errorMessage);
+      setAddingToBasket(null);
+    }
+  }
 
-      success(`${goodsName}을(를) 장바구니에 담았습니다`);
+  async function handleItemSelect(items: Array<{ itemNo: string; quantity: number }>) {
+    if (!selectedGoods) return;
+
+    try {
+      // 여러 단품을 순차적으로 장바구니에 추가
+      for (const item of items) {
+        await addBasket({
+          goodsNo: selectedGoods.goodsNo,
+          itemNo: item.itemNo,
+          quantity: item.quantity,
+        });
+      }
+
+      const itemCount = items.length;
+      success(
+        `${selectedGoods.goodsName} ${itemCount}개 단품을 장바구니에 담았습니다`
+      );
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "장바구니 담기에 실패했습니다";
       showError(errorMessage);
-    } finally {
-      setAddingToBasket(null);
     }
+  }
+
+  function handleItemModalClose() {
+    setIsItemModalOpen(false);
+    setSelectedGoods(null);
   }
 
   if (loading) {
@@ -160,6 +197,13 @@ export default function Home() {
   return (
     <>
       <LoginRequiredModal isOpen={isModalOpen} onClose={closeModal} />
+      <ItemSelectionModal
+        isOpen={isItemModalOpen}
+        onClose={handleItemModalClose}
+        onSelect={handleItemSelect}
+        items={selectedGoods?.items || []}
+        goodsName={selectedGoods?.goodsName || ""}
+      />
       <div className="bg-white min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* 검색 폼 */}

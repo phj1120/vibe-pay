@@ -7,6 +7,12 @@ import { getGoodsDetail, deleteGoods } from "@/lib/goods-api";
 import type { GoodsDetailResponse } from "@/types/goods";
 import AlertModal from "@/components/common/AlertModal";
 import { useAlert } from "@/hooks/useAlert";
+import { useBasketStore } from "@/store/basket-store";
+import { useToast } from "@/hooks/useToast";
+import Toast from "@/components/ui/Toast";
+import LoginRequiredModal from "@/components/ui/LoginRequiredModal";
+import { useLoginRequired } from "@/hooks/useLoginRequired";
+import ItemSelectionModal from "@/components/common/ItemSelectionModal";
 
 export default function GoodsDetailPage() {
   const params = useParams();
@@ -16,7 +22,12 @@ export default function GoodsDetailPage() {
   const [goods, setGoods] = useState<GoodsDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isItemModalOpen, setIsItemModalOpen] = useState(false);
+  
   const alert = useAlert();
+  const { addBasket } = useBasketStore();
+  const { toasts, removeToast, success, error: showError } = useToast();
+  const { isModalOpen, checkLoginRequired, closeModal } = useLoginRequired();
 
   useEffect(() => {
     fetchGoodsDetail();
@@ -56,6 +67,56 @@ export default function GoodsDetailPage() {
     return new Date(dateTime).toLocaleString("ko-KR");
   }
 
+  function handleAddToBasket() {
+    // 로그인 체크
+    if (!checkLoginRequired()) {
+      return;
+    }
+
+    if (!goods) return;
+
+    // 재고가 있는 단품 필터링
+    const availableItems = goods.items.filter(
+      (item) => item.stock > 0 && !item.isSoldOut
+    );
+
+    if (availableItems.length === 0) {
+      showError("재고가 없습니다");
+      return;
+    }
+
+    // 단품 선택 모달 열기
+    setIsItemModalOpen(true);
+  }
+
+  async function handleItemSelect(items: Array<{ itemNo: string; quantity: number }>) {
+    if (!goods) return;
+
+    try {
+      // 여러 단품을 순차적으로 장바구니에 추가
+      for (const item of items) {
+        await addBasket({
+          goodsNo: goods.goodsNo,
+          itemNo: item.itemNo,
+          quantity: item.quantity,
+        });
+      }
+
+      const itemCount = items.length;
+      success(
+        `${goods.goodsName} ${itemCount}개 단품을 장바구니에 담았습니다`
+      );
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "장바구니 담기에 실패했습니다";
+      showError(errorMessage);
+    }
+  }
+
+  function handleItemModalClose() {
+    setIsItemModalOpen(false);
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -88,6 +149,14 @@ export default function GoodsDetailPage() {
         isOpen={alert.isOpen}
         message={alert.message}
         onClose={alert.hideAlert}
+      />
+      <LoginRequiredModal isOpen={isModalOpen} onClose={closeModal} />
+      <ItemSelectionModal
+        isOpen={isItemModalOpen}
+        onClose={handleItemModalClose}
+        onSelect={handleItemSelect}
+        items={goods?.items || []}
+        goodsName={goods?.goodsName || ""}
       />
       <div className="bg-white min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -155,6 +224,16 @@ export default function GoodsDetailPage() {
                 <span>{formatDateTime(goods.modifyDateTime)}</span>
               </div>
             </div>
+
+            {/* 장바구니 담기 버튼 */}
+            <div className="pt-6">
+              <button
+                onClick={handleAddToBasket}
+                className="w-full py-4 bg-black text-white text-base font-medium hover:bg-gray-800 transition"
+              >
+                장바구니 담기
+              </button>
+            </div>
           </div>
         </div>
 
@@ -201,6 +280,16 @@ export default function GoodsDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* 토스트 알림 */}
+      {toasts.map((toast) => (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          type={toast.type}
+          onClose={() => removeToast(toast.id)}
+        />
+      ))}
     </div>
     </>
   );
