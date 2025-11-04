@@ -75,6 +75,24 @@
             member_no = #{memberNo}
     </select>
 
+    <select id="findByEmail" resultMap="memberBaseMap" parameterType="String">
+        SELECT
+            member_no,
+            member_name,
+            phone,
+            email,
+            password,
+            member_status_code,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        FROM
+            member_base
+        WHERE
+            email = #{email}
+    </select>
+
     <update id="updateMemberBase" parameterType="com.api.app.entity.memberbase.MemberBaseDto">
         UPDATE member_base
         SET

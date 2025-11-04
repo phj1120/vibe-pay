@@ -10,6 +10,7 @@ public interface MemberBaseMapper {
     void insertMemberBase(MemberBaseDto memberBaseDto);
     List<MemberBaseDto> selectMemberBaseList();
     MemberBaseDto selectMemberBase(String memberNo);
+    MemberBaseDto findByEmail(String email);
     void updateMemberBase(MemberBaseDto memberBaseDto);
     void deleteMemberBase(String memberNo);
 }
