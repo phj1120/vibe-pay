@@ -10,6 +10,7 @@ public interface GoodsBaseMapper {
     void insertGoodsBase(GoodsBaseDto goodsBaseDto);
     List<GoodsBaseDto> selectGoodsBaseList();
     GoodsBaseDto selectGoodsBase(String goodsNo);
+    List<com.api.app.goods.response.GoodsDetailDto> selectGoodsDetailList();
     void updateGoodsBase(GoodsBaseDto goodsBaseDto);
     void deleteGoodsBase(String goodsNo);
 }

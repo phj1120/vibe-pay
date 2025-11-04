@@ -83,4 +83,54 @@
             goods_no = #{goodsNo}
     </delete>
 
+    <resultMap id="goodsItemResponseMap" type="com.api.app.goods.response.GoodsItemResponseDto">
+        <id property="itemNo" column="item_no"/>
+        <result property="goodsNo" column="goods_no"/>
+        <result property="itemName" column="item_name"/>
+        <result property="itemPrice" column="item_price"/>
+        <result property="stock" column="stock"/>
+        <result property="goodsStatusCode" column="item_goods_status_code"/>
+    </resultMap>
+
+    <resultMap id="goodsDetailMap" type="com.api.app.goods.response.GoodsDetailDto">
+        <id property="goodsNo" column="goods_no"/>
+        <result property="goodsName" column="goods_name"/>
+        <result property="goodsStatusCode" column="goods_status_code"/>
+        <result property="goodsMainImageUrl" column="goods_main_image_url"/>
+        <result property="salePrice" column="sale_price"/>
+        <result property="supplyPrice" column="supply_price"/>
+        <result property="registDateTime" column="regist_date_time"/>
+        <result property="modifyDateTime" column="modify_date_time"/>
+        <collection property="items" ofType="com.api.app.goods.response.GoodsItemResponseDto" resultMap="goodsItemResponseMap"/>
+    </resultMap>
+
+    <select id="selectGoodsDetailList" resultMap="goodsDetailMap">
+        SELECT
+            gb.goods_no,
+            gb.goods_name,
+            gb.goods_status_code,
+            gb.goods_main_image_url,
+            gph.sale_price,
+            gph.supply_price,
+            gi.item_no,
+            gi.item_name,
+            gi.item_price,
+            gi.stock,
+            gi.goods_status_code AS item_goods_status_code,
+            gb.regist_date_time,
+            gb.modify_date_time
+        FROM
+            goods_base gb
+        JOIN
+            goods_price_hist gph ON gb.goods_no = gph.goods_no
+            AND gph.start_date_time <= NOW() AND gph.end_date_time >= NOW()
+        LEFT JOIN
+            goods_item gi ON gb.goods_no = gi.goods_no
+        WHERE
+            gb.goods_status_code = '001'
+            AND (gi.goods_no IS NULL OR (gi.goods_status_code = '001' AND gi.stock > 0))
+        ORDER BY
+            gb.regist_date_time DESC, gi.item_no ASC
+    </select>
+
 </mapper>
