@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.mapper.goodspricehist.GoodsPriceHistMapper">
+
+    <resultMap id="goodsPriceHistMap" type="com.api.app.entity.goodspricehist.GoodsPriceHistDto">
+        <id property="goodsNo" column="goods_no"/>
+        <id property="startDateTime" column="start_date_time"/>
+        <id property="endDateTime" column="end_date_time"/>
+        <result property="salePrice" column="sale_price"/>
+        <result property="supplyPrice" column="supply_price"/>
+        <result property="registId" column="regist_id"/>
+        <result property="registDateTime" column="regist_date_time"/>
+        <result property="modifyId" column="modify_id"/>
+        <result property="modifyDateTime" column="modify_date_time"/>
+    </resultMap>
+
+    <insert id="insertGoodsPriceHist" parameterType="com.api.app.entity.goodspricehist.GoodsPriceHistDto">
+        INSERT INTO goods_price_hist (
+            goods_no,
+            start_date_time,
+            end_date_time,
+            sale_price,
+            supply_price,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        ) VALUES (
+            #{goodsNo},
+            #{startDateTime},
+            #{endDateTime},
+            #{salePrice},
+            #{supplyPrice},
+            #{registId},
+            #{registDateTime},
+            #{modifyId},
+            #{modifyDateTime}
+        )
+    </insert>
+
+    <select id="selectGoodsPriceHistList" resultMap="goodsPriceHistMap">
+        SELECT
+            goods_no,
+            start_date_time,
+            end_date_time,
+            sale_price,
+            supply_price,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        FROM
+            goods_price_hist
+    </select>
+
+    <select id="selectGoodsPriceHist" resultMap="goodsPriceHistMap">
+        SELECT
+            goods_no,
+            start_date_time,
+            end_date_time,
+            sale_price,
+            supply_price,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        FROM
+            goods_price_hist
+        WHERE
+            goods_no = #{param1} AND start_date_time = #{param2} AND end_date_time = #{param3}
+    </select>
+
+    <update id="updateGoodsPriceHist" parameterType="com.api.app.entity.goodspricehist.GoodsPriceHistDto">
+        UPDATE goods_price_hist
+        SET
+            sale_price = #{salePrice},
+            supply_price = #{supplyPrice},
+            regist_id = #{registId},
+            regist_date_time = #{registDateTime},
+            modify_id = #{modifyId},
+            modify_date_time = #{modifyDateTime}
+        WHERE
+            goods_no = #{goodsNo} AND start_date_time = #{startDateTime} AND end_date_time = #{endDateTime}
+    </update>
+
+    <delete id="deleteGoodsPriceHist">
+        DELETE FROM goods_price_hist
+        WHERE
+            goods_no = #{param1} AND start_date_time = #{param2} AND end_date_time = #{param3}
+    </delete>
+
+</mapper>

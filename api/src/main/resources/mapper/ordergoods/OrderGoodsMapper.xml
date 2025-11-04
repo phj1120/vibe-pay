@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.mapper.ordergoods.OrderGoodsMapper">
+
+    <resultMap id="orderGoodsMap" type="com.api.app.entity.ordergoods.OrderGoodsDto">
+        <id property="orderNo" column="order_no"/>
+        <id property="goodsNo" column="goods_no"/>
+        <id property="itemNo" column="item_no"/>
+        <result property="salePrice" column="sale_price"/>
+        <result property="supplyPrice" column="supply_price"/>
+        <result property="goodsName" column="goods_name"/>
+        <result property="itemName" column="item_name"/>
+        <result property="registId" column="regist_id"/>
+        <result property="registDateTime" column="regist_date_time"/>
+        <result property="modifyId" column="modify_id"/>
+        <result property="modifyDateTime" column="modify_date_time"/>
+    </resultMap>
+
+    <insert id="insertOrderGoods" parameterType="com.api.app.entity.ordergoods.OrderGoodsDto">
+        INSERT INTO order_goods (
+            order_no,
+            goods_no,
+            item_no,
+            sale_price,
+            supply_price,
+            goods_name,
+            item_name,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        ) VALUES (
+            #{orderNo},
+            #{goodsNo},
+            #{itemNo},
+            #{salePrice},
+            #{supplyPrice},
+            #{goodsName},
+            #{itemName},
+            #{registId},
+            #{registDateTime},
+            #{modifyId},
+            #{modifyDateTime}
+        )
+    </insert>
+
+    <select id="selectOrderGoodsList" resultMap="orderGoodsMap">
+        SELECT
+            order_no,
+            goods_no,
+            item_no,
+            sale_price,
+            supply_price,
+            goods_name,
+            item_name,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        FROM
+            order_goods
+    </select>
+
+    <select id="selectOrderGoods" resultMap="orderGoodsMap">
+        SELECT
+            order_no,
+            goods_no,
+            item_no,
+            sale_price,
+            supply_price,
+            goods_name,
+            item_name,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        FROM
+            order_goods
+        WHERE
+            order_no = #{param1} AND goods_no = #{param2} AND item_no = #{param3}
+    </select>
+
+    <update id="updateOrderGoods" parameterType="com.api.app.entity.ordergoods.OrderGoodsDto">
+        UPDATE order_goods
+        SET
+            sale_price = #{salePrice},
+            supply_price = #{supplyPrice},
+            goods_name = #{goodsName},
+            item_name = #{itemName},
+            modify_id = #{modifyId},
+            modify_date_time = #{modifyDateTime}
+        WHERE
+            order_no = #{orderNo} AND goods_no = #{goodsNo} AND item_no = #{itemNo}
+    </update>
+
+    <delete id="deleteOrderGoods">
+        DELETE FROM order_goods
+        WHERE
+            order_no = #{param1} AND goods_no = #{param2} AND item_no = #{param3}
+    </delete>
+
+</mapper>

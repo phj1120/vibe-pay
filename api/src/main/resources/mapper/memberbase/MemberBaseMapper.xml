@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.mapper.memberbase.MemberBaseMapper">
+
+    <resultMap id="memberBaseMap" type="com.api.app.entity.memberbase.MemberBaseDto">
+        <id property="memberNo" column="member_no"/>
+        <result property="memberName" column="member_name"/>
+        <result property="phone" column="phone"/>
+        <result property="email" column="email"/>
+        <result property="password" column="password"/>
+        <result property="memberStatusCode" column="member_status_code"/>
+        <result property="registId" column="regist_id"/>
+        <result property="registDateTime" column="regist_date_time"/>
+        <result property="modifyId" column="modify_id"/>
+        <result property="modifyDateTime" column="modify_date_time"/>
+    </resultMap>
+
+    <insert id="insertMemberBase" parameterType="com.api.app.entity.memberbase.MemberBaseDto">
+        INSERT INTO member_base (
+            member_no,
+            member_name,
+            phone,
+            email,
+            password,
+            member_status_code,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        ) VALUES (
+            #{memberNo},
+            #{memberName},
+            #{phone},
+            #{email},
+            #{password},
+            #{memberStatusCode},
+            #{registId},
+            #{registDateTime},
+            #{modifyId},
+            #{modifyDateTime}
+        )
+    </insert>
+
+    <select id="selectMemberBaseList" resultMap="memberBaseMap">
+        SELECT
+            member_no,
+            member_name,
+            phone,
+            email,
+            password,
+            member_status_code,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        FROM
+            member_base
+    </select>
+
+    <select id="selectMemberBase" resultMap="memberBaseMap" parameterType="String">
+        SELECT
+            member_no,
+            member_name,
+            phone,
+            email,
+            password,
+            member_status_code,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        FROM
+            member_base
+        WHERE
+            member_no = #{memberNo}
+    </select>
+
+    <update id="updateMemberBase" parameterType="com.api.app.entity.memberbase.MemberBaseDto">
+        UPDATE member_base
+        SET
+            member_name = #{memberName},
+            phone = #{phone},
+            email = #{email},
+            password = #{password},
+            member_status_code = #{memberStatusCode},
+            modify_id = #{modifyId},
+            modify_date_time = #{modifyDateTime}
+        WHERE
+            member_no = #{memberNo}
+    </update>
+
+    <delete id="deleteMemberBase" parameterType="String">
+        DELETE FROM member_base
+        WHERE
+            member_no = #{memberNo}
+    </delete>
+
+</mapper>

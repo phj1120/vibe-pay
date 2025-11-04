@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.mapper.orderdetail.OrderDetailMapper">
+
+    <resultMap id="orderDetailMap" type="com.api.app.entity.orderdetail.OrderDetailDto">
+        <id property="orderNo" column="order_no"/>
+        <id property="orderSequence" column="order_sequence"/>
+        <id property="orderProcessSequence" column="order_process_sequence"/>
+        <result property="upperOrderProcessSequence" column="upper_order_process_sequence"/>
+        <result property="claimNo" column="claim_no"/>
+        <result property="goodsNo" column="goods_no"/>
+        <result property="itemNo" column="item_no"/>
+        <result property="quantity" column="quantity"/>
+        <result property="orderStatusCode" column="order_status_code"/>
+        <result property="deliveryTypeCode" column="delivery_type_code"/>
+        <result property="orderTypeCode" column="order_type_code"/>
+        <result property="orderAcceptDtm" column="order_accept_dtm"/>
+        <result property="orderFinishDtm" column="order_finish_dtm"/>
+        <result property="registId" column="regist_id"/>
+        <result property="registDateTime" column="regist_date_time"/>
+        <result property="modifyId" column="modify_id"/>
+        <result property="modifyDateTime" column="modify_date_time"/>
+    </resultMap>
+
+    <insert id="insertOrderDetail" parameterType="com.api.app.entity.orderdetail.OrderDetailDto">
+        INSERT INTO order_detail (
+            order_no,
+            order_sequence,
+            order_process_sequence,
+            upper_order_process_sequence,
+            claim_no,
+            goods_no,
+            item_no,
+            quantity,
+            order_status_code,
+            delivery_type_code,
+            order_type_code,
+            order_accept_dtm,
+            order_finish_dtm,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        ) VALUES (
+            #{orderNo},
+            #{orderSequence},
+            #{orderProcessSequence},
+            #{upperOrderProcessSequence},
+            #{claimNo},
+            #{goodsNo},
+            #{itemNo},
+            #{quantity},
+            #{orderStatusCode},
+            #{deliveryTypeCode},
+            #{orderTypeCode},
+            #{orderAcceptDtm},
+            #{orderFinishDtm},
+            #{registId},
+            #{registDateTime},
+            #{modifyId},
+            #{modifyDateTime}
+        )
+    </insert>
+
+    <select id="selectOrderDetailList" resultMap="orderDetailMap">
+        SELECT
+            order_no,
+            order_sequence,
+            order_process_sequence,
+            upper_order_process_sequence,
+            claim_no,
+            goods_no,
+            item_no,
+            quantity,
+            order_status_code,
+            delivery_type_code,
+            order_type_code,
+            order_accept_dtm,
+            order_finish_dtm,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        FROM
+            order_detail
+    </select>
+
+    <select id="selectOrderDetail" resultMap="orderDetailMap">
+        SELECT
+            order_no,
+            order_sequence,
+            order_process_sequence,
+            upper_order_process_sequence,
+            claim_no,
+            goods_no,
+            item_no,
+            quantity,
+            order_status_code,
+            delivery_type_code,
+            order_type_code,
+            order_accept_dtm,
+            order_finish_dtm,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        FROM
+            order_detail
+        WHERE
+            order_no = #{param1} AND order_sequence = #{param2} AND order_process_sequence = #{param3}
+    </select>
+
+    <update id="updateOrderDetail" parameterType="com.api.app.entity.orderdetail.OrderDetailDto">
+        UPDATE order_detail
+        SET
+            upper_order_process_sequence = #{upperOrderProcessSequence},
+            claim_no = #{claimNo},
+            goods_no = #{goodsNo},
+            item_no = #{itemNo},
+            quantity = #{quantity},
+            order_status_code = #{orderStatusCode},
+            delivery_type_code = #{deliveryTypeCode},
+            order_type_code = #{orderTypeCode},
+            order_accept_dtm = #{orderAcceptDtm},
+            order_finish_dtm = #{orderFinishDtm},
+            modify_id = #{modifyId},
+            modify_date_time = #{modifyDateTime}
+        WHERE
+            order_no = #{orderNo} AND order_sequence = #{orderSequence} AND order_process_sequence = #{orderProcessSequence}
+    </update>
+
+    <delete id="deleteOrderDetail">
+        DELETE FROM order_detail
+        WHERE
+            order_no = #{param1} AND order_sequence = #{param2} AND order_process_sequence = #{param3}
+    </delete>
+
+</mapper>

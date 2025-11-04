@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.mapper.codebase.CodeBaseMapper">
+
+    <resultMap id="codeBaseMap" type="com.api.app.entity.codebase.CodeBaseDto">
+        <id property="groupCode" column="group_code"/>
+        <result property="groupCodeName" column="group_code_name"/>
+        <result property="registId" column="regist_id"/>
+        <result property="registDateTime" column="regist_date_time"/>
+        <result property="modifyId" column="modify_id"/>
+        <result property="modifyDateTime" column="modify_date_time"/>
+    </resultMap>
+
+    <insert id="insertCodeBase" parameterType="com.api.app.entity.codebase.CodeBaseDto">
+        INSERT INTO code_base (
+            group_code,
+            group_code_name,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        ) VALUES (
+            #{groupCode},
+            #{groupCodeName},
+            #{registId},
+            #{registDateTime},
+            #{modifyId},
+            #{modifyDateTime}
+        )
+    </insert>
+
+    <select id="selectCodeBaseList" resultMap="codeBaseMap">
+        SELECT
+            group_code,
+            group_code_name,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        FROM
+            code_base
+    </select>
+
+    <select id="selectCodeBase" resultMap="codeBaseMap" parameterType="String">
+        SELECT
+            group_code,
+            group_code_name,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        FROM
+            code_base
+        WHERE
+            group_code = #{groupCode}
+    </select>
+
+    <update id="updateCodeBase" parameterType="com.api.app.entity.codebase.CodeBaseDto">
+        UPDATE code_base
+        SET
+            group_code_name = #{groupCodeName},
+            modify_id = #{modifyId},
+            modify_date_time = #{modifyDateTime}
+        WHERE
+            group_code = #{groupCode}
+    </update>
+
+    <delete id="deleteCodeBase" parameterType="String">
+        DELETE FROM code_base
+        WHERE
+            group_code = #{groupCode}
+    </delete>
+
+</mapper>

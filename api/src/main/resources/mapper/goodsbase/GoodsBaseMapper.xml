@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.mapper.goodsbase.GoodsBaseMapper">
+
+    <resultMap id="goodsBaseMap" type="com.api.app.entity.goodsbase.GoodsBaseDto">
+        <id property="goodsNo" column="goods_no"/>
+        <result property="goodsName" column="goods_name"/>
+        <result property="goodsStatusCode" column="goods_status_code"/>
+        <result property="goodsMainImageUrl" column="goods_main_image_url"/>
+        <result property="registId" column="regist_id"/>
+        <result property="registDateTime" column="regist_date_time"/>
+        <result property="modifyId" column="modify_id"/>
+        <result property="modifyDateTime" column="modify_date_time"/>
+    </resultMap>
+
+    <insert id="insertGoodsBase" parameterType="com.api.app.entity.goodsbase.GoodsBaseDto">
+        INSERT INTO goods_base (
+            goods_no,
+            goods_name,
+            goods_status_code,
+            goods_main_image_url,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        ) VALUES (
+            #{goodsNo},
+            #{goodsName},
+            #{goodsStatusCode},
+            #{goodsMainImageUrl},
+            #{registId},
+            #{registDateTime},
+            #{modifyId},
+            #{modifyDateTime}
+        )
+    </insert>
+
+    <select id="selectGoodsBaseList" resultMap="goodsBaseMap">
+        SELECT
+            goods_no,
+            goods_name,
+            goods_status_code,
+            goods_main_image_url,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        FROM
+            goods_base
+    </select>
+
+    <select id="selectGoodsBase" resultMap="goodsBaseMap" parameterType="String">
+        SELECT
+            goods_no,
+            goods_name,
+            goods_status_code,
+            goods_main_image_url,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        FROM
+            goods_base
+        WHERE
+            goods_no = #{goodsNo}
+    </select>
+
+    <update id="updateGoodsBase" parameterType="com.api.app.entity.goodsbase.GoodsBaseDto">
+        UPDATE goods_base
+        SET
+            goods_name = #{goodsName},
+            goods_status_code = #{goodsStatusCode},
+            goods_main_image_url = #{goodsMainImageUrl},
+            modify_id = #{modifyId},
+            modify_date_time = #{modifyDateTime}
+        WHERE
+            goods_no = #{goodsNo}
+    </update>
+
+    <delete id="deleteGoodsBase" parameterType="String">
+        DELETE FROM goods_base
+        WHERE
+            goods_no = #{goodsNo}
+    </delete>
+
+</mapper>

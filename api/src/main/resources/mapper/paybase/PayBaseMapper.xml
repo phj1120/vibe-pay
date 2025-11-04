@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.mapper.paybase.PayBaseMapper">
+
+    <resultMap id="payBaseMap" type="com.api.app.entity.paybase.PayBaseDto">
+        <id property="payNo" column="pay_no"/>
+        <result property="payTypeCode" column="pay_type_code"/>
+        <result property="payWayCode" column="pay_way_code"/>
+        <result property="payStatusCode" column="pay_status_code"/>
+        <result property="approveNo" column="approve_no"/>
+        <result property="orderNo" column="order_no"/>
+        <result property="claimNo" column="claim_no"/>
+        <result property="upperPayNo" column="upper_pay_no"/>
+        <result property="trdNo" column="trd_no"/>
+        <result property="payFinishDateTime" column="pay_finish_date_time"/>
+        <result property="memberNo" column="member_no"/>
+        <result property="amount" column="amount"/>
+        <result property="cancelableAmount" column="cancelable_amount"/>
+        <result property="pgTypeCode" column="pg_type_code"/>
+        <result property="registId" column="regist_id"/>
+        <result property="registDateTime" column="regist_date_time"/>
+        <result property="modifyId" column="modify_id"/>
+        <result property="modifyDateTime" column="modify_date_time"/>
+    </resultMap>
+
+    <insert id="insertPayBase" parameterType="com.api.app.entity.paybase.PayBaseDto">
+        INSERT INTO pay_base (
+            pay_no,
+            pay_type_code,
+            pay_way_code,
+            pay_status_code,
+            approve_no,
+            order_no,
+            claim_no,
+            upper_pay_no,
+            trd_no,
+            pay_finish_date_time,
+            member_no,
+            amount,
+            cancelable_amount,
+            pg_type_code,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        ) VALUES (
+            #{payNo},
+            #{payTypeCode},
+            #{payWayCode},
+            #{payStatusCode},
+            #{approveNo},
+            #{orderNo},
+            #{claimNo},
+            #{upperPayNo},
+            #{trdNo},
+            #{payFinishDateTime},
+            #{memberNo},
+            #{amount},
+            #{cancelableAmount},
+            #{pgTypeCode},
+            #{registId},
+            #{registDateTime},
+            #{modifyId},
+            #{modifyDateTime}
+        )
+    </insert>
+
+    <select id="selectPayBaseList" resultMap="payBaseMap">
+        SELECT
+            pay_no,
+            pay_type_code,
+            pay_way_code,
+            pay_status_code,
+            approve_no,
+            order_no,
+            claim_no,
+            upper_pay_no,
+            trd_no,
+            pay_finish_date_time,
+            member_no,
+            amount,
+            cancelable_amount,
+            pg_type_code,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        FROM
+            pay_base
+    </select>
+
+    <select id="selectPayBase" resultMap="payBaseMap" parameterType="String">
+        SELECT
+            pay_no,
+            pay_type_code,
+            pay_way_code,
+            pay_status_code,
+            approve_no,
+            order_no,
+            claim_no,
+            upper_pay_no,
+            trd_no,
+            pay_finish_date_time,
+            member_no,
+            amount,
+            cancelable_amount,
+            pg_type_code,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        FROM
+            pay_base
+        WHERE
+            pay_no = #{payNo}
+    </select>
+
+    <update id="updatePayBase" parameterType="com.api.app.entity.paybase.PayBaseDto">
+        UPDATE pay_base
+        SET
+            pay_type_code = #{payTypeCode},
+            pay_way_code = #{payWayCode},
+            pay_status_code = #{payStatusCode},
+            approve_no = #{approveNo},
+            order_no = #{orderNo},
+            claim_no = #{claimNo},
+            upper_pay_no = #{upperPayNo},
+            trd_no = #{trdNo},
+            pay_finish_date_time = #{payFinishDateTime},
+            member_no = #{memberNo},
+            amount = #{amount},
+            cancelable_amount = #{cancelableAmount},
+            pg_type_code = #{pgTypeCode},
+            modify_id = #{modifyId},
+            modify_date_time = #{modifyDateTime}
+        WHERE
+            pay_no = #{payNo}
+    </update>
+
+    <delete id="deletePayBase" parameterType="String">
+        DELETE FROM pay_base
+        WHERE
+            pay_no = #{payNo}
+    </delete>
+
+</mapper>

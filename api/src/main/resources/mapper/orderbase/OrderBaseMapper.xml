@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.mapper.orderbase.OrderBaseMapper">
+
+    <resultMap id="orderBaseMap" type="com.api.app.entity.orderbase.OrderBaseDto">
+        <id property="orderNo" column="order_no"/>
+        <result property="memberNo" column="member_no"/>
+        <result property="registId" column="regist_id"/>
+        <result property="registDateTime" column="regist_date_time"/>
+        <result property="modifyId" column="modify_id"/>
+        <result property="modifyDateTime" column="modify_date_time"/>
+    </resultMap>
+
+    <insert id="insertOrderBase" parameterType="com.api.app.entity.orderbase.OrderBaseDto">
+        INSERT INTO order_base (
+            order_no,
+            member_no,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        ) VALUES (
+            #{orderNo},
+            #{memberNo},
+            #{registId},
+            #{registDateTime},
+            #{modifyId},
+            #{modifyDateTime}
+        )
+    </insert>
+
+    <select id="selectOrderBaseList" resultMap="orderBaseMap">
+        SELECT
+            order_no,
+            member_no,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        FROM
+            order_base
+    </select>
+
+    <select id="selectOrderBase" resultMap="orderBaseMap" parameterType="String">
+        SELECT
+            order_no,
+            member_no,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        FROM
+            order_base
+        WHERE
+            order_no = #{orderNo}
+    </select>
+
+    <update id="updateOrderBase" parameterType="com.api.app.entity.orderbase.OrderBaseDto">
+        UPDATE order_base
+        SET
+            member_no = #{memberNo},
+            modify_id = #{modifyId},
+            modify_date_time = #{modifyDateTime}
+        WHERE
+            order_no = #{orderNo}
+    </update>
+
+    <delete id="deleteOrderBase" parameterType="String">
+        DELETE FROM order_base
+        WHERE
+            order_no = #{orderNo}
+    </delete>
+
+</mapper>

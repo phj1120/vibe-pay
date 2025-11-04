@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.mapper.pointhistory.PointHistoryMapper">
+
+    <resultMap id="pointHistoryMap" type="com.api.app.entity.pointhistory.PointHistoryDto">
+        <id property="pointHistoryNo" column="point_history_no"/>
+        <result property="memberNo" column="member_no"/>
+        <result property="amount" column="amount"/>
+        <result property="pointTransactionCode" column="pointTransactionCode"/>
+        <result property="pointTransactionResonCode" column="point_transaction_reson_code"/>
+        <result property="pointTransactionResonNo" column="point_transaction_reson_no"/>
+        <result property="startDateTime" column="start_date_time"/>
+        <result property="endDateTime" column="end_date_time"/>
+        <result property="upperPointHistoryNo" column="upper_point_history_no"/>
+        <result property="remainPoint" column="remain_point"/>
+        <result property="registId" column="regist_id"/>
+        <result property="registDateTime" column="regist_date_time"/>
+        <result property="modifyId" column="modify_id"/>
+        <result property="modifyDateTime" column="modify_date_time"/>
+    </resultMap>
+
+    <insert id="insertPointHistory" parameterType="com.api.app.entity.pointhistory.PointHistoryDto">
+        INSERT INTO point_history (
+            point_history_no,
+            member_no,
+            amount,
+            pointTransactionCode,
+            point_transaction_reson_code,
+            point_transaction_reson_no,
+            start_date_time,
+            end_date_time,
+            upper_point_history_no,
+            remain_point,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        ) VALUES (
+            #{pointHistoryNo},
+            #{memberNo},
+            #{amount},
+            #{pointTransactionCode},
+            #{pointTransactionResonCode},
+            #{pointTransactionResonNo},
+            #{startDateTime},
+            #{endDateTime},
+            #{upperPointHistoryNo},
+            #{remainPoint},
+            #{registId},
+            #{registDateTime},
+            #{modifyId},
+            #{modifyDateTime}
+        )
+    </insert>
+
+    <select id="selectPointHistoryList" resultMap="pointHistoryMap">
+        SELECT
+            point_history_no,
+            member_no,
+            amount,
+            pointTransactionCode,
+            point_transaction_reson_code,
+            point_transaction_reson_no,
+            start_date_time,
+            end_date_time,
+            upper_point_history_no,
+            remain_point,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        FROM
+            point_history
+    </select>
+
+    <select id="selectPointHistory" resultMap="pointHistoryMap" parameterType="String">
+        SELECT
+            point_history_no,
+            member_no,
+            amount,
+            pointTransactionCode,
+            point_transaction_reson_code,
+            point_transaction_reson_no,
+            start_date_time,
+            end_date_time,
+            upper_point_history_no,
+            remain_point,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        FROM
+            point_history
+        WHERE
+            point_history_no = #{pointHistoryNo}
+    </select>
+
+    <update id="updatePointHistory" parameterType="com.api.app.entity.pointhistory.PointHistoryDto">
+        UPDATE point_history
+        SET
+            member_no = #{memberNo},
+            amount = #{amount},
+            pointTransactionCode = #{pointTransactionCode},
+            point_transaction_reson_code = #{pointTransactionResonCode},
+            point_transaction_reson_no = #{pointTransactionResonNo},
+            start_date_time = #{startDateTime},
+            end_date_time = #{endDateTime},
+            upper_point_history_no = #{upperPointHistoryNo},
+            remain_point = #{remainPoint},
+            modify_id = #{modifyId},
+            modify_date_time = #{modifyDateTime}
+        WHERE
+            point_history_no = #{pointHistoryNo}
+    </update>
+
+    <delete id="deletePointHistory" parameterType="String">
+        DELETE FROM point_history
+        WHERE
+            point_history_no = #{pointHistoryNo}
+    </delete>
+
+</mapper>

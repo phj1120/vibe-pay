@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.api.app.mapper.payinterfacelog.PayInterfaceLogMapper">
+
+    <resultMap id="payInterfaceLogMap" type="com.api.app.entity.payinterfacelog.PayInterfaceLogDto">
+        <id property="payInterfaceNo" column="pay_interface_no"/>
+        <result property="memberNo" column="member_no"/>
+        <result property="payNo" column="pay_no"/>
+        <result property="payLogCode" column="pay_log_code"/>
+        <result property="requestJson" column="request_json"/>
+        <result property="responseJson" column="response_json"/>
+        <result property="registId" column="regist_id"/>
+        <result property="registDateTime" column="regist_date_time"/>
+        <result property="modifyId" column="modify_id"/>
+        <result property="modifyDateTime" column="modify_date_time"/>
+    </resultMap>
+
+    <insert id="insertPayInterfaceLog" parameterType="com.api.app.entity.payinterfacelog.PayInterfaceLogDto">
+        INSERT INTO pay_interface_log (
+            pay_interface_no,
+            member_no,
+            pay_no,
+            pay_log_code,
+            request_json,
+            response_json,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        ) VALUES (
+            #{payInterfaceNo},
+            #{memberNo},
+            #{payNo},
+            #{payLogCode},
+            #{requestJson, jdbcType=VARCHAR},
+            #{responseJson, jdbcType=VARCHAR},
+            #{registId},
+            #{registDateTime},
+            #{modifyId},
+            #{modifyDateTime}
+        )
+    </insert>
+
+    <select id="selectPayInterfaceLogList" resultMap="payInterfaceLogMap">
+        SELECT
+            pay_interface_no,
+            member_no,
+            pay_no,
+            pay_log_code,
+            request_json,
+            response_json,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        FROM
+            pay_interface_log
+    </select>
+
+    <select id="selectPayInterfaceLog" resultMap="payInterfaceLogMap" parameterType="String">
+        SELECT
+            pay_interface_no,
+            member_no,
+            pay_no,
+            pay_log_code,
+            request_json,
+            response_json,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        FROM
+            pay_interface_log
+        WHERE
+            pay_interface_no = #{payInterfaceNo}
+    </select>
+
+    <update id="updatePayInterfaceLog" parameterType="com.api.app.entity.payinterfacelog.PayInterfaceLogDto">
+        UPDATE pay_interface_log
+        SET
+            member_no = #{memberNo},
+            pay_no = #{payNo},
+            pay_log_code = #{payLogCode},
+            request_json = #{requestJson, jdbcType=VARCHAR},
+            response_json = #{responseJson, jdbcType=VARCHAR},
+            modify_id = #{modifyId},
+            modify_date_time = #{modifyDateTime}
+        WHERE
+            pay_interface_no = #{payInterfaceNo}
+    </update>
+
+    <delete id="deletePayInterfaceLog" parameterType="String">
+        DELETE FROM pay_interface_log
+        WHERE
+            pay_interface_no = #{payInterfaceNo}
+    </delete>
+
+</mapper>
