@@ -10,6 +10,8 @@ public interface PointHistoryMapper {
     void insertPointHistory(PointHistoryDto pointHistoryDto);
     List<PointHistoryDto> selectPointHistoryList();
     PointHistoryDto selectPointHistory(String pointHistoryNo);
+    List<PointHistoryDto> findAvailablePointsByMemberNo(String memberNo);
+    Long findTotalAvailablePointsByMemberNo(String memberNo);
     void updatePointHistory(PointHistoryDto pointHistoryDto);
     void deletePointHistory(String pointHistoryNo);
 }

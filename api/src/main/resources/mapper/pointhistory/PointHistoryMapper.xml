@@ -5,12 +5,12 @@
     <resultMap id="pointHistoryMap" type="com.api.app.entity.pointhistory.PointHistoryDto">
         <id property="pointHistoryNo" column="point_history_no"/>
         <result property="memberNo" column="member_no"/>
-        <result property="amount" column="amount"/>
+        <result property="amount" column="amount" javaType="java.lang.Long"/>
         <result property="pointTransactionCode" column="pointTransactionCode"/>
         <result property="pointTransactionResonCode" column="point_transaction_reson_code"/>
         <result property="pointTransactionResonNo" column="point_transaction_reson_no"/>
-        <result property="startDateTime" column="start_date_time"/>
-        <result property="endDateTime" column="end_date_time"/>
+        <result property="startDateTime" column="start_date_time" javaType="java.time.LocalDateTime"/>
+        <result property="endDateTime" column="end_date_time" javaType="java.time.LocalDateTime"/>
         <result property="upperPointHistoryNo" column="upper_point_history_no"/>
         <result property="remainPoint" column="remain_point"/>
         <result property="registId" column="regist_id"/>
@@ -38,14 +38,14 @@
         ) VALUES (
             #{pointHistoryNo},
             #{memberNo},
-            #{amount},
+            #{amount,jdbcType=BIGINT},
             #{pointTransactionCode},
             #{pointTransactionResonCode},
             #{pointTransactionResonNo},
-            #{startDateTime},
-            #{endDateTime},
+            #{startDateTime,jdbcType=TIMESTAMP},
+            #{endDateTime,jdbcType=TIMESTAMP},
             #{upperPointHistoryNo},
-            #{remainPoint},
+            #{remainPoint,jdbcType=BIGINT},
             #{registId},
             #{registDateTime},
             #{modifyId},
@@ -53,7 +53,7 @@
         )
     </insert>
 
-    <select id="selectPointHistoryList" resultMap="pointHistoryMap">
+    <select id="selectPointHistoryList" resultMap="pointHistoryMap" parameterType="String">
         SELECT
             point_history_no,
             member_no,
@@ -71,6 +71,10 @@
             modify_date_time
         FROM
             point_history
+        WHERE
+            member_no = #{memberNo}
+        ORDER BY
+            regist_date_time DESC
     </select>
 
     <select id="selectPointHistory" resultMap="pointHistoryMap" parameterType="String">
@@ -99,14 +103,14 @@
         UPDATE point_history
         SET
             member_no = #{memberNo},
-            amount = #{amount},
+            amount = #{amount,jdbcType=BIGINT},
             pointTransactionCode = #{pointTransactionCode},
             point_transaction_reson_code = #{pointTransactionResonCode},
             point_transaction_reson_no = #{pointTransactionResonNo},
-            start_date_time = #{startDateTime},
-            end_date_time = #{endDateTime},
+            start_date_time = #{startDateTime,jdbcType=TIMESTAMP},
+            end_date_time = #{endDateTime,jdbcType=TIMESTAMP},
             upper_point_history_no = #{upperPointHistoryNo},
-            remain_point = #{remainPoint},
+            remain_point = #{remainPoint,jdbcType=BIGINT},
             modify_id = #{modifyId},
             modify_date_time = #{modifyDateTime}
         WHERE
@@ -118,5 +122,42 @@
         WHERE
             point_history_no = #{pointHistoryNo}
     </delete>
+
+    <select id="findAvailablePointsByMemberNo" resultMap="pointHistoryMap" parameterType="String">
+        SELECT
+            point_history_no,
+            member_no,
+            amount,
+            point_transaction_code,
+            point_transaction_reson_code,
+            point_transaction_reson_no,
+            start_date_time,
+            end_date_time,
+            upper_point_history_no,
+            remain_point,
+            regist_id,
+            regist_date_time,
+            modify_id,
+            modify_date_time
+        FROM
+            point_history
+        WHERE
+            member_no = #{memberNo}
+            AND remain_point > 0
+            AND end_date_time >= NOW()
+        ORDER BY
+            end_date_time ASC, regist_date_time ASC
+    </select>
+
+    <select id="findTotalAvailablePointsByMemberNo" resultType="Long" parameterType="String">
+        SELECT
+            COALESCE(SUM(remain_point), 0)
+        FROM
+            point_history
+        WHERE
+            member_no = #{memberNo}
+            AND remain_point > 0
+            AND end_date_time >= NOW()
+    </select>
 
 </mapper>

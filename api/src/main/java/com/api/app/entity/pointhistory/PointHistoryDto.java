@@ -9,12 +9,12 @@ import java.time.LocalDateTime;
 public class PointHistoryDto {
     private String pointHistoryNo;
     private String memberNo;
-    private String amount;
+    private Long amount;
     private String pointTransactionCode;
     private String pointTransactionResonCode;
     private String pointTransactionResonNo;
-    private LocalDate startDateTime;
-    private LocalDate endDateTime;
+    private LocalDateTime startDateTime;
+    private LocalDateTime endDateTime;
     private String upperPointHistoryNo;
     private Long remainPoint;
     private String registId;
