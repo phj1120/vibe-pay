@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    primary:
+      jdbc-url: jdbc:postgresql://db:5432/model_claude_v6
+      username: model_claude_v6
+      password: password
+      driver-class-name: org.postgresql.Driver
+    secondary:
+      jdbc-url: jdbc:postgresql://db:5432/model_claude_v6
+      username: model_claude_v6
+      password: password
+      driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
