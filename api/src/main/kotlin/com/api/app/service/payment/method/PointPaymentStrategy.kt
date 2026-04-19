@@ -31,7 +31,17 @@ class PointPaymentStrategy(
     override fun processPayment(memberNo: String, orderNo: String, payRequest: PayRequest): PayBase {
         log.info("Point payment processing started. memberNo={}, orderNo={}, amount={}", memberNo, orderNo, payRequest.amount)
 
-        val payNo = payBaseTrxRepository.generatePayNo()
+        val payBase = PayBase().apply {
+            this.payTypeCode = PAY001.PAYMENT.code
+            this.payWayCode = PAY002.POINT.code
+            this.payStatusCode = PAY003.PAYMENT_COMPLETED.code
+            this.orderNo = orderNo
+            this.memberNo = memberNo
+            this.amount = payRequest.amount
+            this.cancelableAmount = payRequest.amount
+        }
+        payBaseTrxRepository.save(payBase)
+        val payNo = payBase.payNo
 
         val pointRequest = PointTransactionRequest(
             amount = payRequest.amount,
@@ -56,19 +66,8 @@ class PointPaymentStrategy(
             log.error("Failed to log point payment approval. payNo={}", payNo, e)
         }
 
-        val payBase = PayBase().apply {
-            this.payNo = payNo
-            this.payTypeCode = PAY001.PAYMENT.code
-            this.payWayCode = PAY002.POINT.code
-            this.payStatusCode = PAY003.PAYMENT_COMPLETED.code
-            this.orderNo = orderNo
-            this.payFinishDateTime = LocalDateTime.now()
-            this.memberNo = memberNo
-            this.amount = payRequest.amount
-            this.cancelableAmount = payRequest.amount
-        }
+        payBase.payFinishDateTime = LocalDateTime.now()
 
-        payBaseTrxRepository.save(payBase)
         log.info("Point payment completed. memberNo={}, orderNo={}, payNo={}", memberNo, orderNo, payNo)
         return payBase
     }
@@ -78,9 +77,7 @@ class PointPaymentStrategy(
     private fun saveInterfaceLog(payNo: String, memberNo: String, payLogCode: String,
                                   requestJson: String?, responseJson: String?) {
         try {
-            val payInterfaceNo = payInterfaceLogTrxRepository.generatePayInterfaceNo()
             val interfaceLog = PayInterfaceLog().apply {
-                this.payInterfaceNo = payInterfaceNo
                 this.memberNo = memberNo
                 this.payNo = payNo
                 this.payLogCode = payLogCode

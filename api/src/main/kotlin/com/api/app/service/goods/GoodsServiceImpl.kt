@@ -42,16 +42,14 @@ class GoodsServiceImpl(
 
     @Transactional
     override fun registerGoods(request: GoodsRegisterRequest): String {
-        val goodsNo = goodsBaseTrxRepository.generateGoodsNo()
-        log.debug("상품번호 생성: {}", goodsNo)
-
         val goodsBase = GoodsBase().apply {
-            this.goodsNo = goodsNo
             this.goodsName = request.goodsName
             this.goodsStatusCode = request.goodsStatusCode
             this.goodsMainImageUrl = request.goodsMainImageUrl
         }
         goodsBaseTrxRepository.save(goodsBase)
+        val goodsNo = goodsBase.goodsNo
+        log.debug("상품번호 생성: {}", goodsNo)
 
         val priceHist = GoodsPriceHist().apply {
             this.id = GoodsPriceHistId(goodsNo = goodsNo, startDateTime = LocalDateTime.now())

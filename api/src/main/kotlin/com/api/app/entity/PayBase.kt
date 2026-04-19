@@ -1,18 +1,34 @@
 package com.api.app.entity
 
+import com.api.app.common.id.PaddedSequenceIdGenerator
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.GeneratedValue
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import org.hibernate.annotations.GenericGenerator
+import org.hibernate.annotations.Parameter
+import org.hibernate.id.enhanced.SequenceStyleGenerator
 import java.time.LocalDateTime
 
 @Entity
 @Table(name = "PAY_BASE")
-class PayBase : SystemEntity() {
+class PayBase : PersistableSequenceEntity() {
 
     @Id
+    @GeneratedValue(generator = "pay_no_gen")
+    @GenericGenerator(
+        name = "pay_no_gen",
+        type = PaddedSequenceIdGenerator::class,
+        parameters = [
+            Parameter(name = SequenceStyleGenerator.SEQUENCE_PARAM, value = "SEQ_PAY_NO"),
+            Parameter(name = "pad_length", value = "15")
+        ]
+    )
     @Column(name = "PAY_NO", length = 15, nullable = false)
     var payNo: String = ""
+
+    override fun getId() = payNo
 
     @Column(name = "PAY_TYPE_CODE", nullable = false, length = 3)
     var payTypeCode: String = ""

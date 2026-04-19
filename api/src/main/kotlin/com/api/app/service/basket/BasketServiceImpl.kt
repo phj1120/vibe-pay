@@ -45,9 +45,7 @@ class BasketServiceImpl(
             log.info("장바구니 수량 증가 완료: basketNo={}", existing.basketNo)
             existing.basketNo
         } else {
-            val basketNo = basketBaseTrxRepository.generateBasketNo()
             val basket = BasketBase().apply {
-                this.basketNo = basketNo
                 this.memberNo = memberNo
                 this.goodsNo = request.goodsNo
                 this.itemNo = request.itemNo
@@ -55,8 +53,8 @@ class BasketServiceImpl(
                 this.isOrder = false
             }
             basketBaseTrxRepository.save(basket)
-            log.info("장바구니 추가 완료: basketNo={}", basketNo)
-            basketNo
+            log.info("장바구니 추가 완료: basketNo={}", basket.basketNo)
+            basket.basketNo
         }
     }
 

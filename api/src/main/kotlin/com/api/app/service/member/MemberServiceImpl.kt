@@ -36,10 +36,7 @@ class MemberServiceImpl(
             throw ApiException(ApiError.DUPLICATE_EMAIL)
         }
 
-        val memberNo = memberBaseTrxRepository.generateMemberNo()
-
         val memberBase = MemberBase().apply {
-            this.memberNo = memberNo
             this.memberName = request.memberName
             this.phone = request.phone
             this.email = request.email
@@ -48,7 +45,7 @@ class MemberServiceImpl(
         }
 
         memberBaseTrxRepository.save(memberBase)
-        log.info("회원 가입 완료: memberNo={}, email={}", memberNo, request.email)
+        log.info("회원 가입 완료: memberNo={}, email={}", memberBase.memberNo, request.email)
     }
 
     override fun login(request: MemberLoginRequest): MemberLoginResponse {

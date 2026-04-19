@@ -7,9 +7,6 @@ import org.springframework.data.jpa.repository.Query
 
 interface BasketBaseTrxRepository : JpaRepository<BasketBase, String> {
 
-    @Query(value = "SELECT LPAD(NEXTVAL('SEQ_BASKET_NO')::TEXT, 15, '0')", nativeQuery = true)
-    fun generateBasketNo(): String
-
     @Modifying
     @Query("DELETE FROM BasketBase b WHERE b.basketNo IN :basketNos")
     fun deleteByBasketNoIn(basketNos: List<String>): Int

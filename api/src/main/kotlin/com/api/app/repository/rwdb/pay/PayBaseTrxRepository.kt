@@ -5,10 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 
-interface PayBaseTrxRepository : JpaRepository<PayBase, String> {
 
-    @Query(value = "SELECT LPAD(NEXTVAL('SEQ_PAY_NO')::TEXT, 15, '0')", nativeQuery = true)
-    fun generatePayNo(): String
+interface PayBaseTrxRepository : JpaRepository<PayBase, String> {
 
     @Modifying
     @Query(

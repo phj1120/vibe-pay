@@ -5,10 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 
-interface PointHistoryTrxRepository : JpaRepository<PointHistory, String> {
 
-    @Query(value = "SELECT LPAD(NEXTVAL('SEQ_POINT_HISTORY_NO')::TEXT, 15, '0')", nativeQuery = true)
-    fun generatePointHistoryNo(): String
+interface PointHistoryTrxRepository : JpaRepository<PointHistory, String> {
 
     @Modifying
     @Query(

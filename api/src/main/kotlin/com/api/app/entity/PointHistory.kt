@@ -1,18 +1,34 @@
 package com.api.app.entity
 
+import com.api.app.common.id.PaddedSequenceIdGenerator
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.GeneratedValue
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import org.hibernate.annotations.GenericGenerator
+import org.hibernate.annotations.Parameter
+import org.hibernate.id.enhanced.SequenceStyleGenerator
 import java.time.LocalDateTime
 
 @Entity
 @Table(name = "POINT_HISTORY")
-class PointHistory : SystemEntity() {
+class PointHistory : PersistableSequenceEntity() {
 
     @Id
+    @GeneratedValue(generator = "point_history_no_gen")
+    @GenericGenerator(
+        name = "point_history_no_gen",
+        type = PaddedSequenceIdGenerator::class,
+        parameters = [
+            Parameter(name = SequenceStyleGenerator.SEQUENCE_PARAM, value = "SEQ_POINT_HISTORY_NO"),
+            Parameter(name = "pad_length", value = "15")
+        ]
+    )
     @Column(name = "POINT_HISTORY_NO", length = 15, nullable = false)
     var pointHistoryNo: String = ""
+
+    override fun getId() = pointHistoryNo
 
     @Column(name = "MEMBER_NO", nullable = false, length = 15)
     var memberNo: String = ""

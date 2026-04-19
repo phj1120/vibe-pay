@@ -47,10 +47,7 @@ class PointServiceImpl(
         val startDateTime = now.toLocalDate().atStartOfDay()
         val endDateTime = startDateTime.plusDays(validityDays.toLong())
 
-        val pointHistoryNo = pointHistoryTrxRepository.generatePointHistoryNo()
-
         val pointHistory = PointHistory().apply {
-            this.pointHistoryNo = pointHistoryNo
             this.memberNo = memberNo
             this.amount = request.amount
             this.pointTransactionCode = request.pointTransactionCode
@@ -86,9 +83,7 @@ class PointServiceImpl(
                 memberNo
             )
 
-            val useHistoryNo = pointHistoryTrxRepository.generatePointHistoryNo()
             val useHistory = PointHistory().apply {
-                this.pointHistoryNo = useHistoryNo
                 this.memberNo = memberNo
                 this.amount = deductAmount
                 this.pointTransactionCode = request.pointTransactionCode

@@ -32,7 +32,18 @@ class CardPaymentStrategy(
         val pgType = com.api.app.emum.PAY005.findByCode(confirmRequest.pgTypeCode!!)!!
         val pgStrategy = paymentGatewayFactory.getStrategy(pgType)
 
-        val payNo = payBaseTrxRepository.generatePayNo()
+        val payBase = PayBase().apply {
+            this.payTypeCode = PAY001.PAYMENT.code
+            this.payWayCode = PAY002.CREDIT_CARD.code
+            this.payStatusCode = PAY003.PAYMENT_COMPLETED.code
+            this.orderNo = orderNo
+            this.memberNo = memberNo
+            this.amount = payRequest.amount
+            this.cancelableAmount = payRequest.amount
+            this.pgTypeCode = confirmRequest.pgTypeCode
+        }
+        payBaseTrxRepository.save(payBase)
+        val payNo = payBase.payNo
 
         try {
             val requestJson = objectMapper.writeValueAsString(confirmRequest)
@@ -50,22 +61,10 @@ class CardPaymentStrategy(
             log.error("Failed to log payment approval. payNo={}", payNo, e)
         }
 
-        val payBase = PayBase().apply {
-            this.payNo = payNo
-            this.payTypeCode = PAY001.PAYMENT.code
-            this.payWayCode = PAY002.CREDIT_CARD.code
-            this.payStatusCode = PAY003.PAYMENT_COMPLETED.code
-            this.approveNo = approvalResponse.approveNo
-            this.orderNo = orderNo
-            this.trdNo = approvalResponse.trdNo
-            this.payFinishDateTime = LocalDateTime.now()
-            this.memberNo = memberNo
-            this.amount = payRequest.amount
-            this.cancelableAmount = payRequest.amount
-            this.pgTypeCode = confirmRequest.pgTypeCode
-        }
+        payBase.approveNo = approvalResponse.approveNo
+        payBase.trdNo = approvalResponse.trdNo
+        payBase.payFinishDateTime = LocalDateTime.now()
 
-        payBaseTrxRepository.save(payBase)
         log.info("Card payment completed. orderNo={}, payNo={}", orderNo, payNo)
         return payBase
     }
@@ -75,16 +74,14 @@ class CardPaymentStrategy(
     private fun saveInterfaceLog(payNo: String, memberNo: String, payLogCode: String,
                                   requestJson: String?, responseJson: String?) {
         try {
-            val payInterfaceNo = payInterfaceLogTrxRepository.generatePayInterfaceNo()
-            val log = PayInterfaceLog().apply {
-                this.payInterfaceNo = payInterfaceNo
+            val interfaceLog = PayInterfaceLog().apply {
                 this.memberNo = memberNo
                 this.payNo = payNo
                 this.payLogCode = payLogCode
                 this.requestJson = requestJson
                 this.responseJson = responseJson
             }
-            payInterfaceLogTrxRepository.save(log)
+            payInterfaceLogTrxRepository.save(interfaceLog)
         } catch (e: Exception) {
             this.log.error("Error creating pay_interface_log. payNo={}", payNo, e)
         }

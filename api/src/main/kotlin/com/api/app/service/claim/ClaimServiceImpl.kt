@@ -144,7 +144,22 @@ class ClaimServiceImpl(
 
     private fun processCreditCardCancel(originalPayment: PayBase, cancelAmount: Long,
                                          claimNo: String, memberNo: String, now: LocalDateTime) {
-        val payNo = payBaseTrxRepository.generatePayNo()
+        val cancelPayment = PayBase().apply {
+            this.payTypeCode = PAY001.REFUND.code
+            this.payWayCode = originalPayment.payWayCode
+            this.payStatusCode = PAY003.PAYMENT_CANCELLED.code
+            this.orderNo = originalPayment.orderNo
+            this.claimNo = claimNo
+            this.upperPayNo = originalPayment.payNo
+            this.payFinishDateTime = now
+            this.memberNo = memberNo
+            this.amount = cancelAmount
+            this.cancelableAmount = 0L
+            this.pgTypeCode = originalPayment.pgTypeCode
+            this.trdNo = originalPayment.trdNo
+        }
+        payBaseTrxRepository.save(cancelPayment)
+        val payNo = cancelPayment.payNo
 
         val pgType = PAY005.findByCode(originalPayment.pgTypeCode!!)!!
         val strategy = paymentGatewayFactory.getStrategy(pgType)
@@ -175,8 +190,12 @@ class ClaimServiceImpl(
             saveInterfaceLog(payNo, memberNo, PAY004.CANCEL.code, requestJson, responseJson)
         }
 
+        log.info("Credit card cancel payment created. payNo={}, cancelAmount={}", payNo, cancelAmount)
+    }
+
+    private fun processPointCancel(originalPayment: PayBase, cancelAmount: Long,
+                                    claimNo: String, memberNo: String, now: LocalDateTime) {
         val cancelPayment = PayBase().apply {
-            this.payNo = payNo
             this.payTypeCode = PAY001.REFUND.code
             this.payWayCode = originalPayment.payWayCode
             this.payStatusCode = PAY003.PAYMENT_CANCELLED.code
@@ -187,16 +206,9 @@ class ClaimServiceImpl(
             this.memberNo = memberNo
             this.amount = cancelAmount
             this.cancelableAmount = 0L
-            this.pgTypeCode = originalPayment.pgTypeCode
-            this.trdNo = originalPayment.trdNo
         }
         payBaseTrxRepository.save(cancelPayment)
-        log.info("Credit card cancel payment created. payNo={}, cancelAmount={}", payNo, cancelAmount)
-    }
-
-    private fun processPointCancel(originalPayment: PayBase, cancelAmount: Long,
-                                    claimNo: String, memberNo: String, now: LocalDateTime) {
-        val payNo = payBaseTrxRepository.generatePayNo()
+        val payNo = cancelPayment.payNo
 
         val pointRequest = PointTransactionRequest(
             amount = cancelAmount,
@@ -206,21 +218,6 @@ class ClaimServiceImpl(
         )
 
         pointService.processPointTransaction(memberNo, pointRequest)
-
-        val cancelPayment = PayBase().apply {
-            this.payNo = payNo
-            this.payTypeCode = PAY001.REFUND.code
-            this.payWayCode = originalPayment.payWayCode
-            this.payStatusCode = PAY003.PAYMENT_CANCELLED.code
-            this.orderNo = originalPayment.orderNo
-            this.claimNo = claimNo
-            this.upperPayNo = originalPayment.payNo
-            this.payFinishDateTime = now
-            this.memberNo = memberNo
-            this.amount = cancelAmount
-            this.cancelableAmount = 0L
-        }
-        payBaseTrxRepository.save(cancelPayment)
         log.info("Point cancel payment created. payNo={}, cancelAmount={}", payNo, cancelAmount)
     }
 
@@ -259,9 +256,7 @@ class ClaimServiceImpl(
     private fun saveInterfaceLog(payNo: String, memberNo: String, payLogCode: String,
                                   requestJson: String?, responseJson: String?) {
         try {
-            val payInterfaceNo = payInterfaceLogTrxRepository.generatePayInterfaceNo()
             val interfaceLog = PayInterfaceLog().apply {
-                this.payInterfaceNo = payInterfaceNo
                 this.memberNo = memberNo
                 this.payNo = payNo
                 this.payLogCode = payLogCode
