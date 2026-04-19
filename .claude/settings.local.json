@@ -15,7 +15,10 @@
       "mcp__jetbrains__create_new_file",
       "mcp__jetbrains__replace_text_in_file",
       "Bash(npx next lint:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "WebSearch",
+      "Bash(xargs ls *)",
+      "Bash(docker exec *)"
     ],
     "deny": [],
     "ask": []

@@ -2,3 +2,9 @@
 ccptracker/*
 !ccptracker/data/
 !ccptracker/data/ccptracker.csv
+
+# Claude Code / AI agent local settings
+.claude/settings.local.json
+
+# AI agent skills (installed locally, versioned via skills-lock.json)
+.agents/
