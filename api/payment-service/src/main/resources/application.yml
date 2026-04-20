@@ -1,0 +1,56 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: payment-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/vibepay
+    username: vibepay
+    password: vibepay
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    open-in-view: false
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: payment-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+jwt:
+  secret: vibepay-secret-key-for-jwt-token-generation-must-be-at-least-256-bits-long
+  access-token-expiration: 30000
+  refresh-token-expiration: 7200000
+
+payment:
+  inicis:
+    mid: INIpayTest
+    api-key: ItEQKi3rY7uvDS8l
+    sign-key: SU5JTElURV9UUklQTEVERVNfS0VZU1RS
+    return-url: http://localhost:3000/api/order/payment/return
+    close-url: http://localhost:3000/order/close
+    gopaymethod: Card
+    acceptmethod: below1000
+  nice:
+    mid: nicepay00m
+    merchant-key: EYzu8jGGMfqaDEp76gSckuvnaHHu+bC4opsSN6lHv3b2lurNYkVXrZ7Z1AoqQnXI3eLuaUFyoRNC6FkrzVjceg==
+    return-url: http://localhost:3000/api/order/payment/return
+    cancel-url: http://localhost:3000/order/cancel
+
+core-service:
+  url: http://localhost:8081
+
+kafka:
+  bootstrap-servers: localhost:9092

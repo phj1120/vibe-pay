@@ -18,7 +18,11 @@
       "Bash(npx tsc:*)",
       "WebSearch",
       "Bash(xargs ls *)",
-      "Bash(docker exec *)"
+      "Bash(docker exec *)",
+      "Bash(git mv *)",
+      "Bash(awk '{print $9}')",
+      "Read(//Users/parkh/Library/Java/JavaVirtualMachines/**)",
+      "Bash(/usr/libexec/java_home -V)"
     ],
     "deny": [],
     "ask": []

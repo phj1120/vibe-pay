@@ -1,0 +1,6 @@
+rootProject.name = "vibepay"
+
+include("common-lib:common-core")
+include("common-lib:common-security")
+include("common-lib:common-messaging")
+include("monolith")

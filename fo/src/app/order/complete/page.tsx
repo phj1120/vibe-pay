@@ -6,6 +6,9 @@ import { getOrderComplete, type OrderCompleteResponse } from "@/lib/order-api";
 import AlertModal from "@/components/common/AlertModal";
 import { useAlert } from "@/hooks/useAlert";
 
+const POLL_INTERVAL_MS = 2000;
+const POLL_MAX_ATTEMPTS = 5;
+
 function OrderCompleteContent() {
   const router = useRouter();
   const alert = useAlert();
@@ -13,43 +16,61 @@ function OrderCompleteContent() {
   const orderNo = searchParams.get("orderNo");
   const [orderData, setOrderData] = useState<OrderCompleteResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [polling, setPolling] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchOrderData = async () => {
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        alert.showAlert("로그인이 필요한 서비스입니다");
-        router.push("/login");
-        return;
-      }
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      alert.showAlert("로그인이 필요한 서비스입니다");
+      router.push("/login");
+      return;
+    }
+    if (!orderNo) {
+      alert.showAlert("잘못된 접근입니다");
+      router.push("/");
+      return;
+    }
 
-      if (!orderNo) {
-        alert.showAlert("잘못된 접근입니다");
-        router.push("/");
-        return;
-      }
+    let cancelled = false;
 
-      try {
-        const data = await getOrderComplete(orderNo);
-        setOrderData(data);
-      } catch (err) {
-        console.error("주문 완료 정보 조회 실패:", err);
-        setError("주문 정보를 불러올 수 없습니다");
-        alert.showAlert("잘못된 접근입니다");
-        router.push("/");
-      } finally {
-        setLoading(false);
+    const fetchWithPolling = async () => {
+      for (let attempt = 0; attempt < POLL_MAX_ATTEMPTS; attempt++) {
+        if (cancelled) return;
+        try {
+          const data = await getOrderComplete(orderNo);
+          if (data.paymentList.length > 0) {
+            if (!cancelled) { setOrderData(data); setLoading(false); setPolling(false); }
+            return;
+          }
+          if (attempt < POLL_MAX_ATTEMPTS - 1) {
+            if (!cancelled) setPolling(true);
+            await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+          } else {
+            if (!cancelled) { setOrderData(data); setLoading(false); setPolling(false); }
+          }
+        } catch (err) {
+          console.error("주문 완료 정보 조회 실패:", err);
+          if (!cancelled) {
+            setError("주문 정보를 불러올 수 없습니다");
+            setLoading(false);
+            alert.showAlert("잘못된 접근입니다");
+            router.push("/");
+          }
+          return;
+        }
       }
     };
 
-    fetchOrderData();
+    fetchWithPolling();
+    return () => { cancelled = true; };
   }, [router, orderNo]);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
+      <div className="flex flex-col justify-center items-center min-h-[calc(100vh-200px)] gap-2">
         <div className="text-lg">로딩 중...</div>
+        {polling && <div className="text-sm text-gray-500">결제 처리 중입니다. 잠시만 기다려 주세요...</div>}
       </div>
     );
   }

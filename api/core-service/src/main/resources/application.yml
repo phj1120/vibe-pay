@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: core-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/vibepay
+    username: vibepay
+    password: vibepay
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    open-in-view: false
+
+  kafka:
+    bootstrap-servers: localhost:9092
+
+server:
+  port: 8081
+
+jwt:
+  secret: vibepay-secret-key-for-jwt-token-generation-must-be-at-least-256-bits-long
+  access-token-expiration: 30000
+  refresh-token-expiration: 7200000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

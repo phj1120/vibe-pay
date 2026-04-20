@@ -1,0 +1,34 @@
+spring:
+  datasource:
+    primary:
+      jdbc-url: jdbc:postgresql://db:5432/vibepay
+      username: vibepay
+      password: vibepay
+      driver-class-name: org.postgresql.Driver
+    secondary:
+      jdbc-url: jdbc:postgresql://db:5432/vibepay
+      username: vibepay
+      password: vibepay
+      driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+goods-service:
+  url: http://goods-service:8082
+
+core-service:
+  url: http://core-service:8081
+
+kafka:
+  bootstrap-servers: kafka:9092
+
+spring:
+  kafka:
+    bootstrap-servers: kafka:9092
+    consumer:
+      group-id: order-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer

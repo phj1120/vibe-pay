@@ -1,10 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="CompilerConfiguration">
+    <bytecodeTargetLevel>
+      <module name="api" target="21" />
+      <module name="api.main" target="21" />
+      <module name="api.test" target="21" />
+      <module name="vibepay.common-lib.main" target="21" />
+      <module name="vibepay.common-lib.test" target="21" />
+    </bytecodeTargetLevel>
+  </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="api" options="-parameters -proc:none" />
       <module name="api.main" options="-parameters -proc:none" />
       <module name="api.test" options="-parameters -proc:none" />
+      <module name="vibepay.claim-service" options="-parameters -proc:none" />
+      <module name="vibepay.claim-service.main" options="-parameters -proc:none" />
+      <module name="vibepay.claim-service.test" options="-parameters -proc:none" />
+      <module name="vibepay.common-lib.common-core" options="-proc:none" />
+      <module name="vibepay.common-lib.common-core.main" options="-proc:none" />
+      <module name="vibepay.common-lib.common-core.test" options="-proc:none" />
+      <module name="vibepay.core-service" options="-parameters -proc:none" />
+      <module name="vibepay.core-service.main" options="-parameters -proc:none" />
+      <module name="vibepay.core-service.test" options="-parameters -proc:none" />
+      <module name="vibepay.gateway-service" options="-parameters" />
+      <module name="vibepay.gateway-service.main" options="-parameters" />
+      <module name="vibepay.gateway-service.test" options="-parameters" />
+      <module name="vibepay.goods-service" options="-parameters -proc:none" />
+      <module name="vibepay.goods-service.main" options="-parameters -proc:none" />
+      <module name="vibepay.goods-service.test" options="-parameters -proc:none" />
+      <module name="vibepay.monolith" options="-parameters -proc:none" />
+      <module name="vibepay.monolith.main" options="-parameters -proc:none" />
+      <module name="vibepay.monolith.test" options="-parameters -proc:none" />
+      <module name="vibepay.payment-service" options="-parameters -proc:none" />
+      <module name="vibepay.payment-service.main" options="-parameters -proc:none" />
+      <module name="vibepay.payment-service.test" options="-parameters -proc:none" />
     </option>
   </component>
 </project>
