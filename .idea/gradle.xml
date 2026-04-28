@@ -9,16 +9,6 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$/api" />
-            <option value="$PROJECT_DIR$/api/claim-service" />
-            <option value="$PROJECT_DIR$/api/common-lib" />
-            <option value="$PROJECT_DIR$/api/common-lib/common-core" />
-            <option value="$PROJECT_DIR$/api/common-lib/common-messaging" />
-            <option value="$PROJECT_DIR$/api/common-lib/common-security" />
-            <option value="$PROJECT_DIR$/api/core-service" />
-            <option value="$PROJECT_DIR$/api/gateway-service" />
-            <option value="$PROJECT_DIR$/api/goods-service" />
-            <option value="$PROJECT_DIR$/api/monolith" />
-            <option value="$PROJECT_DIR$/api/payment-service" />
           </set>
         </option>
       </GradleProjectSettings>

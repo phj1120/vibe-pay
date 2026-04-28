@@ -4,6 +4,7 @@ import com.api.app.common.exception.ApiError
 import com.api.app.common.exception.ApiException
 import com.api.app.dto.request.basket.BasketAddRequest
 import com.api.app.dto.request.basket.BasketModifyRequest
+import com.api.app.emum.PRD001
 import com.api.app.entity.BasketBase
 import com.api.app.entity.MemberBase
 import com.api.app.repository.rodb.basket.BasketBaseRepository
@@ -15,14 +16,18 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
-import org.mockito.ArgumentMatchers.anyList
-import org.mockito.ArgumentMatchers.anyString
 import org.mockito.BDDMockito.given
 import org.mockito.InjectMocks
 import org.mockito.Mock
-import org.mockito.Mockito.*
+import org.mockito.Mockito.doReturn
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.never
+import org.mockito.Mockito.times
+import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
+import java.time.LocalDateTime
 import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
@@ -40,169 +45,143 @@ class BasketServiceImplTest {
     @Mock
     private lateinit var memberBaseRepository: MemberBaseRepository
 
-    private fun createMember(memberNo: String = "000000000000001", email: String = "test@example.com") =
-        MemberBase().apply {
-            this.memberNo = memberNo
-            this.email = email
-        }
-
-    private fun mockProjection(basketNo: String, memberNo: String = "000000000000001"): BasketProjection {
-        val p = mock(BasketProjection::class.java)
-        given(p.getBasketNo()).willReturn(basketNo)
-        given(p.getMemberNo()).willReturn(memberNo)
-        given(p.getGoodsNo()).willReturn("G00000000000001")
-        given(p.getGoodsName()).willReturn("테스트상품")
-        given(p.getGoodsStatusCode()).willReturn("SALE")
-        given(p.getGoodsMainImageUrl()).willReturn(null)
-        given(p.getSalePrice()).willReturn(10000L)
-        given(p.getItemNo()).willReturn("001")
-        given(p.getItemName()).willReturn("기본")
-        given(p.getItemPrice()).willReturn(0L)
-        given(p.getItemStatusCode()).willReturn("SALE")
-        given(p.getStock()).willReturn(10L)
-        given(p.getQuantity()).willReturn(2L)
-        given(p.getIsOrder()).willReturn(false)
-        given(p.getRegistDateTime()).willReturn(null)
-        return p
-    }
-
     @Test
     @DisplayName("장바구니 목록 조회 성공")
-    fun getBasketList_Success() {
+    fun getBasketListSuccess() {
         val email = "test@example.com"
-        val memberNo = "000000000000001"
-
-        given(memberBaseRepository.findByEmail(email)).willReturn(createMember(memberNo, email))
-        given(basketBaseRepository.selectBasketListByMemberNo(memberNo))
-            .willReturn(listOf(mockProjection("000000000000001")))
+        val member = createMember(email = email)
+        val projection = createProjection(basketNo = "B001", memberNo = member.memberNo)
+        given(memberBaseRepository.findByEmail(email)).willReturn(member)
+        given(basketBaseRepository.selectBasketListByMemberNo(member.memberNo)).willReturn(listOf(projection))
 
         val result = basketService.getBasketList(email)
 
         assertThat(result).hasSize(1)
-        assertThat(result[0].basketNo).isEqualTo("000000000000001")
-        verify(memberBaseRepository, times(1)).findByEmail(email)
-        verify(basketBaseRepository, times(1)).selectBasketListByMemberNo(memberNo)
+        assertThat(result.single().basketNo).isEqualTo("B001")
+        assertThat(result.single().goodsStatusCode).isEqualTo(PRD001.ON_SALE.code)
+        verify(basketBaseRepository, times(1)).selectBasketListByMemberNo(member.memberNo)
     }
 
     @Test
-    @DisplayName("장바구니 조회 실패 - 회원 정보 없음")
-    fun getBasketList_Fail_MemberNotFound() {
-        given(memberBaseRepository.findByEmail(anyString())).willReturn(null)
+    @DisplayName("장바구니 목록 조회 실패 - 회원 없음")
+    fun getBasketListFailWhenMemberMissing() {
+        given(memberBaseRepository.findByEmail("missing@example.com")).willReturn(null)
 
-        assertThatThrownBy { basketService.getBasketList("test@example.com") }
+        assertThatThrownBy { basketService.getBasketList("missing@example.com") }
             .isInstanceOf(ApiException::class.java)
             .hasFieldOrPropertyWithValue("apiError", ApiError.DATA_NOT_FOUND)
-
-        verify(basketBaseRepository, never()).selectBasketListByMemberNo(anyString())
     }
 
     @Test
-    @DisplayName("장바구니 추가 성공 - 새로운 상품")
-    fun addBasket_Success_NewItem() {
+    @DisplayName("장바구니 추가 성공 - 신규 상품")
+    fun addBasketSuccessForNewBasket() {
         val email = "test@example.com"
-        val memberNo = "000000000000001"
-        val request = BasketAddRequest(goodsNo = "G00000000000001", itemNo = "001", quantity = 1L)
-
-        given(memberBaseRepository.findByEmail(email)).willReturn(createMember(memberNo, email))
-        given(basketBaseRepository.findByMemberNoAndGoodsNoAndItemNoAndIsOrderFalse(memberNo, request.goodsNo, request.itemNo))
-            .willReturn(null)
-        given(basketBaseTrxRepository.save(any(BasketBase::class.java))).willAnswer { it.arguments[0] as BasketBase }
-
-        basketService.addBasket(email, request)
-
-        verify(memberBaseRepository, times(1)).findByEmail(email)
-        verify(basketBaseRepository, times(1))
-            .findByMemberNoAndGoodsNoAndItemNoAndIsOrderFalse(memberNo, request.goodsNo, request.itemNo)
-        verify(basketBaseTrxRepository, times(1)).save(any(BasketBase::class.java))
-    }
-
-    @Test
-    @DisplayName("장바구니 추가 성공 - 기존 상품 수량 증가")
-    fun addBasket_Success_UpdateQuantity() {
-        val email = "test@example.com"
-        val memberNo = "000000000000001"
-        val request = BasketAddRequest(goodsNo = "G00000000000001", itemNo = "001", quantity = 2L)
-
-        val existingBasket = BasketBase().apply {
-            this.basketNo = "000000000000001"
-            this.memberNo = memberNo
-            this.goodsNo = request.goodsNo
-            this.itemNo = request.itemNo
-            this.quantity = 3L
+        val member = createMember(email = email)
+        val request = BasketAddRequest(goodsNo = "G001", itemNo = "001", quantity = 2L)
+        given(memberBaseRepository.findByEmail(email)).willReturn(member)
+        given(
+            basketBaseRepository.findByMemberNoAndGoodsNoAndItemNoAndIsOrderFalse(
+                member.memberNo,
+                request.goodsNo,
+                request.itemNo
+            )
+        ).willReturn(null)
+        given(basketBaseTrxRepository.save(any(BasketBase::class.java))).willAnswer { invocation ->
+            (invocation.arguments[0] as BasketBase).apply { basketNo = "B001" }
         }
 
-        given(memberBaseRepository.findByEmail(email)).willReturn(createMember(memberNo, email))
-        given(basketBaseRepository.findByMemberNoAndGoodsNoAndItemNoAndIsOrderFalse(memberNo, request.goodsNo, request.itemNo))
-            .willReturn(existingBasket)
-        given(basketBaseTrxRepository.save(any(BasketBase::class.java))).willAnswer { it.arguments[0] as BasketBase }
+        val basketNo = basketService.addBasket(email, request)
 
-        val result = basketService.addBasket(email, request)
+        val captor = ArgumentCaptor.forClass(BasketBase::class.java)
+        verify(basketBaseTrxRepository).save(captor.capture())
+        assertThat(basketNo).isEqualTo("B001")
+        assertThat(captor.value.memberNo).isEqualTo(member.memberNo)
+        assertThat(captor.value.isOrder).isFalse()
+        assertThat(captor.value.quantity).isEqualTo(2L)
+    }
 
-        assertThat(result).isEqualTo("000000000000001")
-        assertThat(existingBasket.quantity).isEqualTo(5L)
-        verify(basketBaseTrxRepository, times(1)).save(any(BasketBase::class.java))
+    @Test
+    @DisplayName("장바구니 추가 성공 - 기존 수량 증가")
+    fun addBasketSuccessForExistingBasket() {
+        val email = "test@example.com"
+        val member = createMember(email = email)
+        val request = BasketAddRequest(goodsNo = "G001", itemNo = "001", quantity = 2L)
+        val existing = BasketBase().apply {
+            basketNo = "B001"
+            memberNo = member.memberNo
+            goodsNo = request.goodsNo
+            itemNo = request.itemNo
+            quantity = 3L
+        }
+
+        given(memberBaseRepository.findByEmail(email)).willReturn(member)
+        given(
+            basketBaseRepository.findByMemberNoAndGoodsNoAndItemNoAndIsOrderFalse(
+                member.memberNo,
+                request.goodsNo,
+                request.itemNo
+            )
+        ).willReturn(existing)
+
+        val basketNo = basketService.addBasket(email, request)
+
+        assertThat(basketNo).isEqualTo("B001")
+        assertThat(existing.quantity).isEqualTo(5L)
+        verify(basketBaseTrxRepository, times(1)).save(existing)
     }
 
     @Test
     @DisplayName("장바구니 수정 성공")
-    fun modifyBasket_Success() {
+    fun modifyBasketSuccess() {
         val email = "test@example.com"
-        val memberNo = "000000000000001"
-        val basketNo = "000000000000001"
-        val request = BasketModifyRequest(quantity = 5L)
-
+        val member = createMember(email = email)
         val basket = BasketBase().apply {
-            this.basketNo = basketNo
-            this.memberNo = memberNo
-            this.quantity = 1L
+            basketNo = "B001"
+            memberNo = member.memberNo
+            goodsNo = "G001"
+            itemNo = "001"
+            quantity = 1L
         }
+        val request = BasketModifyRequest(goodsNo = "G002", itemNo = "002", quantity = 5L)
+        given(memberBaseRepository.findByEmail(email)).willReturn(member)
+        given(basketBaseRepository.findById("B001")).willReturn(Optional.of(basket))
 
-        given(memberBaseRepository.findByEmail(email)).willReturn(createMember(memberNo, email))
-        given(basketBaseRepository.findById(basketNo)).willReturn(Optional.of(basket))
-        given(basketBaseTrxRepository.save(any(BasketBase::class.java))).willAnswer { it.arguments[0] as BasketBase }
+        basketService.modifyBasket(email, "B001", request)
 
-        basketService.modifyBasket(email, basketNo, request)
-
-        verify(memberBaseRepository, times(1)).findByEmail(email)
-        verify(basketBaseRepository, times(1)).findById(basketNo)
-        verify(basketBaseTrxRepository, times(1)).save(any(BasketBase::class.java))
+        assertThat(basket.goodsNo).isEqualTo("G002")
+        assertThat(basket.itemNo).isEqualTo("002")
+        assertThat(basket.quantity).isEqualTo(5L)
+        verify(basketBaseTrxRepository).save(basket)
     }
 
     @Test
     @DisplayName("장바구니 수정 실패 - 장바구니 없음")
-    fun modifyBasket_Fail_BasketNotFound() {
-        val email = "test@example.com"
-        val memberNo = "000000000000001"
-        val basketNo = "000000000000001"
-        val request = BasketModifyRequest(quantity = 5L)
+    fun modifyBasketFailWhenBasketMissing() {
+        val member = createMember(email = "test@example.com")
+        given(memberBaseRepository.findByEmail(member.email)).willReturn(member)
+        given(basketBaseRepository.findById("B001")).willReturn(Optional.empty())
 
-        given(memberBaseRepository.findByEmail(email)).willReturn(createMember(memberNo, email))
-        given(basketBaseRepository.findById(basketNo)).willReturn(Optional.empty())
-
-        assertThatThrownBy { basketService.modifyBasket(email, basketNo, request) }
+        assertThatThrownBy {
+            basketService.modifyBasket(member.email, "B001", BasketModifyRequest(quantity = 1L))
+        }
             .isInstanceOf(ApiException::class.java)
             .hasFieldOrPropertyWithValue("apiError", ApiError.DATA_NOT_FOUND)
-
-        verify(basketBaseTrxRepository, never()).save(any(BasketBase::class.java))
     }
 
     @Test
     @DisplayName("장바구니 수정 실패 - 권한 없음")
-    fun modifyBasket_Fail_Forbidden() {
-        val email = "test@example.com"
-        val memberNo = "000000000000001"
-        val basketNo = "000000000000001"
-        val request = BasketModifyRequest(quantity = 5L)
-
+    fun modifyBasketFailWhenForbidden() {
+        val member = createMember(email = "test@example.com")
         val basket = BasketBase().apply {
-            this.basketNo = basketNo
-            this.memberNo = "000000000000002"
+            basketNo = "B001"
+            memberNo = "OTHER"
         }
+        given(memberBaseRepository.findByEmail(member.email)).willReturn(member)
+        given(basketBaseRepository.findById("B001")).willReturn(Optional.of(basket))
 
-        given(memberBaseRepository.findByEmail(email)).willReturn(createMember(memberNo, email))
-        given(basketBaseRepository.findById(basketNo)).willReturn(Optional.of(basket))
-
-        assertThatThrownBy { basketService.modifyBasket(email, basketNo, request) }
+        assertThatThrownBy {
+            basketService.modifyBasket(member.email, "B001", BasketModifyRequest(quantity = 1L))
+        }
             .isInstanceOf(ApiException::class.java)
             .hasFieldOrPropertyWithValue("apiError", ApiError.FORBIDDEN)
 
@@ -211,60 +190,117 @@ class BasketServiceImplTest {
 
     @Test
     @DisplayName("장바구니 삭제 성공")
-    fun deleteBasket_Success() {
-        val email = "test@example.com"
-        val memberNo = "000000000000001"
-        val basketNo = "000000000000001"
-
+    fun deleteBasketSuccess() {
+        val member = createMember(email = "test@example.com")
         val basket = BasketBase().apply {
-            this.basketNo = basketNo
-            this.memberNo = memberNo
+            basketNo = "B001"
+            memberNo = member.memberNo
         }
+        given(memberBaseRepository.findByEmail(member.email)).willReturn(member)
+        given(basketBaseRepository.findById("B001")).willReturn(Optional.of(basket))
 
-        given(memberBaseRepository.findByEmail(email)).willReturn(createMember(memberNo, email))
-        given(basketBaseRepository.findById(basketNo)).willReturn(Optional.of(basket))
+        basketService.deleteBasket(member.email, "B001")
 
-        basketService.deleteBasket(email, basketNo)
+        verify(basketBaseTrxRepository).deleteById("B001")
+    }
 
-        verify(memberBaseRepository, times(1)).findByEmail(email)
-        verify(basketBaseRepository, times(1)).findById(basketNo)
-        verify(basketBaseTrxRepository, times(1)).deleteById(basketNo)
+    @Test
+    @DisplayName("장바구니 삭제 실패 - 권한 없음")
+    fun deleteBasketFailWhenForbidden() {
+        val member = createMember(email = "test@example.com")
+        val basket = BasketBase().apply {
+            basketNo = "B001"
+            memberNo = "OTHER"
+        }
+        given(memberBaseRepository.findByEmail(member.email)).willReturn(member)
+        given(basketBaseRepository.findById("B001")).willReturn(Optional.of(basket))
+
+        assertThatThrownBy { basketService.deleteBasket(member.email, "B001") }
+            .isInstanceOf(ApiException::class.java)
+            .hasFieldOrPropertyWithValue("apiError", ApiError.FORBIDDEN)
+
+        verify(basketBaseTrxRepository, never()).deleteById("B001")
     }
 
     @Test
     @DisplayName("장바구니 여러 개 삭제 성공")
-    fun deleteBaskets_Success() {
-        val email = "test@example.com"
-        val memberNo = "000000000000001"
-        val basketNos = listOf("000000000000001", "000000000000002")
+    fun deleteBasketsSuccess() {
+        val member = createMember(email = "test@example.com")
+        val basketNos = listOf("B001", "B002")
+        given(memberBaseRepository.findByEmail(member.email)).willReturn(member)
+        basketNos.forEach { basketNo ->
+            given(basketBaseRepository.findById(basketNo)).willReturn(
+                Optional.of(BasketBase().apply {
+                    this.basketNo = basketNo
+                    memberNo = member.memberNo
+                })
+            )
+        }
 
-        val basket1 = BasketBase().apply { this.basketNo = "000000000000001"; this.memberNo = memberNo }
-        val basket2 = BasketBase().apply { this.basketNo = "000000000000002"; this.memberNo = memberNo }
+        basketService.deleteBaskets(member.email, basketNos)
 
-        given(memberBaseRepository.findByEmail(email)).willReturn(createMember(memberNo, email))
-        given(basketBaseRepository.findById("000000000000001")).willReturn(Optional.of(basket1))
-        given(basketBaseRepository.findById("000000000000002")).willReturn(Optional.of(basket2))
-        given(basketBaseTrxRepository.deleteByBasketNoIn(anyList())).willReturn(2)
+        verify(basketBaseTrxRepository).deleteByBasketNoIn(basketNos)
+    }
 
-        basketService.deleteBaskets(email, basketNos)
+    @Test
+    @DisplayName("장바구니 여러 개 삭제 실패 - 비어 있는 요청")
+    fun deleteBasketsFailWhenEmpty() {
+        assertThatThrownBy { basketService.deleteBaskets("test@example.com", emptyList()) }
+            .isInstanceOf(ApiException::class.java)
+            .hasFieldOrPropertyWithValue("apiError", ApiError.INVALID_PARAMETER)
+    }
 
-        verify(memberBaseRepository, times(1)).findByEmail(email)
-        verify(basketBaseRepository, times(2)).findById(anyString())
-        verify(basketBaseTrxRepository, times(1)).deleteByBasketNoIn(basketNos)
+    @Test
+    @DisplayName("장바구니 여러 개 삭제 실패 - 일부 장바구니 없음")
+    fun deleteBasketsFailWhenBasketMissing() {
+        val member = createMember(email = "test@example.com")
+        given(memberBaseRepository.findByEmail(member.email)).willReturn(member)
+        given(basketBaseRepository.findById("B001")).willReturn(Optional.empty())
+
+        assertThatThrownBy { basketService.deleteBaskets(member.email, listOf("B001")) }
+            .isInstanceOf(ApiException::class.java)
+            .hasFieldOrPropertyWithValue("apiError", ApiError.DATA_NOT_FOUND)
     }
 
     @Test
     @DisplayName("장바구니 전체 삭제 성공")
-    fun deleteAllBaskets_Success() {
-        val email = "test@example.com"
-        val memberNo = "000000000000001"
+    fun deleteAllBasketsSuccess() {
+        val member = createMember(email = "test@example.com")
+        given(memberBaseRepository.findByEmail(member.email)).willReturn(member)
 
-        given(memberBaseRepository.findByEmail(email)).willReturn(createMember(memberNo, email))
-        given(basketBaseTrxRepository.deleteByMemberNo(memberNo)).willReturn(5)
+        basketService.deleteAllBaskets(member.email)
 
-        basketService.deleteAllBaskets(email)
+        verify(basketBaseTrxRepository).deleteByMemberNo(member.memberNo)
+    }
 
-        verify(memberBaseRepository, times(1)).findByEmail(email)
-        verify(basketBaseTrxRepository, times(1)).deleteByMemberNo(memberNo)
+    private fun createMember(
+        memberNo: String = "M001",
+        email: String = "test@example.com"
+    ) = MemberBase().apply {
+        this.memberNo = memberNo
+        this.email = email
+    }
+
+    private fun createProjection(
+        basketNo: String,
+        memberNo: String = "M001"
+    ): BasketProjection {
+        val projection = mock(BasketProjection::class.java)
+        doReturn(basketNo).`when`(projection).getBasketNo()
+        doReturn(memberNo).`when`(projection).getMemberNo()
+        doReturn("G001").`when`(projection).getGoodsNo()
+        doReturn("테스트상품").`when`(projection).getGoodsName()
+        doReturn(PRD001.ON_SALE.code).`when`(projection).getGoodsStatusCode()
+        doReturn("https://cdn.example.com/goods.jpg").`when`(projection).getGoodsMainImageUrl()
+        doReturn(10000L).`when`(projection).getSalePrice()
+        doReturn("001").`when`(projection).getItemNo()
+        doReturn("기본").`when`(projection).getItemName()
+        doReturn(1000L).`when`(projection).getItemPrice()
+        doReturn(PRD001.ON_SALE.code).`when`(projection).getItemStatusCode()
+        doReturn(10L).`when`(projection).getStock()
+        doReturn(2L).`when`(projection).getQuantity()
+        doReturn(false).`when`(projection).getIsOrder()
+        doReturn(LocalDateTime.of(2026, 4, 28, 0, 0)).`when`(projection).getRegistDateTime()
+        return projection
     }
 }

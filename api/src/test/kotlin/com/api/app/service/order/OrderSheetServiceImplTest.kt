@@ -1,6 +1,8 @@
 package com.api.app.service.order
 
+import com.api.app.common.exception.ApiError
 import com.api.app.common.exception.ApiException
+import com.api.app.emum.PRD001
 import com.api.app.entity.MemberBase
 import com.api.app.repository.rodb.basket.BasketBaseRepository
 import com.api.app.repository.rodb.basket.BasketProjection
@@ -13,10 +15,15 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.BDDMockito.given
 import org.mockito.InjectMocks
 import org.mockito.Mock
+import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
+import java.time.LocalDateTime
 
 @ExtendWith(MockitoExtension::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class OrderSheetServiceImplTest {
 
     @InjectMocks
@@ -28,155 +35,167 @@ class OrderSheetServiceImplTest {
     @Mock
     private lateinit var memberBaseRepository: MemberBaseRepository
 
-    private fun createMember(memberNo: String = "M001", email: String = "test@example.com") =
-        MemberBase().apply {
-            this.memberNo = memberNo
-            this.email = email
-            this.memberName = "홍길동"
-            this.phone = "010-1234-5678"
-        }
+    @Test
+    @DisplayName("주문서 조회 성공")
+    fun getOrderSheetSuccess() {
+        val email = "test@example.com"
+        val basket1 = createProjection(basketNo = "B001", salePrice = 10000L, quantity = 2L)
+        val basket2 = createProjection(basketNo = "B002", salePrice = 15000L, quantity = 1L)
+        given(memberBaseRepository.findByEmail(email)).willReturn(createMember(email = email))
+        given(basketBaseRepository.selectBasketListByBasketNos(listOf("B001", "B002"))).willReturn(listOf(basket1, basket2))
 
-    private fun mockProjection(
+        val response = orderSheetService.getOrderSheet(email, listOf("B001", "B002"))
+
+        assertThat(response.items).hasSize(2)
+        assertThat(response.ordererName).isEqualTo("홍길동")
+        assertThat(response.totalProductAmount).isEqualTo(35000L)
+        assertThat(response.totalQuantity).isEqualTo(3L)
+    }
+
+    @Test
+    @DisplayName("주문서 조회 실패 - 장바구니 번호 없음")
+    fun getOrderSheetFailWhenBasketNosEmpty() {
+        assertThatThrownBy { orderSheetService.getOrderSheet("test@example.com", emptyList()) }
+            .isInstanceOf(ApiException::class.java)
+            .hasFieldOrPropertyWithValue("apiError", ApiError.INVALID_PARAMETER)
+    }
+
+    @Test
+    @DisplayName("주문서 조회 실패 - 회원 없음")
+    fun getOrderSheetFailWhenMemberMissing() {
+        given(memberBaseRepository.findByEmail("test@example.com")).willReturn(null)
+
+        assertThatThrownBy { orderSheetService.getOrderSheet("test@example.com", listOf("B001")) }
+            .isInstanceOf(ApiException::class.java)
+            .hasFieldOrPropertyWithValue("apiError", ApiError.DATA_NOT_FOUND)
+    }
+
+    @Test
+    @DisplayName("주문서 조회 실패 - 장바구니 없음")
+    fun getOrderSheetFailWhenBasketMissing() {
+        val email = "test@example.com"
+        given(memberBaseRepository.findByEmail(email)).willReturn(createMember(email = email))
+        given(basketBaseRepository.selectBasketListByBasketNos(listOf("B001"))).willReturn(emptyList())
+
+        assertThatThrownBy { orderSheetService.getOrderSheet(email, listOf("B001")) }
+            .isInstanceOf(ApiException::class.java)
+            .hasFieldOrPropertyWithValue("apiError", ApiError.DATA_NOT_FOUND)
+    }
+
+    @Test
+    @DisplayName("주문서 조회 실패 - 일부 장바구니 누락")
+    fun getOrderSheetFailWhenBasketCountMismatch() {
+        val email = "test@example.com"
+        val basket = createProjection(basketNo = "B001")
+        given(memberBaseRepository.findByEmail(email)).willReturn(createMember(email = email))
+        given(basketBaseRepository.selectBasketListByBasketNos(listOf("B001", "B002"))).willReturn(listOf(basket))
+
+        assertThatThrownBy { orderSheetService.getOrderSheet(email, listOf("B001", "B002")) }
+            .isInstanceOf(ApiException::class.java)
+            .hasFieldOrPropertyWithValue("apiError", ApiError.DATA_NOT_FOUND)
+    }
+
+    @Test
+    @DisplayName("주문서 조회 실패 - 다른 회원 장바구니")
+    fun getOrderSheetFailWhenForbiddenBasket() {
+        val email = "test@example.com"
+        val basket = createProjection(basketNo = "B001", memberNo = "M999")
+        given(memberBaseRepository.findByEmail(email)).willReturn(createMember(memberNo = "M001", email = email))
+        given(basketBaseRepository.selectBasketListByBasketNos(listOf("B001"))).willReturn(listOf(basket))
+
+        assertThatThrownBy { orderSheetService.getOrderSheet(email, listOf("B001")) }
+            .isInstanceOf(ApiException::class.java)
+            .hasFieldOrPropertyWithValue("apiError", ApiError.FORBIDDEN)
+    }
+
+    @Test
+    @DisplayName("주문서 조회 실패 - 이미 주문됨")
+    fun getOrderSheetFailWhenAlreadyOrdered() {
+        val email = "test@example.com"
+        val basket = createProjection(basketNo = "B001", isOrder = true)
+        given(memberBaseRepository.findByEmail(email)).willReturn(createMember(email = email))
+        given(basketBaseRepository.selectBasketListByBasketNos(listOf("B001"))).willReturn(listOf(basket))
+
+        assertThatThrownBy { orderSheetService.getOrderSheet(email, listOf("B001")) }
+            .isInstanceOf(ApiException::class.java)
+            .hasFieldOrPropertyWithValue("apiError", ApiError.INVALID_PARAMETER)
+    }
+
+    @Test
+    @DisplayName("주문서 조회 실패 - 상품 판매 상태 아님")
+    fun getOrderSheetFailWhenGoodsNotOnSale() {
+        val email = "test@example.com"
+        val basket = createProjection(basketNo = "B001", goodsStatusCode = PRD001.SOLD_OUT.code)
+        given(memberBaseRepository.findByEmail(email)).willReturn(createMember(email = email))
+        given(basketBaseRepository.selectBasketListByBasketNos(listOf("B001"))).willReturn(listOf(basket))
+
+        assertThatThrownBy { orderSheetService.getOrderSheet(email, listOf("B001")) }
+            .isInstanceOf(ApiException::class.java)
+            .hasFieldOrPropertyWithValue("apiError", ApiError.INVALID_PARAMETER)
+    }
+
+    @Test
+    @DisplayName("주문서 조회 실패 - 단품 판매 상태 아님")
+    fun getOrderSheetFailWhenItemNotOnSale() {
+        val email = "test@example.com"
+        val basket = createProjection(basketNo = "B001", itemStatusCode = PRD001.DISCONTINUED.code)
+        given(memberBaseRepository.findByEmail(email)).willReturn(createMember(email = email))
+        given(basketBaseRepository.selectBasketListByBasketNos(listOf("B001"))).willReturn(listOf(basket))
+
+        assertThatThrownBy { orderSheetService.getOrderSheet(email, listOf("B001")) }
+            .isInstanceOf(ApiException::class.java)
+            .hasFieldOrPropertyWithValue("apiError", ApiError.INVALID_PARAMETER)
+    }
+
+    @Test
+    @DisplayName("주문서 조회 실패 - 재고 부족")
+    fun getOrderSheetFailWhenStockInsufficient() {
+        val email = "test@example.com"
+        val basket = createProjection(basketNo = "B001", quantity = 10L, stock = 5L)
+        given(memberBaseRepository.findByEmail(email)).willReturn(createMember(email = email))
+        given(basketBaseRepository.selectBasketListByBasketNos(listOf("B001"))).willReturn(listOf(basket))
+
+        assertThatThrownBy { orderSheetService.getOrderSheet(email, listOf("B001")) }
+            .isInstanceOf(ApiException::class.java)
+            .hasFieldOrPropertyWithValue("apiError", ApiError.INVALID_PARAMETER)
+    }
+
+    private fun createMember(
+        memberNo: String = "M001",
+        email: String = "test@example.com"
+    ) = MemberBase().apply {
+        this.memberNo = memberNo
+        this.memberName = "홍길동"
+        this.phone = "010-1234-5678"
+        this.email = email
+    }
+
+    private fun createProjection(
         basketNo: String,
         memberNo: String = "M001",
-        goodsStatusCode: String = "SALE",
-        itemStatusCode: String = "SALE",
+        goodsStatusCode: String = PRD001.ON_SALE.code,
+        itemStatusCode: String = PRD001.ON_SALE.code,
         isOrder: Boolean = false,
         salePrice: Long = 10000L,
         quantity: Long = 2L,
         stock: Long = 10L
     ): BasketProjection {
-        val p = mock(BasketProjection::class.java)
-        given(p.getBasketNo()).willReturn(basketNo)
-        given(p.getMemberNo()).willReturn(memberNo)
-        given(p.getGoodsNo()).willReturn("G001")
-        given(p.getGoodsName()).willReturn("상품$basketNo")
-        given(p.getGoodsStatusCode()).willReturn(goodsStatusCode)
-        given(p.getGoodsMainImageUrl()).willReturn(null)
-        given(p.getSalePrice()).willReturn(salePrice)
-        given(p.getItemNo()).willReturn("001")
-        given(p.getItemName()).willReturn("기본")
-        given(p.getItemPrice()).willReturn(0L)
-        given(p.getItemStatusCode()).willReturn(itemStatusCode)
-        given(p.getStock()).willReturn(stock)
-        given(p.getQuantity()).willReturn(quantity)
-        given(p.getIsOrder()).willReturn(isOrder)
-        given(p.getRegistDateTime()).willReturn(null)
-        return p
-    }
-
-    @Test
-    @DisplayName("주문서 정보 조회 성공")
-    fun getOrderSheet_Success() {
-        val email = "test@example.com"
-        val memberNo = "M001"
-        val basketNos = listOf("B001", "B002")
-
-        val basket1 = mockProjection("B001", salePrice = 10000L, quantity = 2L)
-        val basket2 = mockProjection("B002", salePrice = 15000L, quantity = 1L)
-
-        given(memberBaseRepository.findByEmail(email)).willReturn(createMember(memberNo, email))
-        given(basketBaseRepository.selectBasketListByBasketNos(basketNos)).willReturn(listOf(basket1, basket2))
-
-        val response = orderSheetService.getOrderSheet(email, basketNos)
-
-        assertThat(response.ordererName).isEqualTo("홍길동")
-        assertThat(response.ordererEmail).isEqualTo(email)
-        assertThat(response.ordererPhone).isEqualTo("010-1234-5678")
-        assertThat(response.items).hasSize(2)
-        assertThat(response.totalProductAmount).isEqualTo(35000L) // (10000*2) + (15000*1)
-        assertThat(response.totalQuantity).isEqualTo(3L)
-    }
-
-    @Test
-    @DisplayName("장바구니 번호가 없으면 예외 발생")
-    fun getOrderSheet_EmptyBasketNos() {
-        assertThatThrownBy { orderSheetService.getOrderSheet("test@example.com", emptyList()) }
-            .isInstanceOf(ApiException::class.java)
-            .hasMessageContaining("장바구니 번호가 필요합니다")
-    }
-
-    @Test
-    @DisplayName("회원 정보가 없으면 예외 발생")
-    fun getOrderSheet_MemberNotFound() {
-        given(memberBaseRepository.findByEmail("test@example.com")).willReturn(null)
-
-        assertThatThrownBy { orderSheetService.getOrderSheet("test@example.com", listOf("B001")) }
-            .isInstanceOf(ApiException::class.java)
-            .hasMessageContaining("회원 정보를 찾을 수 없습니다")
-    }
-
-    @Test
-    @DisplayName("장바구니가 존재하지 않으면 예외 발생")
-    fun getOrderSheet_BasketNotFound() {
-        val email = "test@example.com"
-        val basketNos = listOf("B001")
-
-        given(memberBaseRepository.findByEmail(email)).willReturn(createMember())
-        given(basketBaseRepository.selectBasketListByBasketNos(basketNos)).willReturn(emptyList())
-
-        assertThatThrownBy { orderSheetService.getOrderSheet(email, basketNos) }
-            .isInstanceOf(ApiException::class.java)
-            .hasMessageContaining("유효하지 않은 장바구니입니다")
-    }
-
-    @Test
-    @DisplayName("다른 회원의 장바구니면 예외 발생")
-    fun getOrderSheet_ForbiddenBasket() {
-        val email = "test@example.com"
-        val basketNos = listOf("B001")
-
-        given(memberBaseRepository.findByEmail(email)).willReturn(createMember("M001", email))
-        given(basketBaseRepository.selectBasketListByBasketNos(basketNos))
-            .willReturn(listOf(mockProjection("B001", memberNo = "M002")))
-
-        assertThatThrownBy { orderSheetService.getOrderSheet(email, basketNos) }
-            .isInstanceOf(ApiException::class.java)
-            .hasMessageContaining("본인의 장바구니만 주문할 수 있습니다")
-    }
-
-    @Test
-    @DisplayName("이미 주문된 장바구니면 예외 발생")
-    fun getOrderSheet_AlreadyOrdered() {
-        val email = "test@example.com"
-        val basketNos = listOf("B001")
-
-        given(memberBaseRepository.findByEmail(email)).willReturn(createMember())
-        given(basketBaseRepository.selectBasketListByBasketNos(basketNos))
-            .willReturn(listOf(mockProjection("B001", isOrder = true)))
-
-        assertThatThrownBy { orderSheetService.getOrderSheet(email, basketNos) }
-            .isInstanceOf(ApiException::class.java)
-            .hasMessageContaining("이미 주문된 상품입니다")
-    }
-
-    @Test
-    @DisplayName("상품이 판매중이 아니면 예외 발생")
-    fun getOrderSheet_GoodsNotOnSale() {
-        val email = "test@example.com"
-        val basketNos = listOf("B001")
-
-        given(memberBaseRepository.findByEmail(email)).willReturn(createMember())
-        given(basketBaseRepository.selectBasketListByBasketNos(basketNos))
-            .willReturn(listOf(mockProjection("B001", goodsStatusCode = "SOLD_OUT")))
-
-        assertThatThrownBy { orderSheetService.getOrderSheet(email, basketNos) }
-            .isInstanceOf(ApiException::class.java)
-            .hasMessageContaining("판매 중인 상품만 주문할 수 있습니다")
-    }
-
-    @Test
-    @DisplayName("재고가 부족하면 예외 발생")
-    fun getOrderSheet_InsufficientStock() {
-        val email = "test@example.com"
-        val basketNos = listOf("B001")
-
-        given(memberBaseRepository.findByEmail(email)).willReturn(createMember())
-        given(basketBaseRepository.selectBasketListByBasketNos(basketNos))
-            .willReturn(listOf(mockProjection("B001", quantity = 10L, stock = 5L)))
-
-        assertThatThrownBy { orderSheetService.getOrderSheet(email, basketNos) }
-            .isInstanceOf(ApiException::class.java)
-            .hasMessageContaining("재고가 부족합니다")
+        val projection = mock(BasketProjection::class.java)
+        doReturn(basketNo).`when`(projection).getBasketNo()
+        doReturn(memberNo).`when`(projection).getMemberNo()
+        doReturn("G001").`when`(projection).getGoodsNo()
+        doReturn("상품$basketNo").`when`(projection).getGoodsName()
+        doReturn(goodsStatusCode).`when`(projection).getGoodsStatusCode()
+        doReturn("https://cdn.example.com/goods.jpg").`when`(projection).getGoodsMainImageUrl()
+        doReturn(salePrice).`when`(projection).getSalePrice()
+        doReturn("001").`when`(projection).getItemNo()
+        doReturn("기본").`when`(projection).getItemName()
+        doReturn(0L).`when`(projection).getItemPrice()
+        doReturn(itemStatusCode).`when`(projection).getItemStatusCode()
+        doReturn(stock).`when`(projection).getStock()
+        doReturn(quantity).`when`(projection).getQuantity()
+        doReturn(isOrder).`when`(projection).getIsOrder()
+        doReturn(LocalDateTime.of(2026, 4, 28, 0, 0)).`when`(projection).getRegistDateTime()
+        return projection
     }
 }

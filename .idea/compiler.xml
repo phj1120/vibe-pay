@@ -1,19 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="CompilerConfiguration">
-    <bytecodeTargetLevel>
-      <module name="api" target="21" />
-      <module name="api.main" target="21" />
-      <module name="api.test" target="21" />
+    <bytecodeTargetLevel target="21">
+      <module name="vibepay.claim-service" target="21" />
+      <module name="vibepay.claim-service.main" target="21" />
+      <module name="vibepay.claim-service.test" target="21" />
+      <module name="vibepay.common-lib.common-core" target="21" />
+      <module name="vibepay.common-lib.common-core.main" target="21" />
+      <module name="vibepay.common-lib.common-core.test" target="21" />
+      <module name="vibepay.common-lib.common-messaging" target="21" />
+      <module name="vibepay.common-lib.common-messaging.main" target="21" />
+      <module name="vibepay.common-lib.common-messaging.test" target="21" />
+      <module name="vibepay.common-lib.common-security" target="21" />
+      <module name="vibepay.common-lib.common-security.main" target="21" />
+      <module name="vibepay.common-lib.common-security.test" target="21" />
       <module name="vibepay.common-lib.main" target="21" />
       <module name="vibepay.common-lib.test" target="21" />
+      <module name="vibepay.core-service" target="21" />
+      <module name="vibepay.core-service.main" target="21" />
+      <module name="vibepay.core-service.test" target="21" />
+      <module name="vibepay.gateway-service" target="21" />
+      <module name="vibepay.gateway-service.main" target="21" />
+      <module name="vibepay.gateway-service.test" target="21" />
+      <module name="vibepay.goods-service" target="21" />
+      <module name="vibepay.goods-service.main" target="21" />
+      <module name="vibepay.goods-service.test" target="21" />
+      <module name="vibepay.monolith" target="21" />
+      <module name="vibepay.monolith.main" target="21" />
+      <module name="vibepay.monolith.test" target="21" />
+      <module name="vibepay.payment-service" target="21" />
+      <module name="vibepay.payment-service.main" target="21" />
+      <module name="vibepay.payment-service.test" target="21" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_STRING" value="-parameters -proc:none" />
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
-      <module name="api" options="-parameters -proc:none" />
-      <module name="api.main" options="-parameters -proc:none" />
-      <module name="api.test" options="-parameters -proc:none" />
       <module name="vibepay.claim-service" options="-parameters -proc:none" />
       <module name="vibepay.claim-service.main" options="-parameters -proc:none" />
       <module name="vibepay.claim-service.test" options="-parameters -proc:none" />
