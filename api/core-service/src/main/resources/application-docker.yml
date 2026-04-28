@@ -1,8 +1,0 @@
-spring:
-  datasource:
-    url: jdbc:postgresql://postgres:5432/vibepay
-    username: vibepay
-    password: vibepay
-
-  kafka:
-    bootstrap-servers: kafka:9092
