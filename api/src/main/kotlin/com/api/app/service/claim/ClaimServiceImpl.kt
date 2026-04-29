@@ -18,6 +18,7 @@ import com.api.app.entity.OrderDetail
 import com.api.app.entity.OrderDetailId
 import com.api.app.entity.PayBase
 import com.api.app.entity.PayInterfaceLog
+import com.api.app.repository.rodb.order.OrderBaseRepository
 import com.api.app.repository.rodb.order.OrderDetailRepository
 import com.api.app.repository.rodb.order.OrderGoodsRepository
 import com.api.app.repository.rodb.pay.PayBaseRepository
@@ -37,6 +38,7 @@ import java.time.LocalDateTime
 @Transactional
 class ClaimServiceImpl(
     private val orderBaseTrxRepository: OrderBaseTrxRepository,
+    private val orderBaseRepository: OrderBaseRepository,
     private val orderDetailRepository: OrderDetailRepository,
     private val orderDetailTrxRepository: OrderDetailTrxRepository,
     private val orderGoodsRepository: OrderGoodsRepository,
@@ -53,6 +55,8 @@ class ClaimServiceImpl(
     override fun cancelOrder(request: CancelRequest) {
         log.info("Order cancel started. memberNo={}, targetCount={}", request.memberNo, request.targets.size)
 
+        validateCancelRequest(request)
+
         val claimNo = orderBaseTrxRepository.generateClaimNo()
         log.info("Claim number generated: {}", claimNo)
 
@@ -61,17 +65,32 @@ class ClaimServiceImpl(
         for ((orderNo, targets) in targetsByOrderNo) {
             log.info("Processing cancel for orderNo={}, claimNo={}, targetCount={}", orderNo, claimNo, targets.size)
 
-            validateCancelTargets(targets)
+            validateCancelTargets(targets, request.memberNo)
             val cancelAmounts = calculateCancelAmounts(orderNo, targets)
             processCancelPayments(orderNo, claimNo, cancelAmounts, request.memberNo)
-            createCancelOrderDetails(orderNo, claimNo, targets, request.memberNo)
+            createCancelOrderDetails(orderNo, claimNo, targets)
         }
 
         log.info("Order cancel completed successfully. memberNo={}", request.memberNo)
     }
 
-    private fun validateCancelTargets(targets: List<ClaimTargetRequest>) {
+    private fun validateCancelRequest(request: CancelRequest) {
+        if (request.targets.isEmpty()) {
+            throw IllegalArgumentException("취소 대상이 없습니다")
+        }
+        if (request.targets.distinct().size != request.targets.size) {
+            throw IllegalArgumentException("중복된 취소 대상이 포함되어 있습니다")
+        }
+    }
+
+    private fun validateCancelTargets(targets: List<ClaimTargetRequest>, memberNo: String) {
         for (target in targets) {
+            val orderBase = orderBaseRepository.findById(target.orderNo).orElse(null)
+                ?: throw IllegalArgumentException("주문 정보를 찾을 수 없습니다")
+            if (orderBase.memberNo != memberNo) {
+                throw IllegalArgumentException("본인 주문만 취소할 수 있습니다")
+            }
+
             val orderDetail = orderDetailRepository.findByIdOrderNoAndIdOrderSequenceAndIdOrderProcessSequence(
                 target.orderNo, target.orderSequence, target.orderProcessSequence
             ) ?: throw IllegalArgumentException("주문 정보를 찾을 수 없습니다")
@@ -221,8 +240,7 @@ class ClaimServiceImpl(
         log.info("Point cancel payment created. payNo={}, cancelAmount={}", payNo, cancelAmount)
     }
 
-    private fun createCancelOrderDetails(orderNo: String, claimNo: String,
-                                          targets: List<ClaimTargetRequest>, memberNo: String) {
+    private fun createCancelOrderDetails(orderNo: String, claimNo: String, targets: List<ClaimTargetRequest>) {
         val now = LocalDateTime.now()
 
         for (target in targets) {

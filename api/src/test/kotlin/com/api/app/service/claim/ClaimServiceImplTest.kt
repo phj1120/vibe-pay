@@ -14,8 +14,10 @@ import com.api.app.entity.OrderDetail
 import com.api.app.entity.OrderDetailId
 import com.api.app.entity.OrderGoods
 import com.api.app.entity.OrderGoodsId
+import com.api.app.entity.OrderBase
 import com.api.app.entity.PayBase
 import com.api.app.entity.PayInterfaceLog
+import com.api.app.repository.rodb.order.OrderBaseRepository
 import com.api.app.repository.rodb.order.OrderDetailRepository
 import com.api.app.repository.rodb.order.OrderGoodsRepository
 import com.api.app.repository.rodb.pay.PayBaseRepository
@@ -40,6 +42,7 @@ import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
+import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
 class ClaimServiceImplTest {
@@ -48,6 +51,7 @@ class ClaimServiceImplTest {
     private lateinit var claimService: ClaimServiceImpl
 
     @Mock private lateinit var orderBaseTrxRepository: OrderBaseTrxRepository
+    @Mock private lateinit var orderBaseRepository: OrderBaseRepository
     @Mock private lateinit var orderDetailRepository: OrderDetailRepository
     @Mock private lateinit var orderDetailTrxRepository: OrderDetailTrxRepository
     @Mock private lateinit var orderGoodsRepository: OrderGoodsRepository
@@ -74,6 +78,11 @@ class ClaimServiceImplTest {
         quantity = 2L
         this.orderTypeCode = orderTypeCode
         this.orderStatusCode = orderStatusCode
+    }
+
+    private fun orderBase(memberNo: String = "M001") = OrderBase().apply {
+        orderNo = "O001"
+        this.memberNo = memberNo
     }
 
     private fun orderGoods() = OrderGoods().apply {
@@ -126,6 +135,7 @@ class ClaimServiceImplTest {
         }
 
         given(orderBaseTrxRepository.generateClaimNo()).willReturn("C001")
+        given(orderBaseRepository.findById("O001")).willReturn(Optional.of(orderBase()))
         given(orderDetailRepository.findByIdOrderNoAndIdOrderSequenceAndIdOrderProcessSequence("O001", 1L, 1L))
             .willReturn(originalDetail)
         given(orderGoodsRepository.findByIdOrderNoAndIdGoodsNoAndIdItemNo("O001", "G001", "I001"))
@@ -160,6 +170,7 @@ class ClaimServiceImplTest {
     @DisplayName("주문 취소 실패 - 원주문 상태 불가")
     fun cancelOrder_Fail_InvalidStatus() {
         given(orderBaseTrxRepository.generateClaimNo()).willReturn("C001")
+        given(orderBaseRepository.findById("O001")).willReturn(Optional.of(orderBase()))
         given(orderDetailRepository.findByIdOrderNoAndIdOrderSequenceAndIdOrderProcessSequence("O001", 1L, 1L))
             .willReturn(orderDetail(orderStatusCode = ORD002.ORDER_COMPLETED.code))
 
@@ -172,6 +183,7 @@ class ClaimServiceImplTest {
     @DisplayName("주문 취소 실패 - 취소 가능 금액 부족")
     fun cancelOrder_Fail_InsufficientCancelableAmount() {
         given(orderBaseTrxRepository.generateClaimNo()).willReturn("C001")
+        given(orderBaseRepository.findById("O001")).willReturn(Optional.of(orderBase()))
         given(orderDetailRepository.findByIdOrderNoAndIdOrderSequenceAndIdOrderProcessSequence("O001", 1L, 1L))
             .willReturn(orderDetail())
         given(orderGoodsRepository.findByIdOrderNoAndIdGoodsNoAndIdItemNo("O001", "G001", "I001"))
@@ -181,5 +193,32 @@ class ClaimServiceImplTest {
         assertThatThrownBy { claimService.cancelOrder(cancelRequest()) }
             .isInstanceOf(IllegalStateException::class.java)
             .hasMessageContaining("취소 가능한 금액이 부족합니다")
+    }
+
+    @Test
+    @DisplayName("주문 취소 실패 - 본인 주문이 아님")
+    fun cancelOrder_Fail_NotOwnedByMember() {
+        given(orderBaseTrxRepository.generateClaimNo()).willReturn("C001")
+        given(orderBaseRepository.findById("O001")).willReturn(Optional.of(orderBase(memberNo = "M999")))
+
+        assertThatThrownBy { claimService.cancelOrder(cancelRequest()) }
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining("본인 주문만 취소할 수 있습니다")
+    }
+
+    @Test
+    @DisplayName("주문 취소 실패 - 중복 대상 포함")
+    fun cancelOrder_Fail_DuplicateTargets() {
+        val request = CancelRequest(
+            memberNo = "M001",
+            targets = listOf(
+                ClaimTargetRequest(orderNo = "O001", orderSequence = 1L, orderProcessSequence = 1L),
+                ClaimTargetRequest(orderNo = "O001", orderSequence = 1L, orderProcessSequence = 1L)
+            )
+        )
+
+        assertThatThrownBy { claimService.cancelOrder(request) }
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining("중복된 취소 대상이 포함되어 있습니다")
     }
 }

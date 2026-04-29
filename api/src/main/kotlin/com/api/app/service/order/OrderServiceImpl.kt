@@ -9,6 +9,7 @@ import com.api.app.dto.response.order.OrderListResponse
 import com.api.app.emum.MEM001
 import com.api.app.emum.ORD001
 import com.api.app.emum.ORD002
+import com.api.app.emum.PAY001
 import com.api.app.emum.PAY002
 import com.api.app.entity.OrderBase
 import com.api.app.entity.OrderDetail
@@ -87,6 +88,18 @@ class OrderServiceImpl(
             throw IllegalArgumentException("정상 회원만 주문할 수 있습니다")
         }
 
+        validatePaymentRequests(request)
+
+        val totalOrderAmount = request.goodsList.sumOf { goods ->
+            val quantity = goods.quantity ?: 0L
+            val salePrice = goods.salePrice ?: 0L
+            quantity * salePrice
+        }
+        val totalPaymentAmount = request.payList.sumOf { it.amount }
+        if (totalOrderAmount != totalPaymentAmount) {
+            throw IllegalArgumentException("주문 금액과 결제 금액이 일치하지 않습니다")
+        }
+
         request.goodsList.forEach { goods ->
             val item = goodsItemRepository.findByIdGoodsNoAndIdItemNo(goods.goodsNo!!, goods.itemNo!!)
                 ?: throw IllegalArgumentException("상품 정보를 찾을 수 없습니다: ${goods.goodsNo}-${goods.itemNo}")
@@ -99,6 +112,36 @@ class OrderServiceImpl(
             val expectedPrice = priceHist.salePrice + item.itemPrice
             if (expectedPrice != goods.salePrice) {
                 throw IllegalArgumentException("가격이 변경되었습니다: ${goods.goodsName} (DB: $expectedPrice, 요청: ${goods.salePrice})")
+            }
+        }
+    }
+
+    private fun validatePaymentRequests(request: OrderRequest) {
+        if (request.payList.any { it.amount <= 0 }) {
+            throw IllegalArgumentException("결제 금액은 0보다 커야 합니다")
+        }
+        if (request.payList.any { it.payTypeCode != PAY001.PAYMENT.code }) {
+            throw IllegalArgumentException("주문 생성에서는 결제 유형만 사용할 수 있습니다")
+        }
+        if (request.payList.distinctBy { it.payWayCode }.size != request.payList.size) {
+            throw IllegalArgumentException("동일한 결제 수단은 한 번만 사용할 수 있습니다")
+        }
+
+        request.payList.forEach { payRequest ->
+            when (payRequest.payWayCode) {
+                PAY002.CREDIT_CARD.code -> {
+                    val confirmRequest = payRequest.paymentConfirmRequest
+                        ?: throw IllegalArgumentException("카드 결제 승인 정보가 필요합니다")
+                    if (confirmRequest.orderNo != request.orderNo) {
+                        throw IllegalArgumentException("결제 승인 정보의 주문번호가 일치하지 않습니다")
+                    }
+                }
+                PAY002.POINT.code -> {
+                    if (payRequest.paymentConfirmRequest != null) {
+                        throw IllegalArgumentException("포인트 결제에는 카드 승인 정보가 필요하지 않습니다")
+                    }
+                }
+                else -> throw IllegalArgumentException("지원하지 않는 결제 수단입니다: ${payRequest.payWayCode}")
             }
         }
     }

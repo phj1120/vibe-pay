@@ -181,13 +181,101 @@ class OrderServiceImplTest {
     fun createOrderThrowsWhenStockIsInsufficient() {
         val request = baseOrderRequest()
         given(memberBaseRepository.findByMemberNo("000000000000001")).willReturn(activeMember())
-        given(goodsItemRepository.findByIdGoodsNoAndIdItemNo("G-1", "I01")).willReturn(goodsItem(stock = 1L, itemPrice = 100L))
+        given(goodsItemRepository.findByIdGoodsNoAndIdItemNo("G-1", "I01")).willReturn(goodsItem(stock = 0L, itemPrice = 100L))
 
         assertThatThrownBy { orderService.createOrder(request) }
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining("재고가 부족합니다")
 
         verify(goodsPriceHistRepository, never()).selectCurrentPrice("G-1")
+    }
+
+    @Test
+    @DisplayName("createOrder throws when payment total does not match order total")
+    fun createOrderThrowsWhenPaymentTotalDoesNotMatchOrderTotal() {
+        val request = baseOrderRequest(
+            payList = listOf(
+                PayRequest(
+                    payWayCode = PAY002.CREDIT_CARD.code,
+                    amount = 9000L,
+                    payTypeCode = PAY001.PAYMENT.code,
+                    paymentConfirmRequest = PaymentConfirmRequest(pgTypeCode = PAY005.INICIS.code, orderNo = "20260428O000001")
+                )
+            )
+        )
+        given(memberBaseRepository.findByMemberNo("000000000000001")).willReturn(activeMember())
+
+        assertThatThrownBy { orderService.createOrder(request) }
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessage("주문 금액과 결제 금액이 일치하지 않습니다")
+
+        verify(goodsItemRepository, never()).findByIdGoodsNoAndIdItemNo("G-1", "I01")
+    }
+
+    @Test
+    @DisplayName("createOrder throws when card payment approval info is missing")
+    fun createOrderThrowsWhenCardApprovalInfoIsMissing() {
+        val request = baseOrderRequest(
+            payList = listOf(
+                PayRequest(
+                    payWayCode = PAY002.CREDIT_CARD.code,
+                    amount = 10000L,
+                    payTypeCode = PAY001.PAYMENT.code,
+                    paymentConfirmRequest = null
+                )
+            )
+        )
+        given(memberBaseRepository.findByMemberNo("000000000000001")).willReturn(activeMember())
+
+        assertThatThrownBy { orderService.createOrder(request) }
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessage("카드 결제 승인 정보가 필요합니다")
+    }
+
+    @Test
+    @DisplayName("createOrder throws when point payment includes card approval info")
+    fun createOrderThrowsWhenPointPaymentIncludesCardApprovalInfo() {
+        val request = baseOrderRequest(
+            payList = listOf(
+                PayRequest(
+                    payWayCode = PAY002.POINT.code,
+                    amount = 10000L,
+                    payTypeCode = PAY001.PAYMENT.code,
+                    paymentConfirmRequest = PaymentConfirmRequest(pgTypeCode = PAY005.INICIS.code, orderNo = "20260428O000001")
+                )
+            )
+        )
+        given(memberBaseRepository.findByMemberNo("000000000000001")).willReturn(activeMember())
+
+        assertThatThrownBy { orderService.createOrder(request) }
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessage("포인트 결제에는 카드 승인 정보가 필요하지 않습니다")
+    }
+
+    @Test
+    @DisplayName("createOrder throws when duplicate pay ways are provided")
+    fun createOrderThrowsWhenDuplicatePayWaysAreProvided() {
+        val request = baseOrderRequest(
+            payList = listOf(
+                PayRequest(
+                    payWayCode = PAY002.CREDIT_CARD.code,
+                    amount = 7000L,
+                    payTypeCode = PAY001.PAYMENT.code,
+                    paymentConfirmRequest = PaymentConfirmRequest(pgTypeCode = PAY005.INICIS.code, orderNo = "20260428O000001")
+                ),
+                PayRequest(
+                    payWayCode = PAY002.CREDIT_CARD.code,
+                    amount = 3000L,
+                    payTypeCode = PAY001.PAYMENT.code,
+                    paymentConfirmRequest = PaymentConfirmRequest(pgTypeCode = PAY005.NICE.code, orderNo = "20260428O000001")
+                )
+            )
+        )
+        given(memberBaseRepository.findByMemberNo("000000000000001")).willReturn(activeMember())
+
+        assertThatThrownBy { orderService.createOrder(request) }
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessage("동일한 결제 수단은 한 번만 사용할 수 있습니다")
     }
 
     @Test
@@ -336,7 +424,7 @@ class OrderServiceImplTest {
                 salePrice = 10000L,
                 itemNo = "I01",
                 itemName = "Black",
-                quantity = 2L
+                quantity = 1L
             )
         ),
         payList = payList
