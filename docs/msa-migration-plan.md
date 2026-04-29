@@ -8,6 +8,11 @@
 
 VibePay는 현재 `api/`(Kotlin/Spring Boot 3.5) 단일 모듈에 7개 도메인(Member, Basket, Goods, Order, Payment, Point, Claim)이 모놀리식으로 구현되어 있다. 대용량 트래픽 환경에서의 확장성, 장애 격리, 분산 패턴(Saga, Outbox, 분산락 등) **학습**을 위해 MSA로 분리한다.
 
+중요:
+
+- 이 문서의 `gateway-service`, `core-service`, `goods-service`, `order-service`, `payment-service`, `claim-service`는 **현재 존재하는 실행 모듈 목록이 아니라 목표 상태**다.
+- 현재 저장소 기준 실제 실행 코드는 `api/` 단일 모듈 모놀리식이며, 서비스 분리는 이제 처음부터 다시 진행한다.
+
 ### 결정 사항 (사용자 합의)
 
 | 항목 | 결정 |
@@ -17,7 +22,7 @@ VibePay는 현재 `api/`(Kotlin/Spring Boot 3.5) 단일 모듈에 7개 도메인
 | **통신 패턴** | Redis 분산락+캐시, Feign + Resilience4j Circuit Breaker, Kafka + Outbox, Saga Choreography (모두 학습) |
 | **API Gateway** | Spring Cloud Gateway + docker-compose 컨테이너명 디스커버리 (Eureka 미사용) |
 
-### 핵심 결합점 (현재 코드 — 분리 시 끊어야 함)
+### 핵심 결합점 (현재 모놀리식 코드 — 분리 시 끊어야 함)
 
 - `OrderServiceImpl.kt` L180: `basketBaseTrxRepository.updateBasketIsOrder()` 직접 호출
 - `OrderServiceImpl.kt` L91-102: GoodsService로 재고/가격 검증
@@ -37,7 +42,7 @@ VibePay는 현재 `api/`(Kotlin/Spring Boot 3.5) 단일 모듈에 7개 도메인
 
 ---
 
-## 1. 최종 모듈 구조 (Gradle 멀티모듈)
+## 1. 목표 모듈 구조 (Gradle 멀티모듈)
 
 ```
 vibe-pay/
@@ -57,6 +62,8 @@ vibe-pay/
 ├── fo/                               # 변경 거의 없음
 └── docker-compose.yml
 ```
+
+이 구조는 최종 목표다. 현재 저장소에는 아직 아래 모듈들이 실제로 존재하지 않는다.
 
 **설정 포인트**:
 
@@ -87,9 +94,20 @@ include("core-service", "goods-service", "order-service", "payment-service", "cl
 
 **주의**: `order_detail.goods_no`는 FK 끊고 **상품 스냅샷 컬럼**(goods_name, goods_price 등) 추가.
 
+## 2.1 현재 시작점
+
+현재 실제 시작점은 아래와 같다.
+
+- `api/` 단일 Gradle 모듈
+- 단일 Spring Boot 애플리케이션
+- 주문/결제/클레임/상품/회원/장바구니/포인트가 같은 코드베이스 안에 공존
+- `docker-compose.yml`에는 목표 MSA 형태 초안이 남아 있을 수 있지만, 현재 코드와 1:1로 대응되지 않을 수 있음
+
+따라서 분리 작업은 `기존 일부 MSA 모듈을 이어받는 작업`이 아니라, `모놀리식에서 서비스 경계를 새로 정의하고 단계적으로 꺼내는 작업`으로 본다.
+
 ---
 
-## 3. 통신 매핑 (현재 7개 결합점 변환)
+## 3. 통신 매핑 (현재 모놀리식 결합점 → 목표 분산 패턴)
 
 | 현재 호출 | 새 패턴 | 이유 |
 |---|---|---|
@@ -259,6 +277,10 @@ services:
   order-service:   # 8083
   payment-service: # 8084
   claim-service:   # 8085
+
+위 compose 구조 역시 목표 상태 예시다.
+현재 단계 1에서는 이 전체를 한 번에 맞추지 않는다.
+우선순위는 `order-service 경계 정의 → 모듈 스캐폴딩 → 주문 책임 이동 → 나머지 서비스 연동` 순서다.
 ```
 
 서비스 간은 컨테이너 이름으로 디스커버리 (예: `http://goods-service:8082`).
