@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories
+import org.springframework.core.env.Environment
 import org.springframework.orm.jpa.JpaTransactionManager
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter
@@ -23,7 +24,9 @@ import javax.sql.DataSource
     entityManagerFactoryRef = "primaryEntityManagerFactory",
     transactionManagerRef = "primaryTransactionManager"
 )
-class PrimaryDataSourceConfig {
+class PrimaryDataSourceConfig(
+    private val environment: Environment
+) {
 
     @Primary
     @Bean(name = ["primaryDataSource"])
@@ -57,7 +60,10 @@ class PrimaryDataSourceConfig {
     private fun hibernateProperties() = java.util.Properties().apply {
         setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect")
         setProperty("hibernate.format_sql", "true")
-        setProperty("hibernate.hbm2ddl.auto", "validate")
+        setProperty(
+            "hibernate.hbm2ddl.auto",
+            environment.getProperty("spring.jpa.hibernate.ddl-auto", "validate")
+        )
     }
 }
 
@@ -67,7 +73,9 @@ class PrimaryDataSourceConfig {
     entityManagerFactoryRef = "secondaryEntityManagerFactory",
     transactionManagerRef = "secondaryTransactionManager"
 )
-class SecondaryDataSourceConfig {
+class SecondaryDataSourceConfig(
+    private val environment: Environment
+) {
 
     @Bean(name = ["secondaryDataSource"])
     @ConfigurationProperties(prefix = "spring.datasource.secondary")
@@ -98,6 +106,9 @@ class SecondaryDataSourceConfig {
     private fun hibernateProperties() = java.util.Properties().apply {
         setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect")
         setProperty("hibernate.format_sql", "true")
-        setProperty("hibernate.hbm2ddl.auto", "validate")
+        setProperty(
+            "hibernate.hbm2ddl.auto",
+            environment.getProperty("spring.jpa.hibernate.ddl-auto", "validate")
+        )
     }
 }

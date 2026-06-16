@@ -86,6 +86,10 @@ export default function Home() {
     return price.toLocaleString("ko-KR") + "원";
   }
 
+  function isGoodsAvailable(item: GoodsListItem): boolean {
+    return item.goodsStatusCode === "001";
+  }
+
   async function handleAddToBasket(
     event: React.MouseEvent,
     goodsNo: string,
@@ -261,7 +265,10 @@ export default function Home() {
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {goods.map((item) => (
+              {goods.map((item) => {
+                const isAvailable = isGoodsAvailable(item);
+
+                return (
                 <div
                   key={item.goodsNo}
                   className="group"
@@ -277,7 +284,7 @@ export default function Home() {
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                       />
-                      {!item.isAvailable && (
+                      {!isAvailable && (
                         <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
                           <span className="text-white text-sm font-medium">SOLD OUT</span>
                         </div>
@@ -286,15 +293,15 @@ export default function Home() {
                     <div>
                       <h3 className="font-medium text-base mb-2 text-gray-900">{item.goodsName}</h3>
                       <div className="text-sm text-gray-900 font-medium">
-                        {formatPrice(item.salePrice + item.minItemPrice)}
+                        {formatPrice(item.salePrice)}
                       </div>
                     </div>
                   </div>
                   <button
                     onClick={(e) =>
-                      handleAddToBasket(e, item.goodsNo, item.goodsName, item.isAvailable)
+                      handleAddToBasket(e, item.goodsNo, item.goodsName, isAvailable)
                     }
-                    disabled={!item.isAvailable || addingToBasket === item.goodsNo}
+                    disabled={!isAvailable || addingToBasket === item.goodsNo}
                     className="w-full mt-3 py-2.5 bg-black text-white text-sm hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
                   >
                     {addingToBasket === item.goodsNo
@@ -302,7 +309,8 @@ export default function Home() {
                       : "장바구니"}
                   </button>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* 페이지네이션 */}

@@ -39,15 +39,10 @@ export interface GoodsListItem {
   goodsNo: string;
   goodsName: string;
   goodsStatusCode: string;
-  goodsStatusName: string;
+  goodsStatusName?: string | null;
   goodsMainImageUrl: string;
   salePrice: number;
   supplyPrice: number;
-  minItemPrice: number;
-  maxItemPrice: number;
-  totalStock: number;
-  isAvailable: boolean;
-  registDateTime: string;
 }
 
 export interface GoodsPageResponse {

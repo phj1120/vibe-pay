@@ -55,6 +55,7 @@ class OrderServiceImpl(
 
     private val log = LoggerFactory.getLogger(this::class.java)
 
+    @Transactional
     override fun generateOrderNumber(): String {
         val orderNo = orderBaseTrxRepository.generateOrderNo()
         log.info("Order number generated: {}", orderNo)
