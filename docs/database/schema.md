@@ -84,7 +84,7 @@
 | member_no            | 회원번호 | varchar(15) |                               |  |
 | amount               | 결제금액 | numeric |                               |  |
 | cancelable_amount    | 취소가능금액 | numeric |                               |  |
-| pg_type_code	        |PG 코드 |	varchar(3)| 		PAY005 / 001 이니시스 / 002 나이스 |
+| pg_type_code	        |PG 코드 |	varchar(3)| 		PAY005 / 001 이니시스 / 002 나이스 / 999 테스트PG |
 | regist_id            | 등록자 | varchar(15) |                               |  |
 | regist_date_time     | 등록일시 | timestamp |                               |  |
 | modify_id            | 수정자 | varchar(15) |                               |  |

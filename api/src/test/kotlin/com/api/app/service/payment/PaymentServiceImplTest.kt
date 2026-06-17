@@ -53,6 +53,29 @@ class PaymentServiceImplTest {
     }
 
     @Test
+    @DisplayName("initiatePayment delegates to requested test PG")
+    fun initiatePaymentDelegatesToRequestedTestPg() {
+        val request = PaymentInitiateRequest(
+            orderNumber = "20260428O000001",
+            pgType = "TEST",
+            amount = 12000L,
+            productName = "Speaker",
+            buyerName = "Kim",
+            buyerEmail = "kim@test.com",
+            buyerTel = "01012341234"
+        )
+        val response = PaymentInitiateResponse(pgType = "TEST", pgTypeCode = PAY005.TEST.code)
+        given(paymentGatewayFactory.getStrategy(PAY005.TEST)).willReturn(paymentGatewayStrategy)
+        given(paymentGatewayStrategy.initiatePayment(request)).willReturn(response)
+
+        val result = paymentService.initiatePayment(request)
+
+        assertThat(result).isEqualTo(response)
+        verify(paymentGatewayFactory).getStrategy(PAY005.TEST)
+        verify(paymentGatewayStrategy).initiatePayment(request)
+    }
+
+    @Test
     @DisplayName("approvePayment delegates by PG code")
     fun approvePaymentDelegatesByPgCode() {
         val request = PaymentConfirmRequest(pgTypeCode = PAY005.NICE.code, orderNo = "20260428O000001")
@@ -70,10 +93,10 @@ class PaymentServiceImplTest {
     @Test
     @DisplayName("approvePayment throws for unsupported PG code")
     fun approvePaymentThrowsForUnsupportedPgCode() {
-        val request = PaymentConfirmRequest(pgTypeCode = "999", orderNo = "20260428O000001")
+        val request = PaymentConfirmRequest(pgTypeCode = "998", orderNo = "20260428O000001")
 
         assertThatThrownBy { paymentService.approvePayment(request) }
             .isInstanceOf(IllegalArgumentException::class.java)
-            .hasMessage("지원하지 않는 PG 코드입니다: 999")
+            .hasMessage("지원하지 않는 PG 코드입니다: 998")
     }
 }

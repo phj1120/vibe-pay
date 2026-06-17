@@ -11,6 +11,19 @@ import type { OrderSheet } from "@/types/order";
 import type { PointBalanceResponse } from "@/types/point";
 import AlertModal from "@/components/common/AlertModal";
 import { useAlert } from "@/hooks/useAlert";
+import type { InicisAuthResponse, NiceAuthResponse, TestPgAuthResponse } from "@/types/order.types";
+
+function getRequestedPgType(): "TEST" | undefined {
+  if (typeof window === "undefined") {
+    return undefined;
+  }
+
+  const queryPgType = new URLSearchParams(window.location.search).get("pgType");
+  const configuredPgType = process.env.NEXT_PUBLIC_PAYMENT_PG_TYPE;
+  const pgType = (queryPgType || configuredPgType || "").toUpperCase();
+
+  return pgType === "TEST" ? "TEST" : undefined;
+}
 
 export default function OrderSheetPage() {
   const router = useRouter();
@@ -154,8 +167,10 @@ export default function OrderSheetPage() {
 
       // 2. 결제 초기화 (PG사 선택 및 폼 데이터 생성)
       const { initiatePayment } = await import("@/lib/order-api");
+      const requestedPgType = getRequestedPgType();
       const paymentInitResponse = await initiatePayment({
         orderNumber,
+        pgType: requestedPgType,
         amount: finalAmount,
         productName: orderSheet.items.length > 1
           ? `${orderSheet.items[0].goodsName} 외 ${orderSheet.items.length - 1}건`
@@ -202,6 +217,7 @@ export default function OrderSheetPage() {
       });
 
       // 4. 결제 결과 메시지 수신 - 팝업 열기 전에 등록
+      let checkPopupClosed: ReturnType<typeof setInterval> | null = null;
       const handlePaymentResult = async (event: MessageEvent) => {
         console.log("Message received:", event.data, "from:", event.origin);
         
@@ -220,7 +236,9 @@ export default function OrderSheetPage() {
 
         // 이벤트 리스너 제거
         window.removeEventListener("message", handlePaymentResult);
-        clearInterval(checkPopupClosed);
+        if (checkPopupClosed) {
+          clearInterval(checkPopupClosed);
+        }
         setIsPaymentProcessing(false);
 
         if (success && authData) {
@@ -239,7 +257,7 @@ export default function OrderSheetPage() {
             let paymentConfirmRequest;
 
             if (paymentInitResponse.pgType === 'INICIS') {
-              const inicisData = authData as any;
+              const inicisData = authData as InicisAuthResponse;
               paymentConfirmRequest = {
                 pgTypeCode: pgTypeCode,
                 authToken: inicisData.authToken || '',
@@ -250,7 +268,7 @@ export default function OrderSheetPage() {
                 price: finalAmount,
               };
             } else if (paymentInitResponse.pgType === 'NICE') {
-              const niceData = authData as any;
+              const niceData = authData as NiceAuthResponse;
               paymentConfirmRequest = {
                 pgTypeCode: pgTypeCode,
                 authToken: niceData.AuthToken || '',
@@ -262,6 +280,15 @@ export default function OrderSheetPage() {
                 amount: niceData.Amt || '',
                 tradeNo: niceData.TxTid || '',  // TxTid가 거래번호
                 mid: niceData.MID || '',
+              };
+            } else if (paymentInitResponse.pgType === 'TEST') {
+              const testData = authData as TestPgAuthResponse;
+              paymentConfirmRequest = {
+                pgTypeCode: pgTypeCode,
+                authToken: testData.authToken || '',
+                orderNo: orderNumber,
+                amount: String(finalAmount),
+                price: finalAmount,
               };
             }
 
@@ -325,7 +352,11 @@ export default function OrderSheetPage() {
           if (errorDetails) {
             failureMessage = `${failureMessage}\n\n[상세 정보]`;
             if (errorDetails.pgType && errorDetails.pgType !== 'UNKNOWN') {
-              const pgName = errorDetails.pgType === 'INICIS' ? 'KG이니시스' : '나이스페이';
+              const pgName = errorDetails.pgType === 'INICIS'
+                ? 'KG이니시스'
+                : errorDetails.pgType === 'NICE'
+                  ? '나이스페이'
+                  : '테스트PG';
               failureMessage += `\nPG사: ${pgName}`;
             }
             if (errorDetails.errorCode && errorDetails.errorCode !== 'UNKNOWN') {
@@ -358,9 +389,11 @@ export default function OrderSheetPage() {
       }
 
       // 6. 팝업 닫힘 감지
-      const checkPopupClosed = setInterval(() => {
+      checkPopupClosed = setInterval(() => {
         if (popup.closed) {
-          clearInterval(checkPopupClosed);
+          if (checkPopupClosed) {
+            clearInterval(checkPopupClosed);
+          }
           window.removeEventListener("message", handlePaymentResult);
           setIsPaymentProcessing(false);
         }

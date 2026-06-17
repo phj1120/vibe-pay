@@ -18,6 +18,7 @@ export type PaymentMethod = (typeof PaymentMethod)[keyof typeof PaymentMethod];
 export const PgType = {
   INICIS: 'INICIS',
   NICE: 'NICE',
+  TEST: 'TEST',
 } as const;
 
 export type PgType = (typeof PgType)[keyof typeof PgType];
@@ -83,7 +84,7 @@ export const PaymentInfoSchema = z.object({
     PaymentMethod.ACCOUNT_TRANSFER,
     PaymentMethod.PHONE,
   ]),
-  pgType: z.enum([PgType.INICIS, PgType.NICE]),
+  pgType: z.enum([PgType.INICIS, PgType.NICE, PgType.TEST]),
 });
 
 export type PaymentInfo = z.infer<typeof PaymentInfoSchema>;
@@ -109,6 +110,7 @@ export type OrderSheetRequest = z.infer<typeof OrderSheetRequestSchema>;
  */
 export interface PaymentInitiateResponse {
   pgType: PgType;
+  pgTypeCode?: string;
   paymentMethod: PaymentMethod;
   merchantId: string;
   merchantKey: string;
@@ -161,6 +163,18 @@ export interface NiceAuthResponse {
 }
 
 /**
+ * PG 인증 응답 (부하 테스트용)
+ */
+export interface TestPgAuthResponse {
+  pgTypeCode: string;
+  orderNo: string;
+  amount: string;
+  authToken: string;
+
+  [key: string]: string | undefined;
+}
+
+/**
  * 주문 생성 요청 (백엔드 API 스펙에 맞춤)
  */
 export interface OrderCreateRequest {
@@ -168,8 +182,8 @@ export interface OrderCreateRequest {
   memberName: string;
   phone: string;
   email: string;
-  goodsList: any[]; // BasketResponse 타입
-  payList: any[]; // PayRequest 타입
+  goodsList: unknown[]; // BasketResponse 타입
+  payList: unknown[]; // PayRequest 타입
 }
 
 /**
@@ -206,7 +220,7 @@ export interface OrderCookieData {
  */
 export interface PaymentResultMessage {
   success: boolean;
-  authData?: InicisAuthResponse | NiceAuthResponse;
+  authData?: InicisAuthResponse | NiceAuthResponse | TestPgAuthResponse;
   error?: string;
   errorDetails?: {
     pgType?: string;

@@ -5,7 +5,6 @@ import type {
   PaymentInitiateResponse,
   OrderCreateRequest,
   OrderCreateResponse,
-  PaymentMethod,
   PgType,
 } from '@/types/order.types';
 
@@ -35,6 +34,7 @@ export async function generateOrderNumber(): Promise<string> {
  */
 export interface PaymentInitiateRequestAPI {
   orderNumber: string;
+  pgType?: PgType;
   amount: number;
   productName: string;
   buyerName: string;

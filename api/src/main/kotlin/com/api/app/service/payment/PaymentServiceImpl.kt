@@ -19,7 +19,13 @@ class PaymentServiceImpl(
     override fun initiatePayment(request: PaymentInitiateRequest): PaymentInitiateResponse {
         log.info("Payment initiate started. orderNumber={}, amount={}", request.orderNumber, request.amount)
 
-        val strategy = paymentGatewayFactory.selectByWeight()
+        val strategy = request.pgType
+            ?.let { pgType ->
+                PAY005.entries.firstOrNull { it.name.equals(pgType, ignoreCase = true) || it.code == pgType }
+                    ?: throw IllegalArgumentException("지원하지 않는 PG입니다: $pgType")
+            }
+            ?.let { paymentGatewayFactory.getStrategy(it) }
+            ?: paymentGatewayFactory.selectByWeight()
         val response = strategy.initiatePayment(request)
 
         log.info("Payment initiate completed. orderNumber={}, pgType={}", request.orderNumber, response.pgType)

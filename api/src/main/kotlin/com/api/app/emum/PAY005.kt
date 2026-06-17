@@ -8,8 +8,9 @@ enum class PAY005(
     override val referenceValue1: String,
     override val referenceValue2: String
 ) : CommonCode {
-    INICIS("001", "이니시스", 1, "50", ""),
-    NICE("002", "나이스", 2, "50", ""),
+    INICIS("001", "이니시스", 1, "0", ""),
+    NICE("002", "나이스", 2, "0", ""),
+    TEST("999", "테스트PG", 999, "100", ""),
     ;
 
     fun getReferenceValue1AsInt(): Int = referenceValue1.toInt()

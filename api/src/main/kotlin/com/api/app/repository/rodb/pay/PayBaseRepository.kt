@@ -24,7 +24,7 @@ interface PayBaseRepository : JpaRepository<PayBase, String> {
              , CASE PAY_WAY_CODE WHEN '001' THEN '신용카드' WHEN '002' THEN '포인트' ELSE '' END AS payWayName
              , AMOUNT AS amount
              , PG_TYPE_CODE AS pgTypeCode
-             , CASE PG_TYPE_CODE WHEN '001' THEN '이니시스' WHEN '002' THEN '나이스' ELSE '' END AS pgTypeName
+             , CASE PG_TYPE_CODE WHEN '001' THEN '이니시스' WHEN '002' THEN '나이스' WHEN '999' THEN '테스트PG' ELSE '' END AS pgTypeName
           FROM PAY_BASE
          WHERE ORDER_NO = :orderNo
            AND PAY_TYPE_CODE = '001'

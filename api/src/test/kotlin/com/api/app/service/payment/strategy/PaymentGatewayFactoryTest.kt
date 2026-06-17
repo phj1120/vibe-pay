@@ -63,8 +63,8 @@ class PaymentGatewayFactoryTest {
         doReturn(PAY005.INICIS).`when`(strategy).getPgType()
         val factory = PaymentGatewayFactory(listOf(strategy))
 
-        assertThatThrownBy { factory.getByCode("999") }
+        assertThatThrownBy { factory.getByCode("998") }
             .isInstanceOf(IllegalArgumentException::class.java)
-            .hasMessage("지원하지 않는 PG 코드입니다: 999")
+            .hasMessage("지원하지 않는 PG 코드입니다: 998")
     }
 }

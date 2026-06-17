@@ -12,12 +12,17 @@ class PaymentGatewayFactory(private val strategies: List<PaymentGatewayStrategy>
 
     fun selectByWeight(): PaymentGatewayStrategy {
         val strategyMap = strategies.associateBy { it.getPgType() }
+        val selectablePgs = PAY005.entries.filter { it.referenceValue1.toInt() > 0 && strategyMap.containsKey(it) }
 
-        val totalWeight = PAY005.entries.sumOf { it.referenceValue1.toInt() }
+        val totalWeight = selectablePgs.sumOf { it.referenceValue1.toInt() }
+        if (totalWeight <= 0) {
+            log.warn("No weighted PG strategy is registered, using default strategy")
+            return strategies.first()
+        }
         val randomValue = Random.nextInt(totalWeight) + 1
 
         var currentWeight = 0
-        for (pg in PAY005.entries) {
+        for (pg in selectablePgs) {
             currentWeight += pg.referenceValue1.toInt()
             if (randomValue <= currentWeight) {
                 log.info("PG selected: {} (weight={})", pg.codeName, pg.referenceValue1)

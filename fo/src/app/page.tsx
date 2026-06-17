@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { getGoodsList, getGoodsDetail } from "@/lib/goods-api";
@@ -12,7 +12,7 @@ import LoginRequiredModal from "@/components/ui/LoginRequiredModal";
 import { useLoginRequired } from "@/hooks/useLoginRequired";
 import ItemSelectionModal from "@/components/common/ItemSelectionModal";
 
-export default function Home() {
+function HomeContent() {
   const router = useRouter();
   const urlSearchParams = useSearchParams();
   const [goods, setGoods] = useState<GoodsListItem[]>([]);
@@ -350,5 +350,19 @@ export default function Home() {
         />
       ))}
     </>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex justify-center items-center min-h-screen">
+          <div className="text-sm text-gray-400">로딩 중...</div>
+        </div>
+      }
+    >
+      <HomeContent />
+    </Suspense>
   );
 }

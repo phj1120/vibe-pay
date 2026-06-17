@@ -7,21 +7,40 @@ import type { GoodsRegisterRequest, GoodsItem } from "@/types/goods";
 import AlertModal from "@/components/common/AlertModal";
 import { useAlert } from "@/hooks/useAlert";
 
+type NumberInputValue = number | "";
+type GoodsItemForm = Omit<GoodsItem, "itemPrice" | "stock"> & {
+  itemPrice: NumberInputValue;
+  stock: NumberInputValue;
+};
+type GoodsRegisterForm = Omit<GoodsRegisterRequest, "salePrice" | "supplyPrice" | "items"> & {
+  salePrice: NumberInputValue;
+  supplyPrice: NumberInputValue;
+  items: GoodsItemForm[];
+};
+
+function parseNumberInput(value: string): NumberInputValue {
+  return value === "" ? "" : Number(value);
+}
+
+function toNumber(value: NumberInputValue): number {
+  return value === "" ? 0 : value;
+}
+
 export default function GoodsRegisterPage() {
   const router = useRouter();
   const alert = useAlert();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<GoodsRegisterRequest>({
+  const [formData, setFormData] = useState<GoodsRegisterForm>({
     goodsName: "",
     goodsStatusCode: "001",
     goodsMainImageUrl: "",
-    salePrice: 0,
-    supplyPrice: 0,
+    salePrice: "",
+    supplyPrice: "",
     items: [
       {
         itemName: "",
-        itemPrice: 0,
-        stock: 0,
+        itemPrice: "",
+        stock: "",
         goodsStatusCode: "001",
       },
     ],
@@ -34,8 +53,8 @@ export default function GoodsRegisterPage() {
         ...formData.items,
         {
           itemName: "",
-          itemPrice: 0,
-          stock: 0,
+          itemPrice: "",
+          stock: "",
           goodsStatusCode: "001",
         },
       ],
@@ -50,7 +69,7 @@ export default function GoodsRegisterPage() {
     });
   }
 
-  function updateItem(index: number, field: keyof GoodsItem, value: string | number) {
+  function updateItem(index: number, field: keyof GoodsItemForm, value: string | number) {
     const newItems = [...formData.items];
     newItems[index] = {
       ...newItems[index],
@@ -74,11 +93,11 @@ export default function GoodsRegisterPage() {
       alert.showAlert("상품 이미지 URL을 입력해주세요");
       return;
     }
-    if (formData.salePrice <= 0) {
+    if (formData.salePrice === "" || formData.salePrice <= 0) {
       alert.showAlert("판매가는 0보다 커야 합니다");
       return;
     }
-    if (formData.supplyPrice <= 0) {
+    if (formData.supplyPrice === "" || formData.supplyPrice <= 0) {
       alert.showAlert("공급원가는 0보다 커야 합니다");
       return;
     }
@@ -93,7 +112,11 @@ export default function GoodsRegisterPage() {
         alert.showAlert(`${i + 1}번째 단품의 이름을 입력해주세요`);
         return;
       }
-      if (item.stock < 0) {
+      if (item.itemPrice === "" || item.itemPrice < 0) {
+        alert.showAlert(`${i + 1}번째 단품 금액은 0 이상이어야 합니다`);
+        return;
+      }
+      if (item.stock === "" || item.stock < 0) {
         alert.showAlert(`${i + 1}번째 단품의 재고는 0 이상이어야 합니다`);
         return;
       }
@@ -101,7 +124,17 @@ export default function GoodsRegisterPage() {
 
     try {
       setLoading(true);
-      const goodsNo = await registerGoods(formData);
+      const payload: GoodsRegisterRequest = {
+        ...formData,
+        salePrice: formData.salePrice,
+        supplyPrice: formData.supplyPrice,
+        items: formData.items.map((item) => ({
+          ...item,
+          itemPrice: toNumber(item.itemPrice),
+          stock: toNumber(item.stock),
+        })),
+      };
+      const goodsNo = await registerGoods(payload);
       alert.showAlert("상품이 등록되었습니다");
       router.push(`/goods/${goodsNo}`);
     } catch (err) {
@@ -164,7 +197,7 @@ export default function GoodsRegisterPage() {
                   type="number"
                   value={formData.salePrice}
                   onChange={(e) =>
-                    setFormData({ ...formData, salePrice: parseInt(e.target.value) || 0 })
+                    setFormData({ ...formData, salePrice: parseNumberInput(e.target.value) })
                   }
                   className="w-full px-4 py-3 border border-gray-300 focus:outline-none focus:border-black text-sm"
                   placeholder="판매가"
@@ -177,7 +210,7 @@ export default function GoodsRegisterPage() {
                   type="number"
                   value={formData.supplyPrice}
                   onChange={(e) =>
-                    setFormData({ ...formData, supplyPrice: parseInt(e.target.value) || 0 })
+                    setFormData({ ...formData, supplyPrice: parseNumberInput(e.target.value) })
                   }
                   className="w-full px-4 py-3 border border-gray-300 focus:outline-none focus:border-black text-sm"
                   placeholder="공급원가"
@@ -244,7 +277,7 @@ export default function GoodsRegisterPage() {
                       type="number"
                       value={item.itemPrice}
                       onChange={(e) =>
-                        updateItem(index, "itemPrice", parseInt(e.target.value) || 0)
+                        updateItem(index, "itemPrice", parseNumberInput(e.target.value))
                       }
                       className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:border-black text-sm"
                       placeholder="단품 금액"
@@ -256,7 +289,7 @@ export default function GoodsRegisterPage() {
                     <input
                       type="number"
                       value={item.stock}
-                      onChange={(e) => updateItem(index, "stock", parseInt(e.target.value) || 0)}
+                      onChange={(e) => updateItem(index, "stock", parseNumberInput(e.target.value))}
                       className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:border-black text-sm"
                       placeholder="재고"
                       min="0"

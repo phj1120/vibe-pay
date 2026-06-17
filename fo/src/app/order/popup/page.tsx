@@ -29,31 +29,58 @@ export default function PaymentPopupPage() {
     const cookieData = getOrderCookie();
 
     if (!cookieData) {
-      setError('주문 정보를 찾을 수 없습니다. 다시 시도해주세요.');
+      queueMicrotask(() => {
+        setError('주문 정보를 찾을 수 없습니다. 다시 시도해주세요.');
+      });
       setTimeout(() => {
         window.close();
       }, 2000);
       return;
     }
 
-    setOrderData(cookieData);
+    queueMicrotask(() => {
+      setOrderData(cookieData);
+    });
     deleteOrderCookie();
   }, []);
 
   useEffect(() => {
-    if (!orderData || !formRef.current) {
+    if (!orderData) {
+      return;
+    }
+
+    if (orderData.paymentInitiate.pgType !== 'TEST' && !formRef.current) {
       return;
     }
 
     const { paymentInitiate } = orderData;
 
     if (!paymentInitiate.formData || Object.keys(paymentInitiate.formData).length === 0) {
-      setError('PG 결제 정보가 없습니다.');
+      queueMicrotask(() => {
+        setError('PG 결제 정보가 없습니다.');
+      });
       return;
     }
 
     try {
-      if (paymentInitiate.pgType === 'INICIS') {
+      if (paymentInitiate.pgType === 'TEST') {
+        window.opener?.postMessage(
+          {
+            success: true,
+            authData: {
+              pgTypeCode: paymentInitiate.pgTypeCode || paymentInitiate.formData.pgTypeCode || '999',
+              orderNo: orderData.orderNumber,
+              amount: paymentInitiate.formData.amount || String(orderData.orderInfo.finalAmount),
+              authToken: paymentInitiate.formData.authToken || `TESTAUTH-${orderData.orderNumber}`,
+            },
+          },
+          window.location.origin
+        );
+
+        setTimeout(() => {
+          window.close();
+        }, 100);
+      } else if (paymentInitiate.pgType === 'INICIS') {
         const script = document.createElement('script');
         script.src = 'https://stdpay.inicis.com/stdjs/INIStdPay.js';
         script.onload = () => {
@@ -71,7 +98,7 @@ export default function PaymentPopupPage() {
         document.body.appendChild(script);
       } else if (paymentInitiate.pgType === 'NICE') {
         // 나이스페이 콜백 함수 정의 (전역)
-        (window as any).nicepaySubmit = function() {
+        (window as Window & { nicepaySubmit?: () => void }).nicepaySubmit = function() {
           console.log('nicepaySubmit callback called');
           // form이 이미 인증 응답 데이터로 채워져 있음
           // form을 서버로 submit
@@ -94,7 +121,9 @@ export default function PaymentPopupPage() {
         document.body.appendChild(script);
       }
     } catch (error) {
-      setError(error instanceof Error ? error.message : '결제 요청에 실패했습니다.');
+      queueMicrotask(() => {
+        setError(error instanceof Error ? error.message : '결제 요청에 실패했습니다.');
+      });
     }
   }, [orderData]);
 
@@ -129,6 +158,12 @@ export default function PaymentPopupPage() {
       <div className="text-center">
         <p className="mb-4">결제창을 불러오는 중입니다...</p>
         <p className="text-sm text-gray-600">잠시만 기다려주세요.</p>
+
+        {paymentInitiate.pgType === 'TEST' && (
+          <div className="text-sm text-gray-600">
+            테스트PG 승인 처리 중입니다.
+          </div>
+        )}
 
         {paymentInitiate.pgType === 'INICIS' && (
           <form id="inicisForm" name="inicisForm" method="post" ref={formRef}>

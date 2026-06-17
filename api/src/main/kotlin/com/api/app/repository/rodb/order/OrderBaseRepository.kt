@@ -183,7 +183,7 @@ interface OrderBaseRepository : JpaRepository<OrderBase, String> {
              , CASE PB.PAY_WAY_CODE WHEN '001' THEN '신용카드' WHEN '002' THEN '포인트' ELSE '기타' END AS payWayName
              , SUM(PB.CANCELABLE_AMOUNT) AS refundAmount
              , PB.PG_TYPE_CODE AS pgTypeCode
-             , CASE PB.PG_TYPE_CODE WHEN '001' THEN 'KG이니시스' WHEN '002' THEN '나이스페이' ELSE NULL END AS pgTypeName
+             , CASE PB.PG_TYPE_CODE WHEN '001' THEN 'KG이니시스' WHEN '002' THEN '나이스페이' WHEN '999' THEN '테스트PG' ELSE NULL END AS pgTypeName
           FROM PAY_BASE PB
          WHERE PB.ORDER_NO = :orderNo
            AND PB.PAY_TYPE_CODE IN ('001', '002')

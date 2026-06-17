@@ -2,6 +2,7 @@ import type {
   PgType,
   InicisAuthResponse,
   NiceAuthResponse,
+  TestPgAuthResponse,
 } from '@/types/order.types';
 
 /**
@@ -16,6 +17,7 @@ interface PgPopupConfig {
 const PG_POPUP_CONFIGS: Record<PgType, PgPopupConfig> = {
   INICIS: { width: 840, height: 600, title: 'KG이니시스 결제' },
   NICE: { width: 570, height: 830, title: '나이스페이 결제' },
+  TEST: { width: 420, height: 260, title: '테스트PG 결제' },
 };
 
 /**
@@ -140,12 +142,14 @@ export function extractNicePgData(): NiceAuthResponse | null {
  */
 export function extractPgData(
   pgType: PgType
-): InicisAuthResponse | NiceAuthResponse | null {
+): InicisAuthResponse | NiceAuthResponse | TestPgAuthResponse | null {
   switch (pgType) {
     case 'INICIS':
       return extractInicisPgData();
     case 'NICE':
       return extractNicePgData();
+    case 'TEST':
+      return null;
     default:
       return null;
   }
@@ -156,14 +160,16 @@ export function extractPgData(
  */
 export function isPaymentSuccess(
   pgType: PgType,
-  authData: InicisAuthResponse | NiceAuthResponse
+  authData: InicisAuthResponse | NiceAuthResponse | TestPgAuthResponse
 ): boolean {
   if (pgType === 'INICIS') {
     const data = authData as InicisAuthResponse;
     return data.resultCode === '0000';
-  } else {
+  } else if (pgType === 'NICE') {
     const data = authData as NiceAuthResponse;
     return data.AuthResultCode === '0000';
+  } else {
+    return true;
   }
 }
 
@@ -172,14 +178,16 @@ export function isPaymentSuccess(
  */
 export function getPgErrorMessage(
   pgType: PgType,
-  authData: InicisAuthResponse | NiceAuthResponse
+  authData: InicisAuthResponse | NiceAuthResponse | TestPgAuthResponse
 ): string {
   if (pgType === 'INICIS') {
     const data = authData as InicisAuthResponse;
     return data.resultMsg || '결제에 실패했습니다.';
-  } else {
+  } else if (pgType === 'NICE') {
     const data = authData as NiceAuthResponse;
     return data.AuthResultMsg || '결제에 실패했습니다.';
+  } else {
+    return '테스트PG 결제에 실패했습니다.';
   }
 }
 
@@ -187,6 +195,7 @@ export function getPgErrorMessage(
  * PG 타입을 코드값으로 변환 (PAY005 Enum)
  * INICIS -> "001"
  * NICE -> "002"
+ * TEST -> "999"
  */
 export function pgTypeToCode(pgType: PgType): string {
   switch (pgType) {
@@ -194,6 +203,8 @@ export function pgTypeToCode(pgType: PgType): string {
       return '001';
     case 'NICE':
       return '002';
+    case 'TEST':
+      return '999';
     default:
       throw new Error(`Unknown PG type: ${pgType}`);
   }
@@ -203,6 +214,7 @@ export function pgTypeToCode(pgType: PgType): string {
  * PG 코드값을 타입으로 변환
  * "001" -> INICIS
  * "002" -> NICE
+ * "999" -> TEST
  */
 export function pgCodeToType(code: string): PgType {
   switch (code) {
@@ -210,6 +222,8 @@ export function pgCodeToType(code: string): PgType {
       return 'INICIS';
     case '002':
       return 'NICE';
+    case '999':
+      return 'TEST';
     default:
       throw new Error(`Unknown PG code: ${code}`);
   }
