@@ -8,7 +8,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.beans.factory.annotation.Qualifier
 
 class OrderGoodsRepositoryImpl(
-    @Qualifier("secondaryJpaQueryFactory") private val queryFactory: JPAQueryFactory
+    @Qualifier("roJpaQueryFactory") private val queryFactory: JPAQueryFactory
 ) : OrderGoodsRepositoryCustom {
 
     private val qOrderGoods = QOrderGoods.orderGoods

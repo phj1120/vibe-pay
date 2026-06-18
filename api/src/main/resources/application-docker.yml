@@ -1,11 +1,11 @@
 spring:
   datasource:
-    primary:
+    rw:
       jdbc-url: jdbc:postgresql://db:5432/vibepay
       username: vibepay
       password: vibepay
       driver-class-name: org.postgresql.Driver
-    secondary:
+    ro:
       jdbc-url: jdbc:postgresql://db:5432/vibepay
       username: vibepay
       password: vibepay

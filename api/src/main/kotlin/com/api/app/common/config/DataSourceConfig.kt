@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 import org.springframework.core.env.Environment
 import org.springframework.orm.jpa.JpaTransactionManager
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean
+import org.springframework.orm.jpa.SharedEntityManagerCreator
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter
 import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.annotation.EnableTransactionManagement
@@ -21,22 +22,22 @@ import javax.sql.DataSource
 @EnableTransactionManagement
 @EnableJpaRepositories(
     basePackages = ["com.api.app.repository.rwdb"],
-    entityManagerFactoryRef = "primaryEntityManagerFactory",
-    transactionManagerRef = "primaryTransactionManager"
+    entityManagerFactoryRef = "rwEntityManagerFactory",
+    transactionManagerRef = "rwTransactionManager"
 )
-class PrimaryDataSourceConfig(
+class RwDataSourceConfig(
     private val environment: Environment
 ) {
 
     @Primary
-    @Bean(name = ["primaryDataSource"])
-    @ConfigurationProperties(prefix = "spring.datasource.primary")
-    fun primaryDataSource(): DataSource = DataSourceBuilder.create().build()
+    @Bean(name = ["rwDataSource"])
+    @ConfigurationProperties(prefix = "spring.datasource.rw")
+    fun rwDataSource(): DataSource = DataSourceBuilder.create().build()
 
     @Primary
-    @Bean(name = ["primaryEntityManagerFactory"])
-    fun primaryEntityManagerFactory(
-        @Qualifier("primaryDataSource") dataSource: DataSource
+    @Bean(name = ["rwEntityManagerFactory"])
+    fun rwEntityManagerFactory(
+        @Qualifier("rwDataSource") dataSource: DataSource
     ): LocalContainerEntityManagerFactoryBean {
         val factory = LocalContainerEntityManagerFactoryBean()
         factory.dataSource = dataSource
@@ -47,15 +48,16 @@ class PrimaryDataSourceConfig(
     }
 
     @Primary
-    @Bean(name = ["primaryTransactionManager"])
-    fun primaryTransactionManager(
-        @Qualifier("primaryEntityManagerFactory") emf: EntityManagerFactory
+    @Bean(name = ["rwTransactionManager"])
+    fun rwTransactionManager(
+        @Qualifier("rwEntityManagerFactory") emf: EntityManagerFactory
     ): PlatformTransactionManager = JpaTransactionManager(emf)
 
-    @Bean(name = ["primaryJpaQueryFactory"])
-    fun primaryJpaQueryFactory(
-        @Qualifier("primaryEntityManagerFactory") emf: EntityManagerFactory
-    ): JPAQueryFactory = JPAQueryFactory(emf.createEntityManager())
+    @Primary
+    @Bean(name = ["rwJpaQueryFactory"])
+    fun rwJpaQueryFactory(
+        @Qualifier("rwEntityManagerFactory") emf: EntityManagerFactory
+    ): JPAQueryFactory = JPAQueryFactory(SharedEntityManagerCreator.createSharedEntityManager(emf))
 
     private fun hibernateProperties() = java.util.Properties().apply {
         setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect")
@@ -70,20 +72,18 @@ class PrimaryDataSourceConfig(
 @Configuration
 @EnableJpaRepositories(
     basePackages = ["com.api.app.repository.rodb"],
-    entityManagerFactoryRef = "secondaryEntityManagerFactory",
-    transactionManagerRef = "secondaryTransactionManager"
+    entityManagerFactoryRef = "roEntityManagerFactory",
+    transactionManagerRef = "roTransactionManager"
 )
-class SecondaryDataSourceConfig(
-    private val environment: Environment
-) {
+class RoDataSourceConfig {
 
-    @Bean(name = ["secondaryDataSource"])
-    @ConfigurationProperties(prefix = "spring.datasource.secondary")
-    fun secondaryDataSource(): DataSource = DataSourceBuilder.create().build()
+    @Bean(name = ["roDataSource"])
+    @ConfigurationProperties(prefix = "spring.datasource.ro")
+    fun roDataSource(): DataSource = DataSourceBuilder.create().build()
 
-    @Bean(name = ["secondaryEntityManagerFactory"])
-    fun secondaryEntityManagerFactory(
-        @Qualifier("secondaryDataSource") dataSource: DataSource
+    @Bean(name = ["roEntityManagerFactory"])
+    fun roEntityManagerFactory(
+        @Qualifier("roDataSource") dataSource: DataSource
     ): LocalContainerEntityManagerFactoryBean {
         val factory = LocalContainerEntityManagerFactoryBean()
         factory.dataSource = dataSource
@@ -93,22 +93,19 @@ class SecondaryDataSourceConfig(
         return factory
     }
 
-    @Bean(name = ["secondaryTransactionManager"])
-    fun secondaryTransactionManager(
-        @Qualifier("secondaryEntityManagerFactory") emf: EntityManagerFactory
+    @Bean(name = ["roTransactionManager"])
+    fun roTransactionManager(
+        @Qualifier("roEntityManagerFactory") emf: EntityManagerFactory
     ): PlatformTransactionManager = JpaTransactionManager(emf)
 
-    @Bean(name = ["secondaryJpaQueryFactory"])
-    fun secondaryJpaQueryFactory(
-        @Qualifier("secondaryEntityManagerFactory") emf: EntityManagerFactory
-    ): JPAQueryFactory = JPAQueryFactory(emf.createEntityManager())
+    @Bean(name = ["roJpaQueryFactory"])
+    fun roJpaQueryFactory(
+        @Qualifier("roEntityManagerFactory") emf: EntityManagerFactory
+    ): JPAQueryFactory = JPAQueryFactory(SharedEntityManagerCreator.createSharedEntityManager(emf))
 
     private fun hibernateProperties() = java.util.Properties().apply {
         setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect")
         setProperty("hibernate.format_sql", "true")
-        setProperty(
-            "hibernate.hbm2ddl.auto",
-            environment.getProperty("spring.jpa.hibernate.ddl-auto", "validate")
-        )
+        setProperty("hibernate.hbm2ddl.auto", "none")
     }
 }

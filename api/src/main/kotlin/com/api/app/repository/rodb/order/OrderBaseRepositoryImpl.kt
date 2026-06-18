@@ -15,7 +15,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.beans.factory.annotation.Qualifier
 
 class OrderBaseRepositoryImpl(
-    @Qualifier("secondaryJpaQueryFactory") private val queryFactory: JPAQueryFactory
+    @Qualifier("roJpaQueryFactory") private val queryFactory: JPAQueryFactory
 ) : OrderBaseRepositoryCustom {
 
     private val qOrderBase = QOrderBase.orderBase

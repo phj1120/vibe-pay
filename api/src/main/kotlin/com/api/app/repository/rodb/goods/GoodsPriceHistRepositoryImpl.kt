@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import java.time.LocalDateTime
 
 class GoodsPriceHistRepositoryImpl(
-    @Qualifier("secondaryJpaQueryFactory") private val queryFactory: JPAQueryFactory
+    @Qualifier("roJpaQueryFactory") private val queryFactory: JPAQueryFactory
 ) : GoodsPriceHistRepositoryCustom {
 
     private val qGoodsPriceHist = QGoodsPriceHist.goodsPriceHist

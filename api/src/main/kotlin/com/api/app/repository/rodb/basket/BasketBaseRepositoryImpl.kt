@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import java.time.LocalDateTime
 
 class BasketBaseRepositoryImpl(
-    @Qualifier("secondaryJpaQueryFactory") private val queryFactory: JPAQueryFactory
+    @Qualifier("roJpaQueryFactory") private val queryFactory: JPAQueryFactory
 ) : BasketBaseRepositoryCustom {
 
     private val qBasketBase = QBasketBase.basketBase

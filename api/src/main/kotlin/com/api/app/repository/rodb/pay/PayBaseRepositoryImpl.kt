@@ -7,7 +7,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.beans.factory.annotation.Qualifier
 
 class PayBaseRepositoryImpl(
-    @Qualifier("secondaryJpaQueryFactory") private val queryFactory: JPAQueryFactory
+    @Qualifier("roJpaQueryFactory") private val queryFactory: JPAQueryFactory
 ) : PayBaseRepositoryCustom {
 
     private val qPayBase = QPayBase.payBase
