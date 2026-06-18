@@ -9,12 +9,12 @@ import com.api.app.dto.request.goods.GoodsSearchRequest
 import com.api.app.emum.PRD001
 import com.api.app.entity.GoodsBase
 import com.api.app.entity.GoodsItem
+import com.api.app.entity.GoodsItemId
 import com.api.app.entity.GoodsPriceHist
 import com.api.app.repository.rodb.goods.GoodsBaseRepository
-import com.api.app.repository.rodb.goods.GoodsDetailProjection
-import com.api.app.repository.rodb.goods.GoodsItemProjection
 import com.api.app.repository.rodb.goods.GoodsItemRepository
-import com.api.app.repository.rodb.goods.GoodsListProjection
+import com.api.app.vo.GoodsDetailVo
+import com.api.app.vo.GoodsListVo
 import com.api.app.repository.rodb.goods.GoodsPriceHistRepository
 import com.api.app.repository.rwdb.goods.GoodsBaseTrxRepository
 import com.api.app.repository.rwdb.goods.GoodsItemTrxRepository
@@ -166,7 +166,7 @@ class GoodsServiceImplTest {
         val item1 = createGoodsItemProjection(goodsNo = goodsNo, itemNo = "001", stock = 5L)
         val item2 = createGoodsItemProjection(goodsNo = goodsNo, itemNo = "002", stock = 0L)
         given(goodsBaseRepository.selectGoodsDetail(goodsNo)).willReturn(detail)
-        given(goodsItemRepository.selectGoodsItemsByGoodsNo(goodsNo))
+        given(goodsItemRepository.findByIdGoodsNoOrderByIdItemNoAsc(goodsNo))
             .willReturn(listOf(item1, item2))
 
         val response = goodsService.getGoodsDetail(goodsNo)
@@ -242,40 +242,36 @@ class GoodsServiceImplTest {
         this.goodsMainImageUrl = "https://cdn.example.com/original.jpg"
     }
 
-    private fun createGoodsListProjection(goodsNo: String, goodsName: String): GoodsListProjection {
-        val projection = mock(GoodsListProjection::class.java)
-        doReturn(goodsNo).`when`(projection).getGoodsNo()
-        doReturn(goodsName).`when`(projection).getGoodsName()
-        doReturn(PRD001.ON_SALE.code).`when`(projection).getGoodsStatusCode()
-        doReturn("판매중").`when`(projection).getGoodsStatusName()
-        doReturn("https://cdn.example.com/goods.jpg").`when`(projection).getGoodsMainImageUrl()
-        doReturn(20000L).`when`(projection).getSalePrice()
-        doReturn(15000L).`when`(projection).getSupplyPrice()
-        return projection
-    }
+    private fun createGoodsListProjection(goodsNo: String, goodsName: String): GoodsListVo =
+        GoodsListVo(
+            goodsNo = goodsNo,
+            goodsName = goodsName,
+            goodsStatusCode = PRD001.ON_SALE.code,
+            goodsStatusName = "판매중",
+            goodsMainImageUrl = "https://cdn.example.com/goods.jpg",
+            salePrice = 20000L,
+            supplyPrice = 15000L
+        )
 
-    private fun createGoodsDetailProjection(goodsNo: String): GoodsDetailProjection {
-        val projection = mock(GoodsDetailProjection::class.java)
-        doReturn(goodsNo).`when`(projection).getGoodsNo()
-        doReturn("테스트 상품").`when`(projection).getGoodsName()
-        doReturn(PRD001.ON_SALE.code).`when`(projection).getGoodsStatusCode()
-        doReturn("판매중").`when`(projection).getGoodsStatusName()
-        doReturn("https://cdn.example.com/goods.jpg").`when`(projection).getGoodsMainImageUrl()
-        doReturn(20000L).`when`(projection).getSalePrice()
-        doReturn(15000L).`when`(projection).getSupplyPrice()
-        doReturn(LocalDateTime.of(2026, 4, 28, 0, 0)).`when`(projection).getRegistDateTime()
-        doReturn(LocalDateTime.of(2026, 4, 28, 1, 0)).`when`(projection).getModifyDateTime()
-        return projection
-    }
+    private fun createGoodsDetailProjection(goodsNo: String): GoodsDetailVo =
+        GoodsDetailVo(
+            goodsNo = goodsNo,
+            goodsName = "테스트 상품",
+            goodsStatusCode = PRD001.ON_SALE.code,
+            goodsStatusName = "판매중",
+            goodsMainImageUrl = "https://cdn.example.com/goods.jpg",
+            salePrice = 20000L,
+            supplyPrice = 15000L,
+            registDateTime = LocalDateTime.of(2026, 4, 28, 0, 0),
+            modifyDateTime = LocalDateTime.of(2026, 4, 28, 1, 0)
+        )
 
-    private fun createGoodsItemProjection(goodsNo: String, itemNo: String, stock: Long): GoodsItemProjection {
-        val projection = mock(GoodsItemProjection::class.java)
-        doReturn(goodsNo).`when`(projection).getGoodsNo()
-        doReturn(itemNo).`when`(projection).getItemNo()
-        doReturn("옵션$itemNo").`when`(projection).getItemName()
-        doReturn(1000L).`when`(projection).getItemPrice()
-        doReturn(stock).`when`(projection).getStock()
-        doReturn(PRD001.ON_SALE.code).`when`(projection).getGoodsStatusCode()
-        return projection
-    }
+    private fun createGoodsItemProjection(goodsNo: String, itemNo: String, stock: Long): GoodsItem =
+        GoodsItem().apply {
+            this.id = GoodsItemId(goodsNo = goodsNo, itemNo = itemNo)
+            this.itemName = "옵션$itemNo"
+            this.itemPrice = 1000L
+            this.stock = stock
+            this.goodsStatusCode = PRD001.ON_SALE.code
+        }
 }

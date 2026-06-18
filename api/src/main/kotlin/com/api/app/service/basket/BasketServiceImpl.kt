@@ -7,7 +7,7 @@ import com.api.app.dto.request.basket.BasketModifyRequest
 import com.api.app.dto.response.basket.BasketResponse
 import com.api.app.entity.BasketBase
 import com.api.app.repository.rodb.basket.BasketBaseRepository
-import com.api.app.repository.rodb.basket.BasketProjection
+import com.api.app.vo.BasketVo
 import com.api.app.repository.rodb.member.MemberBaseRepository
 import com.api.app.repository.rwdb.basket.BasketBaseTrxRepository
 import org.slf4j.LoggerFactory
@@ -124,21 +124,21 @@ class BasketServiceImpl(
         memberBaseRepository.findByEmail(email)?.memberNo
             ?: throw ApiException(ApiError.DATA_NOT_FOUND, "회원 정보를 찾을 수 없습니다")
 
-    private fun BasketProjection.toResponse() = BasketResponse(
-        basketNo = getBasketNo(),
-        memberNo = getMemberNo(),
-        goodsNo = getGoodsNo(),
-        goodsName = getGoodsName(),
-        goodsStatusCode = getGoodsStatusCode(),
-        goodsMainImageUrl = getGoodsMainImageUrl(),
-        salePrice = getSalePrice(),
-        itemNo = getItemNo(),
-        itemName = getItemName(),
-        itemPrice = getItemPrice(),
-        itemStatusCode = getItemStatusCode(),
-        stock = getStock(),
-        quantity = getQuantity(),
-        isOrder = getIsOrder(),
-        registDateTime = getRegistDateTime()
+    private fun BasketVo.toResponse() = BasketResponse(
+        basketNo = basketNo,
+        memberNo = memberNo,
+        goodsNo = goodsNo,
+        goodsName = goodsName,
+        goodsStatusCode = goodsStatusCode,
+        goodsMainImageUrl = goodsMainImageUrl,
+        salePrice = salePrice,
+        itemNo = itemNo,
+        itemName = itemName,
+        itemPrice = itemPrice,
+        itemStatusCode = itemStatusCode,
+        stock = stock,
+        quantity = quantity,
+        isOrder = isOrder,
+        registDateTime = registDateTime
     )
 }

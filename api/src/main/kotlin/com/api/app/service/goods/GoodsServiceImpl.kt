@@ -16,7 +16,6 @@ import com.api.app.entity.GoodsItemId
 import com.api.app.entity.GoodsPriceHist
 import com.api.app.entity.GoodsPriceHistId
 import com.api.app.repository.rodb.goods.GoodsBaseRepository
-import com.api.app.repository.rodb.goods.GoodsItemProjection
 import com.api.app.repository.rodb.goods.GoodsItemRepository
 import com.api.app.repository.rodb.goods.GoodsPriceHistRepository
 import com.api.app.repository.rwdb.goods.GoodsBaseTrxRepository
@@ -103,13 +102,13 @@ class GoodsServiceImpl(
             request.goodsStatusCode, request.goodsName, request.size, offset
         ).map {
             GoodsListResponse(
-                goodsNo = it.getGoodsNo(),
-                goodsName = it.getGoodsName(),
-                goodsStatusCode = it.getGoodsStatusCode(),
-                goodsStatusName = it.getGoodsStatusName(),
-                goodsMainImageUrl = it.getGoodsMainImageUrl(),
-                salePrice = it.getSalePrice(),
-                supplyPrice = it.getSupplyPrice()
+                goodsNo = it.goodsNo,
+                goodsName = it.goodsName,
+                goodsStatusCode = it.goodsStatusCode,
+                goodsStatusName = it.goodsStatusName,
+                goodsMainImageUrl = it.goodsMainImageUrl,
+                salePrice = it.salePrice,
+                supplyPrice = it.supplyPrice
             )
         }
 
@@ -127,21 +126,21 @@ class GoodsServiceImpl(
     }
 
     override fun getGoodsDetail(goodsNo: String): GoodsDetailResponse {
-        val projection = goodsBaseRepository.selectGoodsDetail(goodsNo)
+        val dto = goodsBaseRepository.selectGoodsDetail(goodsNo)
             ?: throw ApiException(ApiError.DATA_NOT_FOUND, "상품을 찾을 수 없습니다")
 
-        val items = goodsItemRepository.selectGoodsItemsByGoodsNo(goodsNo).map { it.toResponse() }
+        val items = goodsItemRepository.findByIdGoodsNoOrderByIdItemNoAsc(goodsNo).map { it.toResponse() }
 
         return GoodsDetailResponse(
-            goodsNo = projection.getGoodsNo(),
-            goodsName = projection.getGoodsName(),
-            goodsStatusCode = projection.getGoodsStatusCode(),
-            goodsStatusName = projection.getGoodsStatusName(),
-            goodsMainImageUrl = projection.getGoodsMainImageUrl(),
-            salePrice = projection.getSalePrice(),
-            supplyPrice = projection.getSupplyPrice(),
-            registDateTime = projection.getRegistDateTime(),
-            modifyDateTime = projection.getModifyDateTime(),
+            goodsNo = dto.goodsNo,
+            goodsName = dto.goodsName,
+            goodsStatusCode = dto.goodsStatusCode,
+            goodsStatusName = dto.goodsStatusName,
+            goodsMainImageUrl = dto.goodsMainImageUrl,
+            salePrice = dto.salePrice,
+            supplyPrice = dto.supplyPrice,
+            registDateTime = dto.registDateTime,
+            modifyDateTime = dto.modifyDateTime,
             items = items
         )
     }
@@ -171,14 +170,14 @@ class GoodsServiceImpl(
         }
     }
 
-    private fun GoodsItemProjection.toResponse() = GoodsItemResponse(
-        goodsNo = getGoodsNo(),
-        itemNo = getItemNo(),
-        itemName = getItemName(),
-        itemPrice = getItemPrice(),
-        stock = getStock(),
-        goodsStatusCode = getGoodsStatusCode(),
+    private fun GoodsItem.toResponse() = GoodsItemResponse(
+        goodsNo = goodsNo,
+        itemNo = itemNo,
+        itemName = itemName,
+        itemPrice = itemPrice,
+        stock = stock,
+        goodsStatusCode = goodsStatusCode,
         goodsStatusName = null,
-        isSoldOut = getStock()?.let { it <= 0 } ?: false
+        isSoldOut = stock <= 0
     )
 }

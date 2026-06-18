@@ -20,13 +20,13 @@ import com.api.app.entity.PayBase
 import com.api.app.repository.rodb.goods.GoodsItemRepository
 import com.api.app.repository.rodb.goods.GoodsPriceHistRepository
 import com.api.app.repository.rodb.member.MemberBaseRepository
-import com.api.app.repository.rodb.order.CancelableOrderItemProjection
 import com.api.app.repository.rodb.order.OrderBaseRepository
-import com.api.app.repository.rodb.order.OrderCompleteGoodsProjection
 import com.api.app.repository.rodb.order.OrderGoodsRepository
-import com.api.app.repository.rodb.order.RefundDetailProjection
-import com.api.app.repository.rodb.pay.OrderCompletePaymentProjection
 import com.api.app.repository.rodb.pay.PayBaseRepository
+import com.api.app.vo.CancelableOrderItemVo
+import com.api.app.vo.OrderCompleteGoodsVo
+import com.api.app.vo.OrderCompletePaymentVo
+import com.api.app.vo.RefundDetailVo
 import com.api.app.repository.rwdb.basket.BasketBaseTrxRepository
 import com.api.app.repository.rwdb.order.OrderBaseTrxRepository
 import com.api.app.repository.rwdb.order.OrderDetailTrxRepository
@@ -230,7 +230,7 @@ class OrderServiceImpl(
     }
 
     override fun getOrderComplete(orderNo: String, memberNo: String): OrderCompleteResponse {
-        val headerProjection = orderBaseRepository.selectOrderCompleteByOrderNo(orderNo, memberNo)
+        val header = orderBaseRepository.selectOrderCompleteByOrderNo(orderNo, memberNo)
             ?: throw IllegalArgumentException("주문 정보를 찾을 수 없습니다")
 
         val goodsList = orderGoodsRepository.selectOrderCompleteGoodsByOrderNo(orderNo)
@@ -240,10 +240,10 @@ class OrderServiceImpl(
             .map { it.toOrderCompletePayment() }
 
         return OrderCompleteResponse(
-            orderNo = headerProjection.getOrderNo(),
-            memberNo = headerProjection.getMemberNo(),
-            orderAcceptDtm = headerProjection.getOrderAcceptDtm(),
-            totalAmount = headerProjection.getTotalAmount(),
+            orderNo = header.orderNo,
+            memberNo = header.memberNo,
+            orderAcceptDtm = header.orderAcceptDtm,
+            totalAmount = header.totalAmount,
             goodsList = goodsList,
             paymentList = paymentList
         )
@@ -252,28 +252,28 @@ class OrderServiceImpl(
     override fun getOrderList(memberNo: String): List<OrderListResponse> {
         val flatList = orderBaseRepository.selectOrderListByMemberNo(memberNo)
 
-        return flatList.groupBy { it.getOrderNo() }.map { (orderNo, rows) ->
+        return flatList.groupBy { it.orderNo }.map { (orderNo, rows) ->
             val first = rows.first()
             OrderListResponse(
                 orderNo = orderNo,
-                orderAcceptDtm = first.getOrderAcceptDtm(),
-                totalAmount = first.getTotalAmount(),
+                orderAcceptDtm = first.orderAcceptDtm,
+                totalAmount = first.totalAmount,
                 goodsList = rows.map { row ->
                     OrderListResponse.OrderListGoods(
-                        orderSequence = row.getOrderSequence(),
-                        orderProcessSequence = row.getOrderProcessSequence(),
-                        goodsNo = row.getGoodsNo(),
-                        itemNo = row.getItemNo(),
-                        goodsName = row.getGoodsName(),
-                        itemName = row.getItemName(),
-                        salePrice = row.getSalePrice(),
-                        quantity = row.getQuantity(),
-                        orderStatusCode = row.getOrderStatusCode(),
-                        orderStatusName = row.getOrderStatusName(),
-                        orderTypeCode = row.getOrderTypeCode(),
-                        orderTypeName = row.getOrderTypeName(),
-                        cancelable = row.getCancelable(),
-                        cancelableAmount = row.getCancelableAmount()
+                        orderSequence = row.orderSequence,
+                        orderProcessSequence = row.orderProcessSequence,
+                        goodsNo = row.goodsNo,
+                        itemNo = row.itemNo,
+                        goodsName = row.goodsName,
+                        itemName = row.itemName,
+                        salePrice = row.salePrice,
+                        quantity = row.quantity,
+                        orderStatusCode = row.orderStatusCode,
+                        orderStatusName = row.orderStatusName,
+                        orderTypeCode = row.orderTypeCode,
+                        orderTypeName = row.orderTypeName,
+                        cancelable = row.cancelable,
+                        cancelableAmount = row.cancelableAmount
                     )
                 }
             )
@@ -290,7 +290,7 @@ class OrderServiceImpl(
         if (cancelableItems.isEmpty()) throw IllegalArgumentException("취소 가능한 상품이 없습니다")
 
         val refundDetails = orderBaseRepository.selectRefundDetailsByOrderNo(orderNo)
-        val totalRefundAmount = refundDetails.sumOf { it.getRefundAmount() ?: 0L }
+        val totalRefundAmount = refundDetails.sumOf { it.refundAmount ?: 0L }
 
         return CancelableOrderResponse(
             orderNo = orderNo,
@@ -302,41 +302,50 @@ class OrderServiceImpl(
         )
     }
 
-    private fun OrderCompleteGoodsProjection.toOrderCompleteGoods() = OrderCompleteResponse.OrderCompleteGoods(
-        goodsNo = getGoodsNo(),
-        itemNo = getItemNo(),
-        goodsName = getGoodsName(),
-        itemName = getItemName(),
-        salePrice = getSalePrice(),
-        quantity = getQuantity(),
-        subtotal = getSubtotal()
+    private fun OrderCompleteGoodsVo.toOrderCompleteGoods() = OrderCompleteResponse.OrderCompleteGoods(
+        goodsNo = goodsNo,
+        itemNo = itemNo,
+        goodsName = goodsName,
+        itemName = itemName,
+        salePrice = salePrice,
+        quantity = quantity,
+        subtotal = subtotal
     )
 
-    private fun OrderCompletePaymentProjection.toOrderCompletePayment() = OrderCompleteResponse.OrderCompletePayment(
-        payWayCode = getPayWayCode(),
-        payWayName = getPayWayName(),
-        amount = getAmount(),
-        pgTypeCode = getPgTypeCode(),
-        pgTypeName = getPgTypeName()
+    private fun OrderCompletePaymentVo.toOrderCompletePayment() = OrderCompleteResponse.OrderCompletePayment(
+        payWayCode = payWayCode,
+        payWayName = when (payWayCode) {
+            "001" -> "신용카드"
+            "002" -> "포인트"
+            else -> ""
+        },
+        amount = amount,
+        pgTypeCode = pgTypeCode,
+        pgTypeName = when (pgTypeCode) {
+            "001" -> "이니시스"
+            "002" -> "나이스"
+            "999" -> "테스트PG"
+            else -> ""
+        }
     )
 
-    private fun CancelableOrderItemProjection.toCancelableItem() = CancelableOrderResponse.CancelableOrderItem(
-        orderSequence = getOrderSequence(),
-        orderProcessSequence = getOrderProcessSequence(),
-        goodsNo = getGoodsNo(),
-        itemNo = getItemNo(),
-        goodsName = getGoodsName(),
-        itemName = getItemName(),
-        salePrice = getSalePrice(),
-        quantity = getQuantity(),
-        subtotal = getSubtotal()
+    private fun CancelableOrderItemVo.toCancelableItem() = CancelableOrderResponse.CancelableOrderItem(
+        orderSequence = orderSequence,
+        orderProcessSequence = orderProcessSequence,
+        goodsNo = goodsNo,
+        itemNo = itemNo,
+        goodsName = goodsName,
+        itemName = itemName,
+        salePrice = salePrice,
+        quantity = quantity,
+        subtotal = subtotal
     )
 
-    private fun RefundDetailProjection.toRefundDetail() = CancelableOrderResponse.RefundDetail(
-        payWayCode = getPayWayCode(),
-        payWayName = getPayWayName(),
-        refundAmount = getRefundAmount(),
-        pgTypeCode = getPgTypeCode(),
-        pgTypeName = getPgTypeName()
+    private fun RefundDetailVo.toRefundDetail() = CancelableOrderResponse.RefundDetail(
+        payWayCode = payWayCode,
+        payWayName = payWayName,
+        refundAmount = refundAmount,
+        pgTypeCode = pgTypeCode,
+        pgTypeName = pgTypeName
     )
 }

@@ -6,7 +6,7 @@ import com.api.app.dto.response.basket.BasketResponse
 import com.api.app.dto.response.order.OrderSheetResponse
 import com.api.app.emum.PRD001
 import com.api.app.repository.rodb.basket.BasketBaseRepository
-import com.api.app.repository.rodb.basket.BasketProjection
+import com.api.app.vo.BasketVo
 import com.api.app.repository.rodb.member.MemberBaseRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -34,21 +34,21 @@ class OrderSheetServiceImpl(
 
         val memberNo = member.memberNo
         basketList.forEach { basket ->
-            if (basket.getMemberNo() != memberNo) {
+            if (basket.memberNo != memberNo) {
                 throw ApiException(ApiError.FORBIDDEN, "본인의 장바구니만 주문할 수 있습니다")
             }
-            if (basket.getIsOrder() == true) {
-                throw ApiException(ApiError.INVALID_PARAMETER, "이미 주문된 상품입니다: ${basket.getGoodsName()}")
+            if (basket.isOrder == true) {
+                throw ApiException(ApiError.INVALID_PARAMETER, "이미 주문된 상품입니다: ${basket.goodsName}")
             }
-            if (!PRD001.ON_SALE.code.equals(basket.getGoodsStatusCode())
-                || !PRD001.ON_SALE.code.equals(basket.getItemStatusCode())) {
-                throw ApiException(ApiError.INVALID_PARAMETER, "판매 중인 상품만 주문할 수 있습니다: ${basket.getGoodsName()}")
+            if (!PRD001.ON_SALE.code.equals(basket.goodsStatusCode)
+                || !PRD001.ON_SALE.code.equals(basket.itemStatusCode)) {
+                throw ApiException(ApiError.INVALID_PARAMETER, "판매 중인 상품만 주문할 수 있습니다: ${basket.goodsName}")
             }
-            val stock = basket.getStock() ?: 0L
-            val quantity = basket.getQuantity() ?: 0L
+            val stock = basket.stock ?: 0L
+            val quantity = basket.quantity ?: 0L
             if (stock < quantity) {
                 throw ApiException(ApiError.INVALID_PARAMETER,
-                    "재고가 부족합니다: ${basket.getGoodsName()} (재고: $stock, 주문수량: $quantity)")
+                    "재고가 부족합니다: ${basket.goodsName} (재고: $stock, 주문수량: $quantity)")
             }
         }
 
@@ -68,21 +68,21 @@ class OrderSheetServiceImpl(
         )
     }
 
-    private fun BasketProjection.toResponse() = BasketResponse(
-        basketNo = getBasketNo(),
-        memberNo = getMemberNo(),
-        goodsNo = getGoodsNo(),
-        goodsName = getGoodsName(),
-        goodsStatusCode = getGoodsStatusCode(),
-        goodsMainImageUrl = getGoodsMainImageUrl(),
-        salePrice = getSalePrice(),
-        itemNo = getItemNo(),
-        itemName = getItemName(),
-        itemPrice = getItemPrice(),
-        itemStatusCode = getItemStatusCode(),
-        stock = getStock(),
-        quantity = getQuantity(),
-        isOrder = getIsOrder(),
-        registDateTime = getRegistDateTime()
+    private fun BasketVo.toResponse() = BasketResponse(
+        basketNo = basketNo,
+        memberNo = memberNo,
+        goodsNo = goodsNo,
+        goodsName = goodsName,
+        goodsStatusCode = goodsStatusCode,
+        goodsMainImageUrl = goodsMainImageUrl,
+        salePrice = salePrice,
+        itemNo = itemNo,
+        itemName = itemName,
+        itemPrice = itemPrice,
+        itemStatusCode = itemStatusCode,
+        stock = stock,
+        quantity = quantity,
+        isOrder = isOrder,
+        registDateTime = registDateTime
     )
 }

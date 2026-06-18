@@ -10,7 +10,6 @@ import com.api.app.dto.response.point.PointHistoryResponse
 import com.api.app.emum.MEM002
 import com.api.app.emum.MEM003
 import com.api.app.entity.PointHistory
-import com.api.app.repository.rodb.point.PointHistoryProjection
 import com.api.app.repository.rodb.point.PointHistoryRepository
 import com.api.app.repository.rwdb.point.PointHistoryTrxRepository
 import org.slf4j.LoggerFactory
@@ -74,7 +73,7 @@ class PointServiceImpl(
         for (earnHistory in availablePoints) {
             if (remainingAmount <= 0) break
 
-            val currentRemain = earnHistory.remainPoint ?: 0L
+            val currentRemain = earnHistory.remainPoint
             val deductAmount = minOf(currentRemain, remainingAmount)
 
             pointHistoryTrxRepository.updateRemainPoint(
@@ -119,15 +118,15 @@ class PointServiceImpl(
         )
     }
 
-    private fun PointHistoryProjection.toResponse() = PointHistoryResponse(
-        pointHistoryNo = getPointHistoryNo(),
-        amount = getAmount(),
-        pointTransactionCode = getPointTransactionCode(),
-        pointTransactionReasonCode = getPointTransactionReasonCode(),
-        pointTransactionReasonNo = getPointTransactionReasonNo(),
-        startDateTime = getStartDateTime(),
-        endDateTime = getEndDateTime(),
-        remainPoint = getRemainPoint(),
-        createdDate = getCreatedDate()
+    private fun PointHistory.toResponse() = PointHistoryResponse(
+        pointHistoryNo = pointHistoryNo,
+        amount = amount,
+        pointTransactionCode = pointTransactionCode,
+        pointTransactionReasonCode = pointTransactionReasonCode,
+        pointTransactionReasonNo = pointTransactionReasonNo,
+        startDateTime = startDateTime,
+        endDateTime = endDateTime,
+        remainPoint = remainPoint,
+        createdDate = registDateTime
     )
 }

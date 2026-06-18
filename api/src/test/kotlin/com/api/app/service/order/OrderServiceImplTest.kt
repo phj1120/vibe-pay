@@ -20,15 +20,15 @@ import com.api.app.entity.PayBase
 import com.api.app.repository.rodb.goods.GoodsItemRepository
 import com.api.app.repository.rodb.goods.GoodsPriceHistRepository
 import com.api.app.repository.rodb.member.MemberBaseRepository
-import com.api.app.repository.rodb.order.CancelableOrderItemProjection
 import com.api.app.repository.rodb.order.OrderBaseRepository
-import com.api.app.repository.rodb.order.OrderCompleteHeaderProjection
-import com.api.app.repository.rodb.order.OrderCompleteGoodsProjection
 import com.api.app.repository.rodb.order.OrderGoodsRepository
-import com.api.app.repository.rodb.order.OrderListFlatProjection
-import com.api.app.repository.rodb.order.RefundDetailProjection
-import com.api.app.repository.rodb.pay.OrderCompletePaymentProjection
 import com.api.app.repository.rodb.pay.PayBaseRepository
+import com.api.app.vo.CancelableOrderItemVo
+import com.api.app.vo.OrderCompleteGoodsVo
+import com.api.app.vo.OrderCompleteHeaderVo
+import com.api.app.vo.OrderCompletePaymentVo
+import com.api.app.vo.OrderListFlatVo
+import com.api.app.vo.RefundDetailVo
 import com.api.app.repository.rwdb.basket.BasketBaseTrxRepository
 import com.api.app.repository.rwdb.order.OrderBaseTrxRepository
 import com.api.app.repository.rwdb.order.OrderDetailTrxRepository
@@ -300,28 +300,26 @@ class OrderServiceImplTest {
     @Test
     @DisplayName("getOrderComplete maps header goods and payments")
     fun getOrderCompleteMapsHeaderGoodsAndPayments() {
-        val header = org.mockito.Mockito.mock(OrderCompleteHeaderProjection::class.java).also {
-            given(it.getOrderNo()).willReturn("20260428O000001")
-            given(it.getMemberNo()).willReturn("000000000000001")
-            given(it.getOrderAcceptDtm()).willReturn(LocalDateTime.of(2026, 4, 28, 12, 0))
-            given(it.getTotalAmount()).willReturn(10000L)
-        }
-        val goods = org.mockito.Mockito.mock(OrderCompleteGoodsProjection::class.java).also {
-            given(it.getGoodsNo()).willReturn("G-1")
-            given(it.getItemNo()).willReturn("I01")
-            given(it.getGoodsName()).willReturn("Speaker")
-            given(it.getItemName()).willReturn("Black")
-            given(it.getSalePrice()).willReturn(10000L)
-            given(it.getQuantity()).willReturn(1L)
-            given(it.getSubtotal()).willReturn(10000L)
-        }
-        val payment = org.mockito.Mockito.mock(OrderCompletePaymentProjection::class.java).also {
-            given(it.getPayWayCode()).willReturn(PAY002.CREDIT_CARD.code)
-            given(it.getPayWayName()).willReturn("Card")
-            given(it.getAmount()).willReturn(10000L)
-            given(it.getPgTypeCode()).willReturn(PAY005.INICIS.code)
-            given(it.getPgTypeName()).willReturn("Inicis")
-        }
+        val header = OrderCompleteHeaderVo(
+            orderNo = "20260428O000001",
+            memberNo = "000000000000001",
+            orderAcceptDtm = LocalDateTime.of(2026, 4, 28, 12, 0),
+            totalAmount = 10000L
+        )
+        val goods = OrderCompleteGoodsVo(
+            goodsNo = "G-1",
+            itemNo = "I01",
+            goodsName = "Speaker",
+            itemName = "Black",
+            salePrice = 10000L,
+            quantity = 1L,
+            subtotal = 10000L
+        )
+        val payment = OrderCompletePaymentVo(
+            payWayCode = PAY002.CREDIT_CARD.code,
+            amount = 10000L,
+            pgTypeCode = PAY005.INICIS.code
+        )
         given(orderBaseRepository.selectOrderCompleteByOrderNo("20260428O000001", "000000000000001")).willReturn(header)
         given(orderGoodsRepository.selectOrderCompleteGoodsByOrderNo("20260428O000001")).willReturn(listOf(goods))
         given(payBaseRepository.selectOrderCompletePaymentByOrderNo("20260428O000001")).willReturn(listOf(payment))
@@ -355,24 +353,24 @@ class OrderServiceImplTest {
             orderNo = "20260428O000001"
             memberNo = "000000000000001"
         }
-        val cancelableItem = org.mockito.Mockito.mock(CancelableOrderItemProjection::class.java).also {
-            given(it.getOrderSequence()).willReturn(1L)
-            given(it.getOrderProcessSequence()).willReturn(1L)
-            given(it.getGoodsNo()).willReturn("G-1")
-            given(it.getItemNo()).willReturn("I01")
-            given(it.getGoodsName()).willReturn("Speaker")
-            given(it.getItemName()).willReturn("Black")
-            given(it.getSalePrice()).willReturn(10000L)
-            given(it.getQuantity()).willReturn(1L)
-            given(it.getSubtotal()).willReturn(10000L)
-        }
-        val refundDetail = org.mockito.Mockito.mock(RefundDetailProjection::class.java).also {
-            given(it.getPayWayCode()).willReturn(PAY002.CREDIT_CARD.code)
-            given(it.getPayWayName()).willReturn("Card")
-            given(it.getRefundAmount()).willReturn(10000L)
-            given(it.getPgTypeCode()).willReturn(PAY005.INICIS.code)
-            given(it.getPgTypeName()).willReturn("Inicis")
-        }
+        val cancelableItem = CancelableOrderItemVo(
+            orderSequence = 1L,
+            orderProcessSequence = 1L,
+            goodsNo = "G-1",
+            itemNo = "I01",
+            goodsName = "Speaker",
+            itemName = "Black",
+            salePrice = 10000L,
+            quantity = 1L,
+            subtotal = 10000L
+        )
+        val refundDetail = RefundDetailVo(
+            payWayCode = PAY002.CREDIT_CARD.code,
+            payWayName = "신용카드",
+            refundAmount = 10000L,
+            pgTypeCode = PAY005.INICIS.code,
+            pgTypeName = "KG이니시스"
+        )
         given(orderBaseRepository.findById("20260428O000001")).willReturn(Optional.of(orderBase))
         given(orderBaseRepository.selectCancelableOrdersByOrderNo("20260428O000001", "000000000000001"))
             .willReturn(listOf(cancelableItem))
@@ -435,23 +433,23 @@ class OrderServiceImplTest {
         orderSequence: Long,
         goodsName: String,
         salePrice: Long
-    ) = org.mockito.Mockito.mock(OrderListFlatProjection::class.java).also {
-        given(it.getOrderNo()).willReturn(orderNo)
-        lenient().`when`(it.getOrderAcceptDtm()).thenReturn(LocalDateTime.of(2026, 4, 28, 12, 0))
-        lenient().`when`(it.getTotalAmount()).thenReturn(15000L)
-        given(it.getOrderSequence()).willReturn(orderSequence)
-        given(it.getOrderProcessSequence()).willReturn(1L)
-        given(it.getGoodsNo()).willReturn("G-$orderSequence")
-        given(it.getItemNo()).willReturn("I0$orderSequence")
-        given(it.getGoodsName()).willReturn(goodsName)
-        given(it.getItemName()).willReturn("Item-$orderSequence")
-        given(it.getSalePrice()).willReturn(salePrice)
-        given(it.getQuantity()).willReturn(1L)
-        given(it.getOrderStatusCode()).willReturn("001")
-        given(it.getOrderStatusName()).willReturn("Received")
-        given(it.getOrderTypeCode()).willReturn("001")
-        given(it.getOrderTypeName()).willReturn("Order")
-        given(it.getCancelable()).willReturn(true)
-        given(it.getCancelableAmount()).willReturn(15000L)
-    }
+    ) = OrderListFlatVo(
+        orderNo = orderNo,
+        orderAcceptDtm = LocalDateTime.of(2026, 4, 28, 12, 0),
+        totalAmount = 15000L,
+        orderSequence = orderSequence,
+        orderProcessSequence = 1L,
+        goodsNo = "G-$orderSequence",
+        itemNo = "I0$orderSequence",
+        goodsName = goodsName,
+        itemName = "Item-$orderSequence",
+        salePrice = salePrice,
+        quantity = 1L,
+        orderStatusCode = "001",
+        orderStatusName = "주문접수",
+        orderTypeCode = "001",
+        orderTypeName = "주문",
+        cancelable = true,
+        cancelableAmount = 15000L
+    )
 }

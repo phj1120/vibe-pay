@@ -5,7 +5,7 @@ import com.api.app.common.exception.ApiException
 import com.api.app.emum.PRD001
 import com.api.app.entity.MemberBase
 import com.api.app.repository.rodb.basket.BasketBaseRepository
-import com.api.app.repository.rodb.basket.BasketProjection
+import com.api.app.vo.BasketVo
 import com.api.app.repository.rodb.member.MemberBaseRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -179,23 +179,21 @@ class OrderSheetServiceImplTest {
         salePrice: Long = 10000L,
         quantity: Long = 2L,
         stock: Long = 10L
-    ): BasketProjection {
-        val projection = mock(BasketProjection::class.java)
-        doReturn(basketNo).`when`(projection).getBasketNo()
-        doReturn(memberNo).`when`(projection).getMemberNo()
-        doReturn("G001").`when`(projection).getGoodsNo()
-        doReturn("상품$basketNo").`when`(projection).getGoodsName()
-        doReturn(goodsStatusCode).`when`(projection).getGoodsStatusCode()
-        doReturn("https://cdn.example.com/goods.jpg").`when`(projection).getGoodsMainImageUrl()
-        doReturn(salePrice).`when`(projection).getSalePrice()
-        doReturn("001").`when`(projection).getItemNo()
-        doReturn("기본").`when`(projection).getItemName()
-        doReturn(0L).`when`(projection).getItemPrice()
-        doReturn(itemStatusCode).`when`(projection).getItemStatusCode()
-        doReturn(stock).`when`(projection).getStock()
-        doReturn(quantity).`when`(projection).getQuantity()
-        doReturn(isOrder).`when`(projection).getIsOrder()
-        doReturn(LocalDateTime.of(2026, 4, 28, 0, 0)).`when`(projection).getRegistDateTime()
-        return projection
-    }
+    ): BasketVo = BasketVo(
+        basketNo = basketNo,
+        memberNo = memberNo,
+        goodsNo = "G001",
+        goodsName = "상품$basketNo",
+        goodsStatusCode = goodsStatusCode,
+        goodsMainImageUrl = "https://cdn.example.com/goods.jpg",
+        salePrice = salePrice,
+        itemNo = "001",
+        itemName = "기본",
+        itemPrice = 0L,
+        itemStatusCode = itemStatusCode,
+        stock = stock,
+        quantity = quantity,
+        isOrder = isOrder,
+        registDateTime = LocalDateTime.of(2026, 4, 28, 0, 0)
+    )
 }

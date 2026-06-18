@@ -7,7 +7,6 @@ import com.api.app.dto.request.point.PointTransactionRequest
 import com.api.app.emum.MEM002
 import com.api.app.emum.MEM003
 import com.api.app.entity.PointHistory
-import com.api.app.repository.rodb.point.PointHistoryProjection
 import com.api.app.repository.rodb.point.PointHistoryRepository
 import com.api.app.repository.rwdb.point.PointHistoryTrxRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -200,17 +199,14 @@ class PointServiceImplTest {
         pointHistoryNo: String,
         amount: Long,
         remainPoint: Long
-    ): PointHistoryProjection {
-        val projection = mock(PointHistoryProjection::class.java)
-        doReturn(pointHistoryNo).`when`(projection).getPointHistoryNo()
-        doReturn(amount).`when`(projection).getAmount()
-        doReturn(MEM002.EARN.code).`when`(projection).getPointTransactionCode()
-        doReturn(MEM003.ETC.code).`when`(projection).getPointTransactionReasonCode()
-        doReturn(null).`when`(projection).getPointTransactionReasonNo()
-        doReturn(LocalDateTime.of(2026, 1, 1, 0, 0)).`when`(projection).getStartDateTime()
-        doReturn(LocalDateTime.of(2027, 1, 1, 0, 0)).`when`(projection).getEndDateTime()
-        doReturn(remainPoint).`when`(projection).getRemainPoint()
-        doReturn(LocalDateTime.of(2026, 1, 1, 0, 0)).`when`(projection).getCreatedDate()
-        return projection
+    ): PointHistory = PointHistory().apply {
+        this.pointHistoryNo = pointHistoryNo
+        this.memberNo = "M001"
+        this.amount = amount
+        this.pointTransactionCode = MEM002.EARN.code
+        this.pointTransactionReasonCode = MEM003.ETC.code
+        this.startDateTime = LocalDateTime.of(2026, 1, 1, 0, 0)
+        this.endDateTime = LocalDateTime.of(2027, 1, 1, 0, 0)
+        this.remainPoint = remainPoint
     }
 }

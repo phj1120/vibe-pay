@@ -8,7 +8,7 @@ import com.api.app.emum.PRD001
 import com.api.app.entity.BasketBase
 import com.api.app.entity.MemberBase
 import com.api.app.repository.rodb.basket.BasketBaseRepository
-import com.api.app.repository.rodb.basket.BasketProjection
+import com.api.app.vo.BasketVo
 import com.api.app.repository.rodb.member.MemberBaseRepository
 import com.api.app.repository.rwdb.basket.BasketBaseTrxRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -284,23 +284,21 @@ class BasketServiceImplTest {
     private fun createProjection(
         basketNo: String,
         memberNo: String = "M001"
-    ): BasketProjection {
-        val projection = mock(BasketProjection::class.java)
-        doReturn(basketNo).`when`(projection).getBasketNo()
-        doReturn(memberNo).`when`(projection).getMemberNo()
-        doReturn("G001").`when`(projection).getGoodsNo()
-        doReturn("테스트상품").`when`(projection).getGoodsName()
-        doReturn(PRD001.ON_SALE.code).`when`(projection).getGoodsStatusCode()
-        doReturn("https://cdn.example.com/goods.jpg").`when`(projection).getGoodsMainImageUrl()
-        doReturn(10000L).`when`(projection).getSalePrice()
-        doReturn("001").`when`(projection).getItemNo()
-        doReturn("기본").`when`(projection).getItemName()
-        doReturn(1000L).`when`(projection).getItemPrice()
-        doReturn(PRD001.ON_SALE.code).`when`(projection).getItemStatusCode()
-        doReturn(10L).`when`(projection).getStock()
-        doReturn(2L).`when`(projection).getQuantity()
-        doReturn(false).`when`(projection).getIsOrder()
-        doReturn(LocalDateTime.of(2026, 4, 28, 0, 0)).`when`(projection).getRegistDateTime()
-        return projection
-    }
+    ): BasketVo = BasketVo(
+        basketNo = basketNo,
+        memberNo = memberNo,
+        goodsNo = "G001",
+        goodsName = "테스트상품",
+        goodsStatusCode = PRD001.ON_SALE.code,
+        goodsMainImageUrl = "https://cdn.example.com/goods.jpg",
+        salePrice = 10000L,
+        itemNo = "001",
+        itemName = "기본",
+        itemPrice = 1000L,
+        itemStatusCode = PRD001.ON_SALE.code,
+        stock = 10L,
+        quantity = 2L,
+        isOrder = false,
+        registDateTime = LocalDateTime.of(2026, 4, 28, 0, 0)
+    )
 }
